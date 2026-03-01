@@ -46,6 +46,28 @@ const Sidebar = ({ isOpen, onClose }) => {
         localStorage.setItem('menuOrder', JSON.stringify(menuItems));
     }, [menuItems]);
 
+    // 설정에서 메뉴 변경 시 즉시 반영
+    useEffect(() => {
+        const handleMenuUpdate = () => {
+            const saved = localStorage.getItem('menuOrder');
+            if (saved) {
+                const savedItems = JSON.parse(saved);
+                const updatedItems = savedItems
+                    .filter(savedItem => defaultMenuItems.some(d => d.id === savedItem.id))
+                    .map(savedItem => {
+                        const defaultItem = defaultMenuItems.find(d => d.id === savedItem.id);
+                        return { ...savedItem, label: defaultItem.label, to: defaultItem.to };
+                    });
+                const newItems = defaultMenuItems.filter(
+                    defaultItem => !updatedItems.some(item => item.id === defaultItem.id)
+                );
+                setMenuItems(newItems.length > 0 ? [...updatedItems, ...newItems] : updatedItems);
+            }
+        };
+        window.addEventListener('menuOrderUpdated', handleMenuUpdate);
+        return () => window.removeEventListener('menuOrderUpdated', handleMenuUpdate);
+    }, []);
+
     // Keep main-nav scroll at top when route changes
     useEffect(() => {
         if (mainNavRef.current) {
@@ -97,7 +119,7 @@ const Sidebar = ({ isOpen, onClose }) => {
 
                 {/* Draggable Main Navigation */}
                 <div className="main-nav" ref={mainNavRef}>
-                    {menuItems.map((item, index) => (
+                    {menuItems.filter(item => !item.hidden).map((item, index) => (
                         <NavLink
                             key={item.id}
                             to={item.to}
