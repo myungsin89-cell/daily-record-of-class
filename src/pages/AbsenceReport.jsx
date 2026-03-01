@@ -624,11 +624,8 @@ const AbsenceReport = () => {
                     <button className="export-btn" onClick={handleExport}>
                         📥 엑셀 다운로드
                     </button>
-                    <button className="export-btn" onClick={handlePrint} style={{ backgroundColor: '#1e293b' }}>
-                        🖨️ 대장 인쇄
-                    </button>
                     <button className="export-btn" onClick={() => handlePrintForm(filteredAbsenceData)} style={{ backgroundColor: '#1e40af' }}>
-                        📄 전체 신고서
+                        🖨️ 인쇄/PDF
                     </button>
                 </div>
             </div>

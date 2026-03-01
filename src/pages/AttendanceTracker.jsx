@@ -70,6 +70,38 @@ const AttendanceTracker = () => {
         return days;
     };
 
+    // 이전 출석일의 같은 상태 사유를 찾기 (연속 병결 사유 자동 입력)
+    const getPrevSchoolDayReason = (dateStr, studentId, status) => {
+        const holidaySet = new Set(
+            (holidays || []).map(h => (typeof h === 'string' ? h : h.date))
+        );
+        const [y, m, d] = dateStr.split('-').map(Number);
+        let date = new Date(y, m - 1, d);
+
+        // 최대 10일 뒤로 탐색
+        for (let i = 0; i < 10; i++) {
+            date.setDate(date.getDate() - 1);
+            const dow = date.getDay();
+            const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+            // 주말/공휴일이면 건너뜀
+            if (dow === 0 || dow === 6 || holidaySet.has(key)) continue;
+
+            // 출석일 찾음 — 같은 학생/상태인지 확인
+            const data = attendance[key]?.[studentId];
+            if (data) {
+                const prevStatus = typeof data === 'object' ? data.status : data;
+                const prevReason = typeof data === 'object' ? data.reason : '';
+                if (prevStatus === status && prevReason) {
+                    return prevReason;
+                }
+            }
+            // 이전 출석일에 같은 상태가 아니면 연속이 아님
+            break;
+        }
+        return '';
+    };
+
     const handleStatusChange = (studentId, status) => {
         const dateKey = selectedDate;
         const tempKey = `${dateKey}_${studentId}`;
@@ -88,17 +120,21 @@ const AttendanceTracker = () => {
         }
 
         // Set new status
+        let autoReason = '';
         if (status === 'sick' || status === 'other') {
             const existingData = attendance[dateKey]?.[studentId];
             const existingReason = typeof existingData === 'object' ? existingData.reason : '';
 
+            // 기존 사유 없으면 이전 출석일 사유 자동 입력
+            autoReason = existingReason || getPrevSchoolDayReason(dateKey, studentId, status);
+
             setReasons(prev => ({
                 ...prev,
-                [tempKey]: existingReason || ''
+                [tempKey]: autoReason
             }));
         }
 
-        updateAttendance(dateKey, studentId, { status, reason: reasons[tempKey] || '' });
+        updateAttendance(dateKey, studentId, { status, reason: autoReason || reasons[tempKey] || '' });
     };
 
     const handleReasonChange = (studentId, reason) => {

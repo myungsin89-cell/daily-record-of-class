@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getData, saveData, STORES } from '../db/indexedDB';
 
 /**
@@ -13,6 +13,16 @@ import { getData, saveData, STORES } from '../db/indexedDB';
 function useIndexedDB(storeName, key, initialValue) {
     const [storedValue, setStoredValue] = useState(initialValue);
     const [isLoading, setIsLoading] = useState(true);
+
+    // Refs to track the latest key and loading state
+    const keyRef = useRef(key);
+    const isReadyRef = useRef(false);
+
+    // Keep keyRef in sync and reset ready state when key changes
+    useEffect(() => {
+        keyRef.current = key;
+        isReadyRef.current = false;
+    }, [key]);
 
     // Load data from IndexedDB on mount
     useEffect(() => {
@@ -29,7 +39,6 @@ function useIndexedDB(storeName, key, initialValue) {
                     setStoredValue(result.data);
                 } else {
                     // If no data exists, save the initial value
-                    // Use the correct key name based on the store
                     const keyName = storeName === STORES.HOLIDAYS ? 'year' : 'classId';
                     await saveData(storeName, {
                         [keyName]: key,
@@ -44,6 +53,10 @@ function useIndexedDB(storeName, key, initialValue) {
             } finally {
                 if (isMounted) {
                     setIsLoading(false);
+                    // Only mark ready if the key hasn't changed during loading
+                    if (keyRef.current === key) {
+                        isReadyRef.current = true;
+                    }
                 }
             }
         };
@@ -53,31 +66,35 @@ function useIndexedDB(storeName, key, initialValue) {
         return () => {
             isMounted = false;
         };
-    }, [storeName, key]); // Removed initialValue from dependencies to prevent infinite loops
+    }, [storeName, key]);
 
     // Function to update value in both state and IndexedDB
     const setValue = useCallback(async (value) => {
+        // Prevent saving data before initial load is complete
+        // This avoids writing to a transient/wrong key
+        if (!isReadyRef.current) {
+            console.warn(`[useIndexedDB] Blocked save to ${storeName} — still loading (key: ${keyRef.current})`);
+            return;
+        }
+
         try {
-            // Use functional setState to always get the latest storedValue
-            // This prevents race conditions and stale closure issues
             let valueToStore;
             setStoredValue((currentValue) => {
-                // Allow value to be a function so we have same API as useState
                 valueToStore = value instanceof Function ? value(currentValue) : value;
                 return valueToStore;
             });
 
-            // Save to IndexedDB with correct key name
+            // Always use the latest key from the ref
+            const currentKey = keyRef.current;
             const keyName = storeName === STORES.HOLIDAYS ? 'year' : 'classId';
             await saveData(storeName, {
-                [keyName]: key,
+                [keyName]: currentKey,
                 data: valueToStore
             });
         } catch (error) {
             console.error(`Failed to save data to ${storeName}:`, error);
         }
-    }, [storeName, key]); // Removed storedValue from dependencies to prevent unnecessary recreations
-
+    }, [storeName]);
 
     return [storedValue, setValue, isLoading];
 }
