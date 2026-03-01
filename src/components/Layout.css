@@ -1,0 +1,245 @@
+.layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+.main-content {
+    flex: 1;
+    margin-left: 260px;
+    /* Width of sidebar */
+    background-color: var(--color-background);
+    display: flex;
+    flex-direction: column;
+}
+
+.main-header {
+    background: white;
+    padding: 1.5rem 2rem;
+    border-bottom: 2px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 80px;
+}
+
+.class-info h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 0.25rem;
+}
+
+.class-info p {
+    color: #6b7280;
+    font-size: 0.95rem;
+}
+
+.header-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.change-class-btn,
+.logout-btn-header {
+    padding: 0.625rem 1.25rem;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.change-class-btn {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.change-class-btn:hover {
+    background: #e5e7eb;
+    transform: translateY(-2px);
+}
+
+.logout-btn-header {
+    background: #ef4444;
+    color: white;
+}
+
+.logout-btn-header:hover {
+    background: #dc2626;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.backup-btn-header {
+    padding: 0.625rem 1.25rem;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: linear-gradient(135deg, #475569, #334155);
+    color: white;
+}
+
+.backup-btn-header:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(51, 65, 85, 0.4);
+}
+
+.backup-btn-header.disabled,
+.backup-btn-header:disabled {
+    background: #e2e8f0;
+    color: #94a3b8;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.backup-btn-header.done {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.page-content {
+    flex: 1;
+    padding: var(--spacing-2xl);
+}
+
+.hamburger-btn {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--color-text-main);
+    padding: 0.5rem;
+    margin-right: 0.5rem;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+}
+
+.mobile-sidebar-overlay {
+    display: none;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+    .main-content {
+        margin-left: 0;
+    }
+
+    .hamburger-btn {
+        display: block;
+    }
+
+    .main-header {
+        padding: 1rem;
+        min-height: 60px;
+    }
+
+    .class-info h2 {
+        font-size: 1.2rem;
+    }
+
+    .class-info p {
+        font-size: 0.85rem;
+    }
+
+    .change-class-btn,
+    .logout-btn-header,
+    .backup-btn-header {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+    }
+
+    .page-content {
+        padding: var(--spacing-md);
+    }
+
+    .mobile-sidebar-overlay {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 90;
+        /* Below sidebar (100) but above everything else */
+    }
+}
+
+/* Header Save Status */
+/* Header Save Status */
+.header-save-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: 1.5rem;
+    padding: 0.5rem 1rem;
+    background-color: #f8fafc;
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-text-main);
+    transition: all 0.3s ease;
+}
+
+.status-icon {
+    font-size: 1rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+}
+
+.status-icon.saving {
+    animation: spin 1s linear infinite;
+    color: #f59e0b;
+    /* Amber */
+}
+
+.status-icon.saved {
+    color: #10b981;
+    /* Emerald */
+}
+
+.status-icon.waiting {
+    color: #94a3b8;
+    /* Slate 400 */
+}
+
+.header-save-status .status-text {
+    white-space: nowrap;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (max-width: 768px) {
+    .header-save-status {
+        margin-left: 0.5rem;
+        padding: 0.4rem 0.8rem;
+        font-size: 0.8rem;
+        background-color: transparent;
+        border: none;
+    }
+
+    .header-save-status .status-text {
+        display: inline;
+    }
+}

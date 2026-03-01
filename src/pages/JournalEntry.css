@@ -1,0 +1,245 @@
+.journal-container {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    gap: var(--spacing-lg);
+    height: calc(100vh - 200px);
+}
+
+.student-selector {
+    background: var(--color-surface);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow-y: auto;
+}
+
+.student-item {
+    padding: var(--spacing-sm) var(--spacing-md);
+    margin-bottom: var(--spacing-xs);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: var(--transition-base);
+    border: 1px solid transparent;
+}
+
+.student-item:hover {
+    background: var(--color-background);
+    border-color: var(--color-border);
+}
+
+.student-item.active {
+    background: var(--color-primary);
+    color: white;
+    font-weight: 600;
+}
+
+.journal-content {
+    overflow-y: auto;
+    padding-right: var(--spacing-sm);
+}
+
+.journal-form {
+    background: var(--color-surface);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: var(--spacing-lg);
+    border: 1px solid var(--color-border);
+}
+
+.date-selector-inline {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.date-input {
+    padding: 0.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-base);
+    transition: var(--transition-base);
+}
+
+.date-input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.journal-textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: var(--spacing-md);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-base);
+    font-family: inherit;
+    resize: vertical;
+    transition: var(--transition-base);
+    margin-bottom: var(--spacing-md);
+}
+
+.journal-textarea:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.cumulative-records {
+    background: var(--color-surface);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--color-border);
+}
+
+.date-group {
+    margin-bottom: var(--spacing-lg);
+}
+
+.date-group:last-child {
+    margin-bottom: 0;
+}
+
+.date-header {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--color-background);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-sm);
+    border-left: 4px solid var(--color-primary);
+}
+
+.date-entries {
+    padding-left: var(--spacing-md);
+}
+
+.record-item {
+    display: flex;
+    gap: var(--spacing-lg);
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    border-left: 3px solid var(--color-border);
+    background-color: #f8fafc;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    transition: var(--transition-base);
+    align-items: flex-start;
+}
+
+.record-item:hover {
+    background: white;
+    border-left-color: var(--color-primary);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.record-time {
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    font-weight: 600;
+    min-width: 80px;
+    flex-shrink: 0;
+    padding-top: 0.1rem;
+}
+
+.record-content {
+    flex: 1;
+    line-height: 1.6;
+    color: var(--color-text);
+    font-size: 0.95rem;
+    word-break: break-word;
+}
+
+.evaluation-content {
+    padding: var(--spacing-md);
+    background: white;
+    border-radius: var(--radius-md);
+    border: 1px solid #bbf7d0;
+}
+
+/* Attendance Summary */
+.attendance-summary-section {
+    background: var(--color-surface);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--color-border);
+}
+
+.attendance-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.stat-card {
+    background: white;
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    border-left: 4px solid;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    margin-bottom: 0.25rem;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.attendance-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.attendance-table thead {
+    background: var(--color-background);
+}
+
+.attendance-table th {
+    padding: var(--spacing-md);
+    text-align: left;
+    font-weight: 600;
+    color: var(--color-text);
+    border-bottom: 2px solid var(--color-border);
+}
+
+.attendance-table td {
+    padding: var(--spacing-md);
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text);
+}
+
+.attendance-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.attendance-table tbody tr:hover {
+    background: var(--color-background);
+}
+
+.attendance-table th:first-child,
+.attendance-table td:first-child {
+    width: 35%;
+}
+
+.attendance-table th:nth-child(2),
+.attendance-table td:nth-child(2) {
+    width: 25%;
+    text-align: center;
+}
+
+.attendance-table th:last-child,
+.attendance-table td:last-child {
+    width: 40%;
+}

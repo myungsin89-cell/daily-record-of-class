@@ -1,0 +1,25 @@
+.card {
+    background-color: var(--color-surface);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--color-border);
+    transition: var(--transition-base);
+}
+
+.card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.card-title {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    color: var(--color-text-main);
+    margin-bottom: var(--spacing-sm);
+}
+
+.card-body {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-base);
+}

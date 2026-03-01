@@ -1,0 +1,219 @@
+.assignment-container {
+    height: calc(100vh - 100px);
+    display: flex;
+    flex-direction: column;
+}
+
+.assignment-layout {
+    display: flex;
+    gap: var(--spacing-lg);
+    flex: 1;
+    overflow: hidden;
+    margin-top: var(--spacing-md);
+}
+
+/* Sidebar */
+.assignment-sidebar {
+    width: 300px;
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-sm);
+}
+
+.add-assignment-box {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+}
+
+.add-assignment-box input {
+    flex: 1;
+    padding: var(--spacing-sm);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+}
+
+.assignment-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.assignment-item {
+    padding: var(--spacing-md);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s;
+    background: var(--color-background);
+}
+
+.assignment-item:hover {
+    background: #f3f4f6;
+}
+
+.assignment-item.active {
+    background: var(--color-primary);
+    color: white;
+}
+
+.assignment-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.assignment-date {
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+.delete-btn-mini {
+    background: none;
+    border: none;
+    color: inherit;
+    opacity: 0.5;
+    cursor: pointer;
+    padding: 4px;
+}
+
+.delete-btn-mini:hover {
+    opacity: 1;
+}
+
+/* Main Content */
+.assignment-content {
+    flex: 1;
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    overflow-y: auto;
+    box-shadow: var(--shadow-sm);
+}
+
+.assignment-header {
+    margin-bottom: var(--spacing-lg);
+}
+
+.progress-bar-container {
+    margin-top: var(--spacing-sm);
+}
+
+.progress-text {
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+    color: var(--color-text-secondary);
+}
+
+.progress-track {
+    height: 10px;
+    background: #e5e7eb;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--color-success);
+    transition: width 0.3s ease;
+}
+
+.student-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.student-card {
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+
+.student-card.completed {
+    background-color: #dbeafe;
+    border-color: #bfdbfe;
+    color: #1e40af;
+}
+
+.student-card.incomplete {
+    background-color: #fee2e2;
+    border-color: #fecaca;
+    color: #991b1b;
+}
+
+.student-main {
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.student-info {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.student-number {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+
+.student-name {
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.assignment-status-wrapper {
+    margin-top: 4px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.status-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 14px;
+    /* Increased from 12px */
+    font-family: inherit;
+    color: var(--color-text-secondary);
+}
+
+.status-emoji {
+    font-size: 1.1em;
+}
+
+.status-text {
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.note-input-container input {
+    width: 100%;
+    padding: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    font-size: 0.9rem;
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.empty-state {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-secondary);
+}

@@ -1,0 +1,306 @@
+.budget-manager-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+    width: 100%;
+}
+
+/* 새 예산 추가 섹션 */
+.add-budget-section {
+    background: var(--color-surface);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+}
+
+.budget-form {
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: center;
+    flex-wrap: nowrap;
+}
+
+.budget-form>input,
+.budget-form>.input-wrapper {
+    flex: 1;
+}
+
+.budget-form .input-wrapper {
+    position: relative;
+}
+
+.budget-form .input-wrapper input {
+    width: 100%;
+}
+
+.korean-amount-text {
+    position: absolute;
+    right: 10px;
+    bottom: -20px;
+    /* 인풋 아래에 표시 */
+    font-size: 0.8rem;
+    color: var(--color-primary);
+    pointer-events: none;
+    font-weight: 500;
+}
+
+/* 예산 목록 */
+.budget-list-section {
+    background: var(--color-surface);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+}
+
+.budget-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-md);
+}
+
+.budget-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-md);
+    position: relative;
+}
+
+.budget-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.budget-card.selected {
+    outline: 3px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+.budget-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+}
+
+.budget-card-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+.delete-btn-small {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    z-index: 1000;
+    pointer-events: auto;
+}
+
+.delete-btn-small:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.budget-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.budget-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.budget-row.balance-row {
+    margin-top: var(--spacing-sm);
+    padding-top: var(--spacing-sm);
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.balance-positive {
+    color: #4ade80;
+}
+
+.balance-negative {
+    color: #f87171;
+}
+
+.expense-amount {
+    color: #fbbf24;
+}
+
+.budget-footer {
+    margin-top: var(--spacing-md);
+    padding-top: var(--spacing-sm);
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+    text-align: center;
+    opacity: 0.9;
+}
+
+/* 지출 내역 섹션 */
+.expense-section {
+    background: var(--color-surface);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    width: 100%;
+}
+
+.add-expense-form {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    flex-wrap: nowrap;
+    align-items: center;
+    overflow-x: auto;
+    padding-bottom: 25px;
+    width: 100%;
+}
+
+.add-expense-form .form-input,
+.add-expense-form .input-wrapper {
+    flex: 1;
+    /* min-width 제거 */
+}
+
+.add-expense-form .input-wrapper {
+    position: relative;
+    margin-bottom: 0;
+}
+
+.add-expense-form .input-wrapper input {
+    width: 100%;
+}
+
+.expense-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: auto;
+    margin-top: var(--spacing-md);
+}
+
+.expense-table th,
+.expense-table td {
+    padding: var(--spacing-md);
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.expense-table th {
+    background: var(--color-background);
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.expense-table tbody tr:hover {
+    background: var(--color-background);
+}
+
+.expense-table .expense-amount {
+    color: var(--color-primary);
+    font-weight: 600;
+}
+
+.expense-table .delete-expense-btn {
+    background: transparent;
+    color: var(--color-danger);
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+.expense-table .delete-expense-btn:hover {
+    background-color: rgba(239, 68, 68, 0.1);
+}
+
+.expense-note {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+}
+
+/* 모달 스타일 */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.modal-content {
+    background: white;
+    padding: 2rem;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+}
+
+.modal-content h3 {
+    margin-top: 0;
+    color: var(--color-text);
+}
+
+.modal-content p {
+    color: var(--color-text-muted);
+    margin-bottom: 2rem;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+
+    .budget-form,
+    .add-expense-form {
+        flex-direction: column;
+    }
+
+    .budget-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .expense-table {
+        font-size: 0.875rem;
+    }
+
+    .expense-table th,
+    .expense-table td {
+        padding: var(--spacing-sm);
+    }
+}

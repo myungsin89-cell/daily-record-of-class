@@ -1,0 +1,196 @@
+.student-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: var(--spacing-md);
+    align-items: end;
+}
+
+.sm-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.sm-form-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+}
+
+.sm-form-input {
+    width: 100%;
+    height: 42px;
+    /* Fixed height for consistency */
+    padding: 0 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+    transition: all 0.2s;
+    background-color: var(--color-surface);
+}
+
+.sm-form-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+.gender-toggle-group {
+    display: flex;
+    background: var(--color-background);
+    padding: 4px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    height: 42px;
+    /* Match input height */
+}
+
+.gender-toggle-btn {
+    flex: 1;
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.95rem;
+}
+
+.gender-toggle-btn:hover {
+    color: var(--color-text);
+}
+
+.gender-toggle-btn.active {
+    background: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    color: var(--color-text);
+}
+
+.gender-toggle-btn.active.male {
+    color: #3b82f6;
+    /* Blue for male */
+}
+
+.gender-toggle-btn.active.female {
+    color: #ec4899;
+    /* Pink for female */
+}
+
+.form-actions {
+    display: flex;
+    align-items: flex-end;
+}
+
+@media (max-width: 768px) {
+    .student-form-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.file-upload-label {
+    display: inline-block;
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+.file-upload-label input[type="file"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.student-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--spacing-md);
+}
+
+/* 학생 카드 컨테이너 */
+.student-card-container {
+    position: relative;
+    padding: 1rem 0.75rem;
+    transition: all 0.3s ease;
+}
+
+.student-card-container:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 삭제 버튼 - 우상단 X */
+.student-card-delete-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 20px;
+    height: 20px;
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted);
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    padding: 0;
+}
+
+.student-card-delete-btn:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--color-error);
+    transform: scale(1.1);
+}
+
+/* 학생 카드 컨텐츠 */
+.student-card-content {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    text-align: center;
+    flex-wrap: wrap;
+}
+
+/* 출석번호 */
+.student-card-number {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-primary);
+}
+
+/* 이름 */
+.student-card-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+/* 성별 */
+.student-card-gender {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    font-weight: 500;
+}
+
+/* 애니메이션 - 성공 알림 */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

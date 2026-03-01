@@ -1,0 +1,33 @@
+{
+  "name": "학급일지",
+  "short_name": "학급일지",
+  "description": "AI 기반 학생 행동 기록 및 평가 관리 시스템",
+  "start_url": "/",
+  "display": "standalone",
+  "display_override": [
+    "window-controls-overlay",
+    "minimal-ui"
+  ],
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": [
+    "education",
+    "productivity"
+  ],
+  "screenshots": []
+}

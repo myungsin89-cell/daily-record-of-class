@@ -1,0 +1,533 @@
+/* GradeManager.css */
+/* Premium Green Theme & Grid Layout */
+
+.grade-manager {
+    padding: 2rem;
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Header Section */
+.grade-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2.5rem;
+}
+
+.grade-header h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--color-text-main);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* Main Grid Layout */
+.grade-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+}
+
+.grade-section {
+    background: transparent;
+}
+
+.grade-section-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--color-primary-light);
+}
+
+.grade-section-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--color-primary-dark);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.grade-section-count {
+    background-color: var(--color-primary-light);
+    color: var(--color-primary-dark);
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: 1rem;
+}
+
+/* Card Grid */
+.grade-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.grade-card {
+    background: white;
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--color-border);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.grade-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-primary-light);
+}
+
+.grade-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--color-primary);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.grade-card:hover::before {
+    opacity: 1;
+}
+
+.grade-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.grade-card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-text-main);
+    line-height: 1.4;
+}
+
+.grade-card-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    background-color: #f1f5f9;
+    color: var(--color-text-muted);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.grade-card-badge.score {
+    background-color: #e0f2fe;
+    color: #0284c7;
+}
+
+.grade-card-badge.steps {
+    background-color: #dcfce7;
+    color: #16a34a;
+}
+
+.grade-card-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    margin-top: auto;
+}
+
+/* Delete Button on Card */
+.grade-card-delete {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    color: var(--color-text-muted);
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all 0.2s ease;
+}
+
+.grade-card:hover .grade-card-delete {
+    opacity: 1;
+}
+
+.grade-card-delete:hover {
+    background-color: #fee2e2;
+    color: #ef4444;
+}
+
+/* Detail View Styles */
+
+.detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.detail-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.back-btn {
+    align-self: flex-start;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+}
+
+.detail-subtitle {
+    font-size: 1rem;
+    color: var(--color-text-muted);
+    margin-top: 0.25rem;
+    display: block;
+}
+
+.detail-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.grade-table-container.full-page {
+    background: white;
+    padding: 1rem;
+    box-shadow: var(--shadow-sm);
+}
+
+/* Radio Button Group for Grades */
+.grade-radio-group {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.grade-radio-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.4rem 0.8rem;
+    border: 1px solid var(--color-border);
+    border-radius: 2rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.grade-radio-item:hover {
+    background-color: var(--color-background);
+}
+
+.grade-radio-item.selected {
+    background-color: var(--color-primary-light);
+    border-color: var(--color-primary);
+    color: var(--color-primary-dark);
+    font-weight: 600;
+}
+
+.grade-radio-item input {
+    display: none;
+}
+
+.grade-input-number {
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* Criteria Delete Button */
+.criteria-select-container {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.criteria-delete-btn {
+    padding: 0.5rem 0.75rem;
+    background-color: #fee2e2;
+    color: #ef4444;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    white-space: nowrap;
+}
+
+.criteria-delete-btn:hover {
+    background-color: #fecaca;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: var(--radius-lg);
+    border: 2px dashed var(--color-border);
+    color: var(--color-text-muted);
+}
+
+.empty-state-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+/* Modal Styles */
+.grade-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.2s ease-out;
+}
+
+.grade-modal-content {
+    background-color: white;
+    border-radius: var(--radius-lg);
+    width: 90%;
+    max-width: 600px;
+    /* Setup modal is smaller */
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-xl);
+    position: relative;
+    padding: 2.5rem;
+    animation: slideUp 0.3s ease-out;
+}
+
+.grade-modal-close {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--color-text-muted);
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: var(--transition-base);
+}
+
+.grade-modal-close:hover {
+    background-color: var(--color-background);
+    color: var(--color-text-main);
+    transform: rotate(90deg);
+}
+
+.grade-modal-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-text-main);
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+/* Form Styles */
+.form-section {
+    margin-bottom: 2rem;
+}
+
+.form-label {
+    display: block;
+    font-weight: 600;
+    color: var(--color-text-main);
+    margin-bottom: 0.75rem;
+    font-size: 0.95rem;
+}
+
+.form-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    transition: var(--transition-base);
+    background-color: var(--color-surface);
+}
+
+.form-input:focus {
+    border-color: var(--color-primary);
+    outline: none;
+    box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+/* Type Selector Cards */
+.type-selector {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.type-selector.compact {
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.type-card {
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.5rem;
+    background: white;
+}
+
+.type-card:hover {
+    border-color: var(--color-primary-light);
+    background-color: #f0fdf4;
+    transform: translateY(-2px);
+}
+
+.type-card.active {
+    border-color: var(--color-primary);
+    background-color: #f0fdf4;
+    box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.type-icon {
+    font-size: 1.8rem;
+    margin-bottom: 0.2rem;
+}
+
+.type-title {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--color-text-main);
+}
+
+/* Table Styles */
+.grade-table-container {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    margin-top: 1.5rem;
+}
+
+.grade-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.grade-table th {
+    background-color: #f8fafc;
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.grade-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--color-border);
+    background-color: white;
+    vertical-align: middle;
+}
+
+.grade-table tr:last-child td {
+    border-bottom: none;
+}
+
+.grade-table tr:hover td {
+    background-color: #f8fafc;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Group Chips */
+.group-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.group-chip {
+    padding: 0.4rem 0.8rem;
+    background-color: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: 2rem;
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.group-chip:hover {
+    background-color: var(--color-primary-light);
+    color: var(--color-primary-dark);
+    border-color: var(--color-primary-light);
+}
+
+.group-chip.active {
+    background-color: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+}
