@@ -305,7 +305,7 @@ const Dashboard = () => {
     const addTodo = (dateStr, text) => {
         if (!text.trim()) return;
         const newTodo = {
-            id: Date.now(),
+            id: crypto.randomUUID(),
             text,
             completed: false,
             style: { color: '#000000', fontSize: '1rem', fontWeight: 'normal', fontStyle: 'normal' }

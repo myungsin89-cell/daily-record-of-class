@@ -1,27 +1,29 @@
-// Update notes for displaying in UpdateNotification
-// Each note has a technical description and a user-friendly translation
+// 업데이트 기록 — 버전별 변경사항
+// 새 업데이트를 맨 위에 추가하세요.
 
-export const updateNotes = [
+export const CHANGELOG = [
     {
-        technical: "Implemented selective Service Worker update system",
-        friendly: "앱 업데이트 방식이 개선되어 더 안정적입니다."
+        version: '1.1.0',
+        date: '2026-03-03',
+        title: '🛠️ 안정성 개선 및 구글 로그인 유지',
+        changes: [
+            '📨 AI 일정 추출 시 항목이 그룹화되는 버그 수정',
+            '🔐 구글 로그인이 페이지 새로고침 후에도 유지되도록 개선',
+            '✨ 앱 업데이트 시 변경사항을 모달창으로 안내',
+        ]
     },
     {
-        technical: "Added user-friendly update notification banner",
-        friendly: "새로운 버전이 있을 때 알림을 받을 수 있습니다."
+        version: '1.0.1',
+        date: '2026-02-24',
+        title: '🚀 초기 안정화',
+        changes: [
+            '앱 업데이트 방식이 개선되어 더 안정적입니다.',
+            '새로운 버전이 있을 때 알림을 받을 수 있습니다.',
+            '앱 성능이 향상되었습니다.',
+            '인터넷 없이도 앱을 더 잘 사용할 수 있습니다.',
+        ]
     },
-    {
-        technical: "Enhanced cache management with version control",
-        friendly: "앱 성능이 향상되었습니다."
-    },
-    {
-        technical: "Improved offline functionality",
-        friendly: "인터넷 없이도 앱을 더 잘 사용할 수 있습니다."
-    }
 ];
 
-// Version information
-export const version = {
-    current: "1.0.1",
-    previous: "1.0.0"
-};
+// 현재 버전
+export const APP_VERSION = '1.1.0';

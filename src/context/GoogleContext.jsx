@@ -20,7 +20,21 @@ export const GoogleProvider = ({ children }) => {
     const tokenClientRef = useRef(null);
     const tokenExpiryRef = useRef(null);
 
-    // GIS 스크립트 동적 로드
+    // 저장된 연결 상태 즉시 복원 (UI 깜빡임 방지)
+    useEffect(() => {
+        const savedGoogle = localStorage.getItem('google_connected_user');
+        if (savedGoogle) {
+            try {
+                const parsed = JSON.parse(savedGoogle);
+                setGoogleUser(parsed);
+                setIsGoogleConnected(true); // UI에 연결 상태 즉시 표시
+            } catch {
+                localStorage.removeItem('google_connected_user');
+            }
+        }
+    }, []);
+
+    // GIS 스크립트 동적 로드 + 자동 무음 재인증
     useEffect(() => {
         const loadGIS = () => {
             return new Promise((resolve, reject) => {
@@ -50,26 +64,25 @@ export const GoogleProvider = ({ children }) => {
             .then(() => {
                 initTokenClient();
                 setIsLoading(false);
+
+                // 저장된 사용자가 있으면 자동으로 무음 재인증 시도
+                const savedGoogle = localStorage.getItem('google_connected_user');
+                if (savedGoogle && tokenClientRef.current) {
+                    try {
+                        // prompt: '' → 사용자의 브라우저에 Google 세션이 있으면 팝업 없이 토큰 발급
+                        tokenClientRef.current.requestAccessToken({ prompt: '' });
+                    } catch (err) {
+                        console.warn('자동 재인증 실패 (수동 로그인 필요):', err);
+                        // 실패해도 UI에는 사용자 정보가 남아있으므로 문제없음
+                        // 실제 API 호출 시 getValidToken에서 재인증 팝업이 뜰 것
+                    }
+                }
             })
             .catch((err) => {
                 console.error('Failed to load Google Identity Services:', err);
                 setError('Google 로그인 서비스를 불러오지 못했습니다.');
                 setIsLoading(false);
             });
-    }, []);
-
-    // 저장된 연결 상태 복원
-    useEffect(() => {
-        const savedGoogle = localStorage.getItem('google_connected_user');
-        if (savedGoogle) {
-            try {
-                const parsed = JSON.parse(savedGoogle);
-                setGoogleUser(parsed);
-                // 토큰은 세션 단위이므로 복원하지 않음 — 재인증 필요
-            } catch {
-                localStorage.removeItem('google_connected_user');
-            }
-        }
     }, []);
 
     // Token Client 초기화
