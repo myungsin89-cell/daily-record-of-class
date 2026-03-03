@@ -16,6 +16,7 @@ import {
     exportGradesToSheet,
 } from '../services/googleService';
 import Button from '../components/Button';
+import { APP_VERSION } from '../changelog';
 import './Settings.css';
 
 const Settings = () => {
@@ -38,6 +39,7 @@ const Settings = () => {
     const [newHolidayDate, setNewHolidayDate] = useState('');
     const [newHolidayName, setNewHolidayName] = useState('');
     const [showAutoFetchModal, setShowAutoFetchModal] = useState(false);
+    const [isMenuEditExpanded, setIsMenuEditExpanded] = useState(false);
 
     // 게시판(메뉴) 편집 상태
     const [sidebarMenuItems, setSidebarMenuItems] = useState(() => {
@@ -1003,57 +1005,72 @@ const Settings = () => {
 
             {/* 게시판(메뉴) 편집 */}
             <div className="settings-section">
-                <h2>📋 게시판 편집</h2>
-                <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1rem' }}>
-                    사이드바에 표시할 메뉴를 선택하세요.
-                </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {sidebarMenuItems.map(item => {
-                        const emojiMap = { diary: '📅', notepad: '📝', attendance: '✅', journal: '📒', grades: '📊', budget: '💰', assignments: '📋' };
-                        return (
-                            <label
-                                key={item.id}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    padding: '0.75rem 1rem',
-                                    borderRadius: '10px',
-                                    backgroundColor: item.hidden ? '#f8fafc' : '#f0fdf4',
-                                    border: `1px solid ${item.hidden ? '#e2e8f0' : '#bbf7d0'}`,
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s',
-                                }}
-                            >
-                                <span style={{ fontWeight: 500, color: item.hidden ? '#94a3b8' : '#1e293b' }}>
-                                    {emojiMap[item.id] || '📄'} {item.label}
-                                </span>
-                                <div
-                                    onClick={(e) => { e.preventDefault(); handleMenuToggle(item.id); }}
-                                    style={{
-                                        width: '44px', height: '24px',
-                                        borderRadius: '12px',
-                                        backgroundColor: item.hidden ? '#cbd5e1' : '#22c55e',
-                                        position: 'relative',
-                                        cursor: 'pointer',
-                                        transition: 'background-color 0.2s',
-                                    }}
-                                >
-                                    <div style={{
-                                        width: '20px', height: '20px',
-                                        borderRadius: '50%',
-                                        backgroundColor: 'white',
-                                        position: 'absolute',
-                                        top: '2px',
-                                        left: item.hidden ? '2px' : '22px',
-                                        transition: 'left 0.2s',
-                                        boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                                    }} />
-                                </div>
-                            </label>
-                        );
-                    })}
+                <div
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
+                    onClick={() => setIsMenuEditExpanded(!isMenuEditExpanded)}
+                >
+                    <button
+                        className="toggle-btn"
+                        title={isMenuEditExpanded ? '접기' : '펼치기'}
+                    >
+                        {isMenuEditExpanded ? '▼' : '▶'}
+                    </button>
+                    <h2 style={{ margin: 0 }}>📋 게시판 편집</h2>
                 </div>
+                {isMenuEditExpanded && (
+                    <>
+                        <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1rem', marginTop: '0.75rem' }}>
+                            사이드바에 표시할 메뉴를 선택하세요.
+                        </p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            {sidebarMenuItems.map(item => {
+                                const emojiMap = { diary: '📅', notepad: '📝', attendance: '✅', journal: '📒', grades: '📊', budget: '💰', assignments: '📋' };
+                                return (
+                                    <label
+                                        key={item.id}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            padding: '0.75rem 1rem',
+                                            borderRadius: '10px',
+                                            backgroundColor: item.hidden ? '#f8fafc' : '#f0fdf4',
+                                            border: `1px solid ${item.hidden ? '#e2e8f0' : '#bbf7d0'}`,
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s',
+                                        }}
+                                    >
+                                        <span style={{ fontWeight: 500, color: item.hidden ? '#94a3b8' : '#1e293b' }}>
+                                            {emojiMap[item.id] || '📄'} {item.label}
+                                        </span>
+                                        <div
+                                            onClick={(e) => { e.preventDefault(); handleMenuToggle(item.id); }}
+                                            style={{
+                                                width: '44px', height: '24px',
+                                                borderRadius: '12px',
+                                                backgroundColor: item.hidden ? '#cbd5e1' : '#22c55e',
+                                                position: 'relative',
+                                                cursor: 'pointer',
+                                                transition: 'background-color 0.2s',
+                                            }}
+                                        >
+                                            <div style={{
+                                                width: '20px', height: '20px',
+                                                borderRadius: '50%',
+                                                backgroundColor: 'white',
+                                                position: 'absolute',
+                                                top: '2px',
+                                                left: item.hidden ? '2px' : '22px',
+                                                transition: 'left 0.2s',
+                                                boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                                            }} />
+                                        </div>
+                                    </label>
+                                );
+                            })}
+                        </div>
+                    </>
+                )}
             </div>
 
             {/* App Info Section with Update Control */}
@@ -1062,7 +1079,7 @@ const Settings = () => {
                 <div className="info-grid">
                     <div className="info-item">
                         <span className="info-label">버전</span>
-                        <span className="info-value">v1.0.0</span>
+                        <span className="info-value">v{APP_VERSION}</span>
                     </div>
                     <div className="info-item">
                         <span className="info-label">저장 방식</span>
