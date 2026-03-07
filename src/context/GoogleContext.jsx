@@ -123,6 +123,11 @@ export const GoogleProvider = ({ children }) => {
     const handleTokenResponse = useCallback(async (response) => {
         if (response.error) {
             console.error('Google token error:', response.error);
+            // 무음 재인증(prompt: '') 실패는 사용자에게 에러를 직접 보여주지 않음 (필요할 때 수동 로그인 유도)
+            if (response.error === 'immediate_failed' || response.error === 'interaction_required') {
+                console.warn('Silent re-auth failed (manual interaction may be needed later)');
+                return;
+            }
             setError(`인증 실패: ${response.error}`);
             return;
         }
@@ -179,11 +184,11 @@ export const GoogleProvider = ({ children }) => {
         }
 
         // 토큰이 있고 아직 유효하면 재인증 불필요
-        if (accessToken && tokenExpiryRef.current && Date.now() < tokenExpiryRef.current) {
+        if (accessToken && tokenExpiryRef.current && Date.now() < tokenExpiryRef.current - 60000) {
             return;
         }
 
-        tokenClientRef.current.requestAccessToken({ prompt: '' });
+        tokenClientRef.current.requestAccessToken(); // 수동 연결 시에는 팝업이 뜨도록 prompt: '' 제거
     }, [accessToken]);
 
     // Google 계정 연결 해제
@@ -207,8 +212,8 @@ export const GoogleProvider = ({ children }) => {
 
     // 유효한 토큰 가져오기 (만료 시 자동 갱신)
     const getValidToken = useCallback(async () => {
-        // 토큰이 아직 유효하면 그대로 반환
-        if (accessToken && tokenExpiryRef.current && Date.now() < tokenExpiryRef.current - 60000) {
+        // 토큰이 아직 유효하면 그대로 반환 (만료 5분 전부터 갱신 시도)
+        if (accessToken && tokenExpiryRef.current && Date.now() < tokenExpiryRef.current - 300000) {
             return accessToken;
         }
 
