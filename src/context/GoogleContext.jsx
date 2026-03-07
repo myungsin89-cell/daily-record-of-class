@@ -20,7 +20,7 @@ export const GoogleProvider = ({ children }) => {
     const tokenClientRef = useRef(null);
     const tokenExpiryRef = useRef(null);
 
-    // 저장된 연결 상태 즉시 복원 (UI 깜빡임 방지)
+    // 저장된 연결 상태 + 토큰 즉시 복원 (UI 깜빡임 방지)
     useEffect(() => {
         const savedGoogle = localStorage.getItem('google_connected_user');
         if (savedGoogle) {
@@ -30,6 +30,22 @@ export const GoogleProvider = ({ children }) => {
                 setIsGoogleConnected(true); // UI에 연결 상태 즉시 표시
             } catch {
                 localStorage.removeItem('google_connected_user');
+            }
+        }
+
+        // 저장된 토큰 복원 (아직 유효하면 즉시 사용 가능)
+        const savedToken = localStorage.getItem('google_access_token');
+        const savedExpiry = localStorage.getItem('google_token_expiry');
+        if (savedToken && savedExpiry) {
+            const expiryTime = parseInt(savedExpiry, 10);
+            if (Date.now() < expiryTime - 60000) {
+                // 토큰이 아직 유효 (만료 1분 전까지)
+                setAccessToken(savedToken);
+                tokenExpiryRef.current = expiryTime;
+            } else {
+                // 만료된 토큰 정리
+                localStorage.removeItem('google_access_token');
+                localStorage.removeItem('google_token_expiry');
             }
         }
     }, []);
@@ -65,7 +81,15 @@ export const GoogleProvider = ({ children }) => {
                 initTokenClient();
                 setIsLoading(false);
 
-                // 저장된 사용자가 있으면 자동으로 무음 재인증 시도
+                // 저장된 토큰이 유효하면 자동 재인증 불필요
+                const savedToken = localStorage.getItem('google_access_token');
+                const savedExpiry = localStorage.getItem('google_token_expiry');
+                if (savedToken && savedExpiry && Date.now() < parseInt(savedExpiry, 10) - 60000) {
+                    // 이미 유효한 토큰이 복원됨 — 재인증 스킵
+                    return;
+                }
+
+                // 토큰이 없거나 만료된 경우, 저장된 사용자가 있으면 무음 재인증 시도
                 const savedGoogle = localStorage.getItem('google_connected_user');
                 if (savedGoogle && tokenClientRef.current) {
                     try {
@@ -73,8 +97,6 @@ export const GoogleProvider = ({ children }) => {
                         tokenClientRef.current.requestAccessToken({ prompt: '' });
                     } catch (err) {
                         console.warn('자동 재인증 실패 (수동 로그인 필요):', err);
-                        // 실패해도 UI에는 사용자 정보가 남아있으므로 문제없음
-                        // 실제 API 호출 시 getValidToken에서 재인증 팝업이 뜰 것
                     }
                 }
             })
@@ -111,7 +133,12 @@ export const GoogleProvider = ({ children }) => {
 
         // 토큰 만료 시간 설정 (기본 3600초)
         const expiresIn = response.expires_in || 3600;
-        tokenExpiryRef.current = Date.now() + expiresIn * 1000;
+        const expiryTime = Date.now() + expiresIn * 1000;
+        tokenExpiryRef.current = expiryTime;
+
+        // 토큰을 localStorage에 저장 → 페이지 새로고침 후에도 유지
+        localStorage.setItem('google_access_token', response.access_token);
+        localStorage.setItem('google_token_expiry', String(expiryTime));
 
         // 사용자 정보 가져오기
         try {
@@ -174,6 +201,8 @@ export const GoogleProvider = ({ children }) => {
         setError(null);
         tokenExpiryRef.current = null;
         localStorage.removeItem('google_connected_user');
+        localStorage.removeItem('google_access_token');
+        localStorage.removeItem('google_token_expiry');
     }, [accessToken]);
 
     // 유효한 토큰 가져오기 (만료 시 자동 갱신)
@@ -190,9 +219,11 @@ export const GoogleProvider = ({ children }) => {
                 return;
             }
 
-            // 기존 callback 일시 교체
+            // 기존 callback 일시 교체 후 복원
             const originalCallback = handleTokenResponse;
             tokenClientRef.current.callback = (response) => {
+                // 콜백 복원
+                tokenClientRef.current.callback = originalCallback;
                 originalCallback(response);
                 if (response.error) {
                     reject(new Error(response.error));

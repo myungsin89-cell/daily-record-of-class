@@ -14,8 +14,9 @@ function useIndexedDB(storeName, key, initialValue) {
     const [storedValue, setStoredValue] = useState(initialValue);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Refs to track the latest key and loading state
+    // Refs to track the latest key, value, and loading state
     const keyRef = useRef(key);
+    const valueRef = useRef(initialValue);
     const isReadyRef = useRef(false);
 
     // Keep keyRef in sync and reset ready state when key changes
@@ -37,6 +38,7 @@ function useIndexedDB(storeName, key, initialValue) {
 
                 if (result && result.data !== undefined) {
                     setStoredValue(result.data);
+                    valueRef.current = result.data;
                 } else {
                     // If no data exists, save the initial value
                     const keyName = storeName === STORES.HOLIDAYS ? 'year' : 'classId';
@@ -45,11 +47,13 @@ function useIndexedDB(storeName, key, initialValue) {
                         data: initialValue
                     });
                     setStoredValue(initialValue);
+                    valueRef.current = initialValue;
                 }
             } catch (error) {
                 if (!isMounted) return;
                 console.error(`Failed to load data from ${storeName}:`, error);
                 setStoredValue(initialValue);
+                valueRef.current = initialValue;
             } finally {
                 if (isMounted) {
                     setIsLoading(false);
@@ -66,7 +70,7 @@ function useIndexedDB(storeName, key, initialValue) {
         return () => {
             isMounted = false;
         };
-    }, [storeName, key]);
+    }, [storeName, key, initialValue]);
 
     // Function to update value in both state and IndexedDB
     const setValue = useCallback(async (value) => {
@@ -78,18 +82,17 @@ function useIndexedDB(storeName, key, initialValue) {
         }
 
         try {
-            let valueToStore;
-            setStoredValue((currentValue) => {
-                valueToStore = value instanceof Function ? value(currentValue) : value;
-                return valueToStore;
-            });
+            // Update ref and state
+            const newValue = value instanceof Function ? value(valueRef.current) : value;
+            valueRef.current = newValue;
+            setStoredValue(newValue);
 
             // Always use the latest key from the ref
             const currentKey = keyRef.current;
             const keyName = storeName === STORES.HOLIDAYS ? 'year' : 'classId';
             await saveData(storeName, {
                 [keyName]: currentKey,
-                data: valueToStore
+                data: newValue
             });
         } catch (error) {
             console.error(`Failed to save data to ${storeName}:`, error);

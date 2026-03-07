@@ -137,7 +137,7 @@ const AttendanceTracker = () => {
         updateAttendance(dateKey, studentId, { status, reason: autoReason || reasons[tempKey] || '' });
     };
 
-    const handleReasonChange = (studentId, reason) => {
+    const handleReasonChange = (studentId, reason, currentStatus) => {
         const dateKey = selectedDate;
         const tempKey = `${dateKey}_${studentId}`;
 
@@ -146,7 +146,6 @@ const AttendanceTracker = () => {
             [tempKey]: reason
         }));
 
-        const currentStatus = getStatus(studentId);
         if (currentStatus === 'sick' || currentStatus === 'other') {
             updateAttendance(dateKey, studentId, { status: currentStatus, reason });
         }
@@ -435,7 +434,7 @@ const AttendanceTracker = () => {
                                                     className="reason-input-full"
                                                     placeholder={currentStatus === 'sick' ? '병결 사유 입력' : '기타 사유 입력'}
                                                     value={reasons[tempKey] || reason || ''}
-                                                    onChange={(e) => handleReasonChange(student.id, e.target.value)}
+                                                    onChange={(e) => handleReasonChange(student.id, e.target.value, currentStatus)}
                                                 />
                                             </div>
                                         )}
