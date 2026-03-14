@@ -20,6 +20,9 @@ const AbsenceReport = () => {
     const [semester, setSemester] = useState(() => {
         return localStorage.getItem('fieldtrip_semester') || '1학기';
     });
+    const [useSeal, setUseSeal] = useState(() => {
+        return localStorage.getItem('fieldtrip_useSeal') === 'true';
+    });
 
     const handleTeacherNameChange = (value) => {
         setTeacherName(value);
@@ -28,6 +31,10 @@ const AbsenceReport = () => {
     const handleSemesterChange = (value) => {
         setSemester(value);
         localStorage.setItem('fieldtrip_semester', value);
+    };
+    const handleUseSealChange = (value) => {
+        setUseSeal(value);
+        localStorage.setItem('fieldtrip_useSeal', value);
     };
 
     // 월 범위 필터
@@ -369,7 +376,96 @@ const AbsenceReport = () => {
             }
         }
 
+        // 도장 이미지 생성 함수
+        const generateSealImage = (name) => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 120; // 가로를 조금 더 늘림
+            canvas.height = 120;
+            const ctx = canvas.getContext('2d');
+            const sealText = name ? (name.length <= 3 ? name + '인' : name) : '인';
+            const centerX = 60;
+            const centerY = 60;
+            const radiusX = 42; // 타원 가로 반지름
+            const radiusY = 52; // 타원 세로 반지름 (약간 길게)
+            const color = '#c40000'; // 진한 인주 색상
 
+            // 1. 테두리 그리기 (약간의 불규칙성 추가)
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3.5;
+            ctx.beginPath();
+
+            // 단순 타원 대신 점들을 연결하여 미세한 떨림 효과
+            for (let i = 0; i <= 360; i += 5) {
+                const angle = (i * Math.PI) / 180;
+                const jitter = (Math.random() - 0.5) * 0.8; // 미세한 떨림
+                const x = centerX + (radiusX + jitter) * Math.cos(angle);
+                const y = centerY + (radiusY + jitter) * Math.sin(angle);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // 2. 글씨 쓰기
+            ctx.fillStyle = color;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            const drawTextWithJitter = (text, x, y, size) => {
+                ctx.font = `${size}pt "HYGyeonyMyeongjo", "HY견명조", serif`;
+                const jitterX = (Math.random() - 0.5) * 0.5;
+                const jitterY = (Math.random() - 0.5) * 0.5;
+                ctx.fillText(text, x + jitterX, y + jitterY);
+            };
+
+            if (sealText.length === 2) {
+                drawTextWithJitter(sealText[0], centerX, centerY - 15, 24);
+                drawTextWithJitter(sealText[1], centerX, centerY + 15, 24);
+            } else if (sealText.length === 3) {
+                drawTextWithJitter(sealText[0], centerX, centerY - 18, 22);
+                drawTextWithJitter(sealText[1], centerX - 18, centerY + 12, 22);
+                drawTextWithJitter(sealText[2], centerX + 18, centerY + 12, 22);
+            } else if (sealText.length === 4) {
+                drawTextWithJitter(sealText[0], centerX - 18, centerY - 18, 20); // 좌상
+                drawTextWithJitter(sealText[1], centerX + 18, centerY - 18, 20); // 우상
+                drawTextWithJitter(sealText[2], centerX - 18, centerY + 18, 20); // 좌하
+                drawTextWithJitter(sealText[3], centerX + 18, centerY + 18, 20); // 우하
+            } else {
+                drawTextWithJitter(sealText, centerX, centerY, 24);
+            }
+
+            // 3. 질감(노이즈) 추가 - 잉크가 덜 묻거나 번진 느낌
+            for (let i = 0; i < 150; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const dist = Math.random() * radiusY;
+                const x = centerX + (Math.random() - 0.5) * radiusX * 2.2;
+                const y = centerY + (Math.random() - 0.5) * radiusY * 2.2;
+
+                // 타원 내부 또는 근처에만 점 찍기
+                const normalizedX = (x - centerX) / radiusX;
+                const normalizedY = (y - centerY) / radiusY;
+                if (normalizedX * normalizedX + normalizedY * normalizedY < 1.1) {
+                    ctx.fillStyle = color;
+                    ctx.globalAlpha = Math.random() * 0.4;
+                    ctx.beginPath();
+                    ctx.arc(x, y, Math.random() * 1.2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            // 일부 하얀 점 (잉크가 안 묻은 곳)
+            ctx.globalCompositeOperation = 'destination-out';
+            for (let i = 0; i < 40; i++) {
+                const x = centerX + (Math.random() - 0.5) * radiusX * 2;
+                const y = centerY + (Math.random() - 0.5) * radiusY * 2;
+                ctx.beginPath();
+                ctx.arc(x, y, Math.random() * 0.8, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            return canvas.toDataURL();
+        };
+
+        const sealImage = useSeal ? generateSealImage(teacherName) : null;
 
         // 결석 종료일 다음 첫 등교일 계산
         const getNextSchoolDay = (endDateStr) => {
@@ -417,13 +513,13 @@ const AbsenceReport = () => {
                             <td class="header-cell">학년부장</td>
                         </tr>
                         <tr>
-                            <td class="sign-cell"></td>
+                            <td class="sign-cell">${sealImage ? `<img src="${sealImage}" class="box-seal"/>` : ''}</td>
                             <td class="sign-cell"></td>
                         </tr>
                     </table>
 
                     <div class="student-info">
-                        제 &nbsp;${grade}&nbsp; 학년 &nbsp;${classNumber}&nbsp; 반 &nbsp;${record.attendanceNumber}&nbsp; 번 이름&nbsp;(&nbsp;&nbsp;${record.studentName}&nbsp;&nbsp;)
+                        제  ${grade}  학년  ${classNumber}  반  ${record.attendanceNumber}  번 이름 (  ${record.studentName}  )
                     </div>
 
                     <div class="confirm-text">
@@ -431,25 +527,28 @@ const AbsenceReport = () => {
                     </div>
 
                     <div class="section-area">
-                        <p class="s-item">1. 결석기간:&nbsp; ${sYear}년 &nbsp;${sMonth}월 &nbsp;${sDay}일 &nbsp;~ &nbsp;${eYear}년 &nbsp;${eMonth}월 &nbsp;${eDay}일</p>
+                        <p class="s-item">1. 결석기간:  ${sYear}년  ${sMonth}월  ${sDay}일  ~  ${eYear}년  ${eMonth}월  ${eDay}일</p>
 
-                        <p class="s-item">2. 결석사유:&nbsp; ${reason}</p>
+                        <p class="s-item">2. 결석사유:  ${reason}</p>
 
                         <p class="s-item">3. 학부모 의견서</p>
-                        <p class="s-sub">&nbsp;&nbsp; 학부모 소견: 위 학생은 (&emsp;${reason || '&emsp;&emsp;&emsp;&emsp;'}&emsp;)으로 인하여 결석하고자 함</p>
+                        <p class="s-sub">학부모 소견: 위 학생은 ( ${reason || '    '} )으로 인하여 결석하고자 함</p>
 
                         <p class="s-item">4. 담임교사 확인서</p>
-                        <p class="s-sub">&nbsp;&nbsp; 담임소견: 위 학생은 (&emsp;${reason || '&emsp;&emsp;&emsp;&emsp;'}&emsp;)으로 인하여 결석함</p>
+                        <p class="s-sub">담임소견: 위 학생은 ( ${reason || '    '} )으로 인하여 결석함</p>
                     </div>
 
-                    <p class="notice">&emsp;※ 3일 이상 연속으로 병결 시 의사 진단서 또는 소견서 제출</p>
+                    <p class="notice"> ※ 3일 이상 연속으로 병결 시 의사 진단서 또는 소견서 제출</p>
 
-                    <div class="date-line">${tYear}년&emsp;&emsp;${tMonth}월&emsp;&nbsp;${tDay}일</div>
+                    <div class="date-line">${tYear}년    ${tMonth}월   ${tDay}일</div>
 
                     <div class="teacher-line">
                         <span>담 임 교 사 :</span>
                         <span class="teacher-name">${teacherName || ''}</span>
-                        <span>(인)</span>
+                        <span class="seal-cell">
+                            (인)
+                            ${sealImage ? `<img src="${sealImage}" class="bottom-seal"/>` : ''}
+                        </span>
                     </div>
                 </div>
             `;
@@ -465,7 +564,7 @@ const AbsenceReport = () => {
                     @page { size: A4; margin: 0; }
                     * { margin: 0; padding: 0; box-sizing: border-box; }
                     body {
-                        font-family: "Batang", "바탕", "BatangChe", "바탕체", "HY중명조", serif;
+                        font-family: "HYGyeonyMyeongjo", "HY견명조", "Batang", "바탕", serif;
                         color: #000;
                         -webkit-print-color-adjust: exact;
                     }
@@ -487,7 +586,6 @@ const AbsenceReport = () => {
                         left: 0; right: 0;
                         text-align: center;
                         font-size: 26pt;
-                        font-weight: 900;
                         letter-spacing: 3px;
                     }
 
@@ -509,7 +607,6 @@ const AbsenceReport = () => {
                     }
                     .approval-box .label-cell {
                         width: 8mm;
-                        font-weight: bold;
                         font-size: 12pt;
                         padding: 2mm 1mm;
                         line-height: 1.5;
@@ -517,12 +614,37 @@ const AbsenceReport = () => {
                     .approval-box .header-cell {
                         height: 8.5mm;
                         width: 28mm;
-                        font-weight: bold;
                         font-size: 12pt;
                     }
                     .approval-box .sign-cell {
                         height: 14mm;
                         width: 28mm;
+                        position: relative;
+                    }
+                    .box-seal {
+                        position: absolute;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                        width: 12mm;
+                        height: 12mm;
+                        opacity: 0.85;
+                    }
+                    .bottom-seal {
+                        position: absolute;
+                        left: 50%;
+                        top: 50%;
+                        transform: translate(-50%, -50%);
+                        width: 12mm;
+                        height: 12mm;
+                        opacity: 0.85;
+                    }
+                    .seal-cell {
+                        position: relative;
+                        display: inline-flex;
+                        align-items: center;
+                        justify-content: center;
+                        width: 15mm;
                     }
 
                     /* 학생정보: 오른쪽 정렬 */
@@ -531,16 +653,15 @@ const AbsenceReport = () => {
                         top: 85mm;
                         left: 0; right: 15mm;
                         text-align: right;
-                        font-size: 15.9pt;
+                        font-size: 16pt;
                     }
-
                     /* 확인문구: PDF y=296.5pt → 104.6mm */
                     .confirm-text {
                         position: absolute;
                         top: 103mm;
                         left: 0; right: 0;
                         text-align: center;
-                        font-size: 15.9pt;
+                        font-size: 16pt;
                     }
 
                     /* 섹션 영역: PDF 첫 항목 y=371.7pt → 131.2mm, x=42.5pt → 15mm */
@@ -558,6 +679,7 @@ const AbsenceReport = () => {
                     .s-sub {
                         margin-top: -9mm;
                         margin-bottom: 5mm;
+                        padding-left: 8.5mm;
                         line-height: 1.4;
                     }
 
@@ -684,6 +806,17 @@ const AbsenceReport = () => {
                             </select>
                         </>
                     )}
+                </div>
+                <div class="print-setting-divider"></div>
+                <div class="print-setting-item">
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                        <input
+                            type="checkbox"
+                            checked={useSeal}
+                            onChange={(e) => handleUseSealChange(e.target.checked)}
+                        />
+                        <span>도장 포함</span>
+                    </label>
                 </div>
             </div>
 

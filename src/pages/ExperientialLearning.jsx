@@ -13,12 +13,14 @@ const ExperientialLearning = () => {
     const [sortConfig, setSortConfig] = useState({ key: 'application', direction: 'asc' });
     const [isEditMode, setIsEditMode] = useState(false);
 
-    // 인쇄용 설정 (localStorage 저장)
     const [teacherName, setTeacherName] = useState(() => {
         return localStorage.getItem('fieldtrip_teacherName') || '';
     });
     const [semester, setSemester] = useState(() => {
         return localStorage.getItem('fieldtrip_semester') || '1학기';
+    });
+    const [useSeal, setUseSeal] = useState(() => {
+        return localStorage.getItem('fieldtrip_useSeal') === 'true';
     });
 
     const handleTeacherNameChange = (value) => {
@@ -28,6 +30,10 @@ const ExperientialLearning = () => {
     const handleSemesterChange = (value) => {
         setSemester(value);
         localStorage.setItem('fieldtrip_semester', value);
+    };
+    const handleUseSealChange = (value) => {
+        setUseSeal(value);
+        localStorage.setItem('fieldtrip_useSeal', value);
     };
 
     // 월 범위 필터
@@ -215,6 +221,87 @@ const ExperientialLearning = () => {
             }
         }
 
+        // 도장 이미지 생성 함수 (인감 스타일)
+        const generateSealImage = (name) => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 120;
+            canvas.height = 120;
+            const ctx = canvas.getContext('2d');
+            const sealText = name ? (name.length <= 3 ? name + '인' : name) : '인';
+            const centerX = 60;
+            const centerY = 60;
+            const radiusX = 42;
+            const radiusY = 52;
+            const color = '#c40000';
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3.5;
+            ctx.beginPath();
+            for (let i = 0; i <= 360; i += 5) {
+                const angle = (i * Math.PI) / 180;
+                const jitter = (Math.random() - 0.5) * 0.8;
+                const x = centerX + (radiusX + jitter) * Math.cos(angle);
+                const y = centerY + (radiusY + jitter) * Math.sin(angle);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            ctx.fillStyle = color;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            const drawTextWithJitter = (text, x, y, size) => {
+                ctx.font = `${size}pt "HYGyeonyMyeongjo", "HY견명조", serif`;
+                const jitterX = (Math.random() - 0.5) * 0.5;
+                const jitterY = (Math.random() - 0.5) * 0.5;
+                ctx.fillText(text, x + jitterX, y + jitterY);
+            };
+
+            if (sealText.length === 2) {
+                drawTextWithJitter(sealText[0], centerX, centerY - 15, 24);
+                drawTextWithJitter(sealText[1], centerX, centerY + 15, 24);
+            } else if (sealText.length === 3) {
+                drawTextWithJitter(sealText[0], centerX, centerY - 18, 22);
+                drawTextWithJitter(sealText[1], centerX - 18, centerY + 12, 22);
+                drawTextWithJitter(sealText[2], centerX + 18, centerY + 12, 22);
+            } else if (sealText.length === 4) {
+                drawTextWithJitter(sealText[0], centerX - 18, centerY - 18, 20);
+                drawTextWithJitter(sealText[1], centerX + 18, centerY - 18, 20);
+                drawTextWithJitter(sealText[2], centerX - 18, centerY + 18, 20);
+                drawTextWithJitter(sealText[3], centerX + 18, centerY + 18, 20);
+            } else {
+                drawTextWithJitter(sealText, centerX, centerY, 24);
+            }
+
+            for (let i = 0; i < 150; i++) {
+                const x = centerX + (Math.random() - 0.5) * radiusX * 2.2;
+                const y = centerY + (Math.random() - 0.5) * radiusY * 2.2;
+                const normalizedX = (x - centerX) / radiusX;
+                const normalizedY = (y - centerY) / radiusY;
+                if (normalizedX * normalizedX + normalizedY * normalizedY < 1.1) {
+                    ctx.fillStyle = color;
+                    ctx.globalAlpha = Math.random() * 0.4;
+                    ctx.beginPath();
+                    ctx.arc(x, y, Math.random() * 1.2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            ctx.globalCompositeOperation = 'destination-out';
+            for (let i = 0; i < 40; i++) {
+                const x = centerX + (Math.random() - 0.5) * radiusX * 2;
+                const y = centerY + (Math.random() - 0.5) * radiusY * 2;
+                ctx.beginPath();
+                ctx.arc(x, y, Math.random() * 0.8, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            return canvas.toDataURL();
+        };
+
+        const sealImage = useSeal ? generateSealImage(teacherName) : null;
+
         // 페이지 분할
         const allRecords = filteredTripData;
         const pages = [];
@@ -279,7 +366,9 @@ const ExperientialLearning = () => {
                         <div style="display:flex; gap:20px">
                             <span>${grade} 학년</span>
                             <span>${classNumber} 반</span>
-                            <span>담임 : ${teacherName || '       '} (인)</span>
+                            <span class="seal-cell">담임 : ${teacherName || '       '} (인)
+                                ${sealImage ? `<img src="${sealImage}" class="seal-img"/>` : ''}
+                            </span>
                         </div>
                     </div>
                     <table>
@@ -347,6 +436,16 @@ const ExperientialLearning = () => {
                     .mt-6mm { margin-top:6mm; font-size:11pt; }
                     .mt-3mm { margin-top:3mm; font-size:10pt; }
                     .page-num { position:absolute; bottom:10mm; left:0; width:100%; text-align:center; font-size:11pt; color:#000; }
+                    .seal-cell { position:relative; display:inline-flex; align-items:center; }
+                    .seal-img { 
+                        position:absolute; 
+                        right:-2mm; 
+                        top:50%; 
+                        transform:translateY(-50%); 
+                        width:11mm; 
+                        height:14mm; 
+                        opacity:0.85; 
+                    }
                 </style>
             </head>
             <body>
@@ -436,6 +535,17 @@ const ExperientialLearning = () => {
                             </select>
                         </>
                     )}
+                </div>
+                <div className="print-setting-divider"></div>
+                <div className="print-setting-item">
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                        <input
+                            type="checkbox"
+                            checked={useSeal}
+                            onChange={(e) => handleUseSealChange(e.target.checked)}
+                        />
+                        <span>도장 포함</span>
+                    </label>
                 </div>
             </div>
             <div className="info-note">
