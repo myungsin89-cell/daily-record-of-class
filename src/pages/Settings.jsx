@@ -447,7 +447,7 @@ const Settings = () => {
                                 disabled={isTesting}
                                 size="small"
                             >
-                                {isTesting ? '테스트 중...' : '🔍 연결 테스트'}
+                                {isTesting ? '테스트 중...' : '연결 테스트'}
                             </Button>
                             <Button
                                 variant="secondary"
@@ -495,7 +495,7 @@ const Settings = () => {
                                 onClick={() => { handleSaveAPIKey(); setShowKeyChange(false); }}
                                 disabled={isSaving || !inputKey.trim()}
                             >
-                                {isSaving ? '저장 중...' : '💾 저장'}
+                                {isSaving ? '저장 중...' : '저장'}
                             </Button>
                         </div>
                     </div>
@@ -529,7 +529,7 @@ const Settings = () => {
                                 onClick={handleSaveAPIKey}
                                 disabled={isSaving || !inputKey.trim()}
                             >
-                                {isSaving ? '저장 중...' : '💾 저장'}
+                                {isSaving ? '저장 중...' : '저장'}
                             </Button>
                         </div>
                     </div>
@@ -563,7 +563,7 @@ const Settings = () => {
                                                 rel="noopener noreferrer"
                                                 className="api-link-button"
                                             >
-                                                🔑 API 키 발급받기
+                                                API 키 발급받기
                                             </a>
                                         </div>
                                     </div>
@@ -632,7 +632,7 @@ const Settings = () => {
                             variant="primary"
                             onClick={() => setShowAutoFetchModal(true)}
                         >
-                            🚀 공휴일 자동 가져오기
+                            공휴일 자동 가져오기
                         </Button>
                     </div>
                 </div>
@@ -811,7 +811,7 @@ const Settings = () => {
                                 onClick={handleFetchKoreanHolidays}
                                 disabled={isFetchingHolidays}
                             >
-                                {isFetchingHolidays ? '가져오는 중...' : '🚀 가져오기'}
+                                {isFetchingHolidays ? '가져오는 중...' : '가져오기'}
                             </Button>
                         </div>
                     </div>
@@ -856,7 +856,7 @@ const Settings = () => {
                                 onClick={handleGoogleConnect}
                                 disabled={isGoogleLoading}
                             >
-                                {isGoogleLoading ? '준비 중...' : '🔑 Google 계정 연결'}
+                                {isGoogleLoading ? '준비 중...' : 'Google 계정 연결'}
                             </Button>
                         )}
                     </div>
@@ -883,7 +883,7 @@ const Settings = () => {
                                 onClick={handleDriveBackup}
                                 disabled={isGoogleBusy}
                             >
-                                {isGoogleBusy ? '처리 중...' : '☁️ Drive에 백업'}
+                                {isGoogleBusy ? '처리 중...' : 'Drive에 백업'}
                             </Button>
                             <Button
                                 variant="secondary"
@@ -945,7 +945,7 @@ const Settings = () => {
                                 onClick={handleExportJournalsToSheet}
                                 disabled={isGoogleBusy}
                             >
-                                {isGoogleBusy ? '처리 중...' : '📝 학생 기록 → 시트'}
+                                {isGoogleBusy ? '처리 중...' : '학생 기록 → 시트'}
                             </Button>
                             <Button
                                 variant="secondary"
@@ -971,11 +971,11 @@ const Settings = () => {
                         variant="primary"
                         onClick={handleExportData}
                     >
-                        📥 데이터 내보내기
+                        데이터 내보내기
                     </Button>
                     <label className="import-button-wrapper">
                         <Button variant="secondary" as="span">
-                            📤 데이터 가져오기
+                            데이터 가져오기
                         </Button>
                         <input
                             type="file"
@@ -999,7 +999,7 @@ const Settings = () => {
                     rel="noopener noreferrer"
                     className="feedback-link-button"
                 >
-                    📮 피드백 보내기
+                    피드백 보내기
                 </a>
             </div>
 
