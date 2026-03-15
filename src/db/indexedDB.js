@@ -6,7 +6,7 @@
  */
 
 const DB_NAME = 'ClassDiaryDB';
-const DB_VERSION = 4; // Increment version to add holidays store
+const DB_VERSION = 5; // Increment version to add seating_configs store
 
 // Object Store names
 const STORES = {
@@ -18,7 +18,8 @@ const STORES = {
     API_KEYS: 'api_keys',
     SETTINGS: 'settings',
     FIELD_TRIPS: 'field_trips',
-    HOLIDAYS: 'holidays'
+    HOLIDAYS: 'holidays',
+    SEATING_CONFIGS: 'seating_configs'
 };
 
 /**
@@ -81,6 +82,9 @@ export const initDB = () => {
             }
             if (!db.objectStoreNames.contains(STORES.HOLIDAYS)) {
                 db.createObjectStore(STORES.HOLIDAYS, { keyPath: 'year' });
+            }
+            if (!db.objectStoreNames.contains(STORES.SEATING_CONFIGS)) {
+                db.createObjectStore(STORES.SEATING_CONFIGS, { keyPath: 'classId' });
             }
 
             console.log('IndexedDB upgrade complete');

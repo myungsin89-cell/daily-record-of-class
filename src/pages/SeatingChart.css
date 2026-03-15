@@ -1,0 +1,1346 @@
+.seating-chart-container {
+    padding: 1rem;
+    background-color: #f8fafc;
+    min-height: calc(100vh - 100px);
+    overflow-y: auto;
+}
+
+/* Global Student Mode Overrides */
+body.student-mode-active .sidebar,
+body.student-mode-active .main-header,
+body.student-mode-active .hamburger-btn {
+    display: none !important;
+}
+
+body.student-mode-active .main-content {
+    margin-left: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+}
+
+body.student-mode-active .layout {
+    display: block !important;
+}
+
+.seating-chart-container.student-view-container {
+    background-color: #f1f5f9; /* Slightly darker to make the chart pop */
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+}
+
+.seating-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 0 0.5rem;
+}
+
+.seating-header h1 {
+    font-size: 1.8rem;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 800;
+}
+
+.stealth-back-btn {
+    position: fixed;
+    top: 2rem;
+    left: 2rem;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.5rem;
+    cursor: pointer;
+    opacity: 0.4;
+    transition: all 0.2s;
+    z-index: 9999; /* Higher than sidebar/header */
+}
+
+.stealth-back-btn:hover {
+    opacity: 1;
+    color: #1e293b;
+    transform: translateX(-2px);
+}
+
+.mode-toggle {
+    display: flex;
+    background: #e2e8f0;
+    padding: 0.35rem;
+    border-radius: 12px;
+    gap: 0.25rem;
+}
+
+.mode-btn {
+    padding: 0.6rem 1.2rem;
+    border-radius: 10px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #64748b;
+    background: transparent;
+}
+
+.mode-btn.active {
+    background: white;
+    color: #2563eb;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+/* Setup Panel */
+.setup-panel {
+    background: white;
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    align-items: flex-end;
+}
+
+.config-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.config-group label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #475569;
+}
+
+.config-group input, .config-group select {
+    padding: 0.6rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-end;
+}
+
+.btn-primary {
+    background: #2563eb;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 10px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-primary:hover {
+    background: #1d4ed8;
+}
+
+.btn-secondary {
+    background: #e2e8f0;
+    color: #475569;
+    padding: 0.75rem 1.5rem;
+    border-radius: 10px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* Validation Panel (Deprecated - replaced by .seating-status-card) */
+/* --- Sleek Horizontal Control Bar (Expanded) --- */
+.setup-bar {
+    display: flex;
+    align-items: center;
+    background: white;
+    padding: 0.8rem 1.75rem; /* Increased vertical breathing room */
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    margin: 0 auto 2.5rem;
+    width: fit-content;
+    min-width: 1000px;
+    gap: 2.5rem;
+}
+
+.setup-group {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+/* 1. Config Section */
+.config-section {
+    padding-right: 1.5rem;
+    border-right: 1px solid #e2e8f0;
+}
+
+.setup-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.setup-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #64748b;
+    margin: 0;
+    line-height: normal;
+}
+
+.input-row {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: #f8fafc;
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+}
+
+.input-row input {
+    width: 32px;
+    border: none;
+    background: transparent;
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #0f172a;
+    padding: 0;
+    line-height: normal;
+}
+
+.config-section select {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #0f172a;
+    line-height: normal;
+}
+
+/* 2. Center Status Section */
+.status-section {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0 1rem;
+    border-radius: 8px;
+    height: 42px;
+}
+
+.status-section.valid { background: #f0fdf4; border: 1px solid #bbf7d0; }
+.status-section.invalid { background: #fef2f2; border: 1px solid #fecaca; }
+
+.status-info {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.status-text {
+    font-weight: 800;
+    font-size: 0.9rem;
+}
+
+.valid .status-text { color: #166534; }
+.invalid .status-text { color: #991b1b; }
+
+.mini-badges {
+    display: flex;
+    gap: 0.6rem;
+}
+
+.m-badge {
+    font-size: 0.8rem;
+    font-weight: 700;
+    background: transparent !important;
+    border: none !important;
+}
+
+.valid .m-badge { color: #15803d; }
+.invalid .m-badge { color: #b91c1c; }
+
+/* Gender Toggle (Ultra Compact) */
+.gender-toggle-mini {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    margin-left: 1rem;
+}
+
+.g-text {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #475569;
+}
+
+.gender-toggle-mini input { display: none; }
+
+.g-slider {
+    position: relative;
+    width: 28px;
+    height: 14px;
+    background-color: #cbd5e1;
+    border-radius: 20px;
+    transition: .2s;
+}
+
+.g-slider:before {
+    position: absolute;
+    content: "";
+    height: 10px;
+    width: 10px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    transition: .2s;
+    border-radius: 50%;
+}
+
+input:checked + .g-slider { background-color: #16a34a; }
+input:checked + .g-slider:before { transform: translateX(14px); }
+
+/* 3. Actions Section (Expanded Spacing) */
+.actions-section {
+    gap: 2rem; /* Distinct gap between block types */
+}
+
+.btn-group {
+    display: flex;
+    gap: 1rem; /* Balanced gap between buttons */
+    align-items: center;
+}
+
+.btn-group.main {
+    padding-right: 1.75rem;
+    border-right: 2px solid #f1f5f9;
+}
+
+.base-btn {
+    padding: 0.6rem 1.25rem;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+    cursor: pointer;
+    border: 1px solid transparent;
+    line-height: normal;
+}
+
+.base-btn.reset { 
+    background: #f8fafc;
+    color: #475569;
+    border-color: #e2e8f0;
+}
+
+.base-btn.randomize {
+    background: #2563eb;
+    color: white;
+}
+
+.base-btn.save {
+    background: #16a34a; /* Vibrant Green */
+    color: white;
+}
+
+.base-btn.print-st, .base-btn.print-tc {
+    background: #0f172a;
+    color: white;
+}
+
+.base-btn:hover {
+    filter: brightness(0.95);
+    transform: translateY(-1px);
+}
+
+.completion-msg {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #15803d;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(21, 128, 61, 0.1);
+    animation: fadeInSlide 0.4s ease-out;
+}
+
+.completion-msg.error {
+    color: #991b1b;
+    border-bottom-color: rgba(153, 27, 27, 0.1);
+}
+
+@keyframes fadeInSlide {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Main Workspace Layout */
+.seating-main-workspace {
+    display: flex;
+    gap: 1.5rem;
+    align-items: start;
+    width: 100%;
+}
+
+.seating-main-workspace.student-view {
+    justify-content: center;
+    padding: 2rem 0;
+    min-height: calc(100vh - 200px);
+    /* Large Scale for Students */
+    --card-width: 200px;
+    --card-height: 100px;
+}
+
+.seating-main-workspace.student-view .classroom-area {
+    padding: 3rem 4rem;
+    transform: scale(1.05); /* Slight extra scale for impact */
+    transition: all 0.5s ease-in-out;
+}
+
+.seating-main-workspace.student-view .blackboard-indicator {
+    width: 60%;
+    height: 60px; /* Larger chalkboard */
+    margin-bottom: 3rem;
+}
+
+.seating-main-workspace.student-view .student-pool-panel {
+    display: none;
+}
+
+.seat-slot.blocked {
+    background: #475569;
+    border-color: #1e293b;
+    cursor: not-allowed;
+}
+
+.seat-slot.blocked::after {
+    content: '사용 불가';
+    position: absolute;
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #cbd5e1;
+}
+
+.seat-slot.blocked:hover {
+    background: #334155;
+}
+
+/* Left Side: Classroom Area */
+.classroom-area {
+    background: white;
+    padding: 2.5rem 1.5rem;
+    border-radius: 20px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: 1px solid #f1f5f9;
+    width: fit-content;
+    min-width: 0;
+}
+
+.blackboard-indicator {
+    width: 60%;
+    min-width: 250px;
+    height: 40px; /* Thicker for chalkboard feel */
+    background: #064e3b; /* Deep chalkboard green */
+    border: 4px solid #78350f; /* Wood-like frame */
+    border-radius: 4px;
+    margin-top: 0.5rem;
+    margin-bottom: 2rem;
+    position: relative;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.blackboard-indicator::after {
+    content: '칠 판';
+    font-size: 1rem;
+    font-weight: 900;
+    color: rgba(255, 255, 255, 0.9);
+    letter-spacing: 0.5em;
+    text-shadow: 0 0 2px rgba(255,255,255,0.5);
+}
+
+.grid-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    width: 100%;
+}
+
+.grid-row {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+}
+
+/* Right Side: Student Pool */
+.student-pool-panel {
+    background: #f8fafc;
+    padding: 1rem; /* Reduced padding for compactness */
+    border-radius: 24px;
+    height: calc(100vh - 200px);
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 1rem;
+    border: 1px solid #e2e8f0;
+    width: 480px;
+    flex-shrink: 0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.pool-header {
+    margin-bottom: 1rem; /* Tighter header space */
+    padding-bottom: 0.5rem;
+    border-bottom: 1.5px solid #e2e8f0;
+}
+
+.pool-header h3 {
+    font-size: 1.1rem; /* Reduced header size as requested */
+    color: #0f172a;
+    font-weight: 800;
+}
+
+.pool-list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.4rem; /* Significantly tighter gap */
+    overflow-y: auto;
+    padding-right: 0.75rem;
+}
+
+/* Custom Scrollbar for Pool List */
+.pool-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.pool-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.pool-list::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+
+.pool-list::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Card & Slot Styling (Horizontal Desk Shape) */
+:root {
+    --card-width: 140px;
+    --card-height: 70px;
+}
+
+.student-card {
+    width: var(--card-width);
+    height: var(--card-height);
+    background: white;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    padding: 0 0.5rem;
+    align-items: center;
+    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    cursor: grab;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    user-select: none;
+    gap: 0.5rem;
+}
+
+
+.student-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px -5px rgba(0, 0, 0, 0.1);
+    border-color: #3b82f6;
+    background: #f0f7ff;
+}
+
+.student-card:active {
+    cursor: grabbing;
+    transform: scale(0.98);
+}
+
+.student-card.dragging {
+    opacity: 0.4;
+    transform: scale(0.95);
+}
+
+.seat-slot {
+    width: var(--card-width);
+    height: var(--card-height);
+    background: #f1f5f9;
+    border: 2px dashed #cbd5e1;
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.seat-slot.occupied {
+    border-color: transparent !important;
+    background: transparent !important;
+}
+
+.seat-slot.occupied::after {
+    display: none !important;
+}
+
+.seat-slot.drop-target {
+    border-color: #3b82f6;
+    background: #dbeafe;
+    transform: scale(1.05);
+}
+
+.seat-slot.gap {
+    margin-right: 1rem;
+}
+
+.student-no {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.5rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    min-width: 40px;
+    height: 24px;
+    white-space: nowrap;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+    flex-shrink: 0;
+}
+
+.student-no.male {
+    color: #1d4ed8;
+    background: #eff6ff;
+    border: 1.5px solid #dbeafe;
+}
+
+.student-no.female {
+    color: #be123c;
+    background: #fff1f2;
+    border: 1.5px solid #ffe4e6;
+}
+
+/* Student Mode Specific Card UI Refinements */
+.student-view .student-card {
+    gap: 1.25rem;
+    padding: 1rem;
+    width: 100%;
+    height: 100%;
+}
+
+.student-view .student-no {
+    font-size: 1.2rem;
+    min-width: 60px;
+    height: 36px;
+    padding: 0 0.75rem;
+    border-radius: 30px;
+}
+
+.student-view .student-name {
+    font-size: 1.8rem; /* Balanced size to fit cards while staying large */
+    font-weight: 800;
+}
+
+/* Reveal Controls */
+.disclosure-controls {
+    background: white;
+    padding: 1.5rem 2.5rem;
+    border-radius: 24px;
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
+    margin-bottom: 3rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    width: fit-content;
+}
+
+.disclosure-header {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    width: 100%;
+}
+
+.fullscreen-btn {
+    background: #475569;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.fullscreen-btn:hover {
+    background: #1e293b;
+}
+
+.strategy-selector {
+    display: flex;
+    gap: 0.5rem;
+    background: #f1f5f9;
+    padding: 0.35rem;
+    border-radius: 12px;
+}
+
+.strategy-selector button {
+    padding: 0.5rem 1rem;
+    border: none;
+    background: transparent;
+    color: #64748b;
+    font-size: 0.85rem;
+    font-weight: 700;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.strategy-selector button.active {
+    background: white;
+    color: #0f172a;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.btn-reveal-start {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    padding: 0.85rem 2.5rem;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.25s;
+    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);
+}
+
+.btn-reveal-start:hover:not(:disabled) {
+    background: #2563eb;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3);
+}
+
+.btn-reveal-start:disabled {
+    background: #cbd5e1;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.seat-slot.gender-female {
+    background: #fef9c3;
+    border-color: #facc15;
+}
+
+.seat-slot.gender-female::after {
+    content: '여학생 전용';
+    position: absolute;
+    bottom: 5px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #a16207;
+    opacity: 0.6;
+}
+
+.student-name {
+    font-size: 0.95rem; /* Standard font size */
+    font-weight: 700;
+    color: #1e293b;
+    white-space: nowrap;
+}
+
+.remove-seat-btn {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    width: 24px;
+    height: 24px;
+    background: #ef4444;
+    color: white;
+    border: 4px solid white;
+    border-radius: 50%;
+    font-size: 14px;
+    line-height: normal;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+
+.remove-seat-btn:hover {
+    transform: scale(1.2);
+}
+
+.student-card:hover .remove-seat-btn {
+    display: flex;
+}
+
+/* Animations for Reveal */
+.reveal-hidden {
+    opacity: 0;
+    transform: scale(0.8) translateY(20px);
+}
+
+.revealed {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Student Reveal View */
+.reveal-controls {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.reveal-progress {
+    margin-top: 1rem;
+    font-weight: 600;
+    color: #2563eb;
+}
+
+/* Constraints Side Panel Overhaul */
+.constraints-panel {
+    margin-top: 4rem;
+    padding-top: 3rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.constraints-header {
+    margin-bottom: 2.5rem;
+}
+
+.constraints-header h2 {
+    font-size: 1.5rem;
+    color: #0f172a;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.constraints-header p {
+    color: #64748b;
+    font-size: 0.95rem;
+}
+
+.constraints-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+}
+
+.constraint-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s;
+}
+
+.constraint-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.constraint-card h3 {
+    font-size: 1.05rem;
+    color: #1e293b;
+    font-weight: 700;
+}
+
+/* Constraint Cards */
+.card-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.mini-add-btn {
+    background: #f1f5f9;
+    color: #475569;
+    border: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.mini-add-btn:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+.empty-msg {
+    color: #94a3b8;
+    font-size: 0.85rem;
+    text-align: center;
+    padding: 1rem 0;
+}
+
+.pair-names {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #334155;
+    word-break: break-all;
+}
+
+/* Modal Styles */
+.chart-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+}
+
+.chart-modal {
+    background: white;
+    width: 600px;
+    max-width: 90vw;
+    border-radius: 24px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+    max-height: 80vh;
+}
+
+.modal-header {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h2 {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.close-btn {
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    color: #94a3b8;
+    cursor: pointer;
+}
+
+.modal-body {
+    padding: 1.5rem 2rem;
+    overflow-y: auto;
+}
+
+.modal-desc {
+    color: #64748b;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+}
+
+.modal-student-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 0.75rem;
+}
+
+.modal-student-item {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 0.75rem;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    transition: all 0.2s;
+}
+
+.modal-student-item:hover {
+    border-color: #cbd5e1;
+    background: #f1f5f9;
+}
+
+.modal-student-item.selected {
+    background: #eff6ff;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.modal-student-item .m-no {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #94a3b8;
+}
+
+.modal-student-item .m-name {
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.modal-student-item.selected .m-name {
+    color: #2563eb;
+}
+
+.modal-footer {
+    padding: 1.5rem 2rem;
+    border-top: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8fafc;
+    border-radius: 0 0 24px 24px;
+}
+
+.selected-count {
+    font-size: 0.9rem;
+    color: #64748b;
+}
+
+.modal-btns {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.m-btn {
+    padding: 0.6rem 1.2rem;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+}
+
+.m-btn.cancel {
+    background: #e2e8f0;
+    color: #475569;
+}
+
+.m-btn.confirm {
+    background: #3b82f6;
+    color: white;
+}
+
+.m-btn.confirm:hover {
+    background: #2563eb;
+}
+
+.card-title .icon {
+    font-size: 1.25rem;
+}
+
+/* Front Preference Buttons */
+.preference-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.preference-btn {
+    padding: 0.4rem 0.8rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.preference-btn:hover {
+    border-color: #3b82f6;
+    color: #3b82f6;
+    background: #eff6ff;
+}
+
+.preference-btn.active {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: white;
+    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
+}
+
+/* Input Rows for Avoidance/Pairing */
+.constraint-input-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.constraint-input-row select {
+    flex: 1;
+    padding: 0.5rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.constraint-input-row select:focus {
+    border-color: #3b82f6;
+}
+
+.constraint-input-row .separator {
+    color: #94a3b8;
+    font-weight: bold;
+}
+
+.constraint-input-row .add-btn {
+    padding: 0.5rem 1rem;
+    background: #0f172a;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.constraint-input-row .add-btn:hover {
+    opacity: 0.9;
+}
+
+/* Active List Items */
+.constraint-active-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 200px;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+}
+
+.active-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.6rem 0.8rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.active-item.avoidance {
+    background: #fff1f2;
+    color: #e11d48;
+    border: 1px solid #fecdd3;
+}
+
+.active-item.pairing {
+    background: #f0fdf4;
+    color: #16a34a;
+    border: 1px solid #bbf7d0;
+}
+
+.active-item .del-btn {
+    background: none;
+    border: none;
+    font-size: 1.1rem;
+    color: currentColor;
+    opacity: 0.5;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 0;
+}
+
+.active-item .del-btn:hover {
+    opacity: 1;
+}
+
+/* Drag and Drop Visuals */
+.seat-slot.dragging {
+    opacity: 0.5;
+    transform: scale(1.05);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive Customizations */
+@media (max-width: 1200px) {
+    .constraints-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Print Button Styling */
+.btn-print {
+    background: #0f172a;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 10px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-print:hover {
+    background: #334155;
+}
+
+/* --- Print Logic --- */
+@media print {
+    @page {
+        size: landscape;
+        margin: 5mm;
+    }
+    
+    /* Hide all UI elements except the seating grid */
+    .sidebar,
+    .main-header,
+    .hamburger-btn,
+    .mobile-sidebar-overlay,
+    .changelog-overlay,
+    .install-banner,
+    .seating-header,
+    .setup-bar,
+    .setup-panel,
+    .status-section,
+    .completion-msg,
+    .student-pool-panel,
+    .reveal-controls,
+    .constraints-panel,
+    .remove-seat-btn {
+        display: none !important;
+    }
+
+    /* Reset Global Layout for Print */
+    .layout,
+    .main-content,
+    .page-content {
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: center !important;
+        width: 100% !important;
+        min-height: 98vh !important; /* Perfect vertical centering */
+        margin: 0 !important;
+        padding: 0 !important;
+        background: white !important;
+        position: static !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .seating-chart-container {
+        padding: 0 !important;
+        margin: 0 !important;
+        background: white !important;
+        width: 100% !important;
+        height: auto !important;
+        overflow: visible !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+    }
+
+    .seating-main-workspace {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        width: 100% !important;
+    }
+
+    .classroom-area {
+        box-shadow: none !important;
+        border: none !important;
+        margin: 0 auto !important;
+        padding: 5mm !important;
+        width: fit-content !important;
+        max-width: 100% !important;
+        page-break-inside: avoid;
+        break-inside: avoid;
+        background: white !important;
+    }
+
+    .student-card {
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+
+    .blackboard-indicator {
+        margin-bottom: 8mm !important;
+        background-color: #064e3b !important;
+        border-color: #78350f !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}
+
+/* Teacher View (Nomal view for Teacher perspective) */
+.print-teacher.printing .classroom-area {
+    flex-direction: column-reverse; /* Put Blackboard at the bottom */
+}
+
+/* Rotate the entire grid 180deg - this flips rows and cols */
+.print-teacher.printing .grid-container {
+    transform: rotate(180deg);
+}
+
+/* Rotate back individual cards so text stays upright */
+.print-teacher.printing .student-card {
+    transform: rotate(180deg);
+}
+
+/* Ensure empty slot text also stays upright in teacher view */
+.print-teacher.printing .seat-slot.blocked::after,
+.print-teacher.printing .seat-slot.gender-female::after {
+    transform: rotate(180deg);
+}
+
+.print-teacher.printing .blackboard-indicator {
+    margin-top: 2.5rem;
+    margin-bottom: 0.5rem;
+}

@@ -28,6 +28,7 @@ import GradeInput from './pages/GradeInput';
 import BudgetManager from './pages/BudgetManager';
 import Notepad from './pages/Notepad';
 import Settings from './pages/Settings';
+import SeatingChart from './pages/SeatingChart';
 
 function App() {
   return (
@@ -61,6 +62,7 @@ function App() {
                               <Route path="/grade-input" element={<GradeInput />} />
                               <Route path="/budget" element={<BudgetManager />} />
                               <Route path="/notepad" element={<Notepad />} />
+                              <Route path="/seating" element={<SeatingChart />} />
                               <Route path="/settings" element={<Settings />} />
                             </Route>
                           </Route>

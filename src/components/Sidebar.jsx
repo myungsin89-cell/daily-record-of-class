@@ -12,6 +12,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         { id: 'grades', to: '/grades', label: '성적 입력' },
         { id: 'budget', to: '/budget', label: '예산 관리' },
         { id: 'assignments', to: '/assignments', label: '제출 체크' },
+        { id: 'seating', to: '/seating', label: '자리 배치' },
     ];
 
     const [menuItems, setMenuItems] = useState(() => {
