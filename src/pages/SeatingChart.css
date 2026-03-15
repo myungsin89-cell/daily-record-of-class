@@ -1,4 +1,4 @@
-/* SeatingChart.css - Fully Scoped to .seating-chart-container */
+/* SeatingChart.css - Scoped to .seating-chart-container to prevent global leakage */
 
 .seating-chart-container {
     padding: 1rem;
@@ -7,6 +7,24 @@
     overflow-y: auto;
 }
 
+/* Global Student Mode Overrides (Body-level) */
+body.student-mode-active .sidebar,
+body.student-mode-active .main-header,
+body.student-mode-active .hamburger-btn {
+    display: none !important;
+}
+
+body.student-mode-active .main-content {
+    margin-left: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+}
+
+body.student-mode-active .layout {
+    display: block !important;
+}
+
+/* Scoped Container Variants */
 .seating-chart-container.student-view-container {
     background-color: #f1f5f9;
     padding: 2rem;
@@ -16,6 +34,7 @@
     overflow-x: hidden;
 }
 
+/* Header & Navigation */
 .seating-chart-container .seating-header {
     display: flex;
     justify-content: space-between;
@@ -57,6 +76,8 @@
     display: flex;
     background: #e2e8f0;
     padding: 0.35rem;
+    border-radius: 12px;
+    gap: 0.25rem;
 }
 
 .seating-chart-container .mode-btn {
@@ -76,6 +97,7 @@
     box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
 }
 
+/* Control Bar (Setup Bar) */
 .seating-chart-container .setup-bar {
     display: flex;
     align-items: center;
@@ -111,204 +133,540 @@
     font-size: 0.8rem;
     font-weight: 700;
     color: #64748b;
+    margin: 0;
+    line-height: normal;
 }
 
 .seating-chart-container .input-row {
     display: flex;
     align-items: center;
-    gap: 0.4rem;
-    background: #f1f5f9;
-    padding: 0.25rem 0.5rem;
-    border-radius: 8px;
+    gap: 0.25rem;
+    background: #f8fafc;
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
 }
 
 .seating-chart-container .input-row input {
-    width: 45px;
+    width: 32px;
     border: none;
     background: transparent;
     text-align: center;
     font-weight: 700;
     font-size: 0.9rem;
+    color: #0f172a;
+    padding: 0;
+    line-height: normal;
 }
 
-.seating-chart-container .status-section {
-    padding: 0.5rem 1rem;
-    border-radius: 10px;
+.seating-chart-container .config-section select {
     background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    min-width: 250px;
-    display: flex;
+    border: 1px solid #cbd5e1;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #0f172a;
+    line-height: normal;
 }
 
-.seating-chart-container .status-section.valid { border-color: #bbf7d0; background: #f0fdf4; }
-.seating-chart-container .status-section.valid .status-text { color: #16a34a; }
-.seating-chart-container .status-section.invalid { border-color: #fecdd3; background: #fff1f2; }
-.seating-chart-container .status-section.invalid .status-text { color: #e11d48; }
+/* Status Section */
+.seating-chart-container .status-section {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0 1rem;
+    border-radius: 8px;
+    height: 42px;
+}
 
-.seating-chart-container .status-text { font-size: 0.85rem; font-weight: 800; }
-.seating-chart-container .m-badge { font-size: 0.65rem; color: #64748b; }
+.seating-chart-container .status-section.valid { background: #f0fdf4; border: 1px solid #bbf7d0; }
+.seating-chart-container .status-section.invalid { background: #fef2f2; border: 1px solid #fecaca; }
 
+.seating-chart-container .status-info {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.seating-chart-container .status-text {
+    font-weight: 800;
+    font-size: 0.9rem;
+}
+
+.seating-chart-container .valid .status-text { color: #166534; }
+.seating-chart-container .invalid .status-text { color: #991b1b; }
+
+.seating-chart-container .mini-badges {
+    display: flex;
+    gap: 0.6rem;
+}
+
+.seating-chart-container .m-badge {
+    font-size: 0.8rem;
+    font-weight: 700;
+    background: transparent !important;
+    border: none !important;
+}
+
+.seating-chart-container .valid .m-badge { color: #15803d; }
+.seating-chart-container .invalid .m-badge { color: #b91c1c; }
+
+/* Gender Toggle */
 .seating-chart-container .gender-toggle-mini {
     display: flex;
     align-items: center;
-    position: relative;
-    padding-left: 36px;
+    gap: 0.4rem;
     cursor: pointer;
+    margin-left: 1rem;
 }
 
-.seating-chart-container .gender-toggle-mini input { position: absolute; opacity: 0; }
+.seating-chart-container .g-text {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #475569;
+}
+
+.seating-chart-container .gender-toggle-mini input { display: none; }
+
 .seating-chart-container .g-slider {
-    position: absolute; left: 0; top: 50%; transform: translateY(-50%);
-    width: 32px; height: 18px; background: #cbd5e1; border-radius: 18px; transition: 0.3s;
+    position: relative;
+    width: 28px;
+    height: 14px;
+    background-color: #cbd5e1;
+    border-radius: 20px;
+    transition: .2s;
 }
+
 .seating-chart-container .g-slider:before {
-    content: ""; position: absolute; left: 2px; bottom: 2px;
-    width: 14px; height: 14px; background: white; border-radius: 50%; transition: 0.3s;
+    position: absolute;
+    content: "";
+    height: 10px;
+    width: 10px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    transition: .2s;
+    border-radius: 50%;
 }
-.seating-chart-container .gender-toggle-mini input:checked + .g-slider { background: #22c55e; }
-.seating-chart-container .gender-toggle-mini input:checked + .g-slider:before { transform: translateX(14px); }
+
+.seating-chart-container input:checked + .g-slider { background-color: #16a34a; }
+.seating-chart-container input:checked + .g-slider:before { transform: translateX(14px); }
+
+/* Buttons */
+.seating-chart-container .btn-group {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.seating-chart-container .btn-group.main {
+    padding-right: 1.75rem;
+    border-right: 2px solid #f1f5f9;
+}
 
 .seating-chart-container .base-btn {
-    padding: 0.6rem 1rem;
+    padding: 0.6rem 1.25rem;
     border-radius: 8px;
-    border: none;
     font-weight: 700;
+    font-size: 0.9rem;
+    transition: all 0.2s;
     cursor: pointer;
-    transition: 0.2s;
+    border: 1px solid transparent;
+    line-height: normal;
 }
 
-.seating-chart-container .base-btn.randomize { background: #0f172a; color: white; }
-.seating-chart-container .base-btn.save { background: #2563eb; color: white; }
-.seating-chart-container .base-btn.reset { background: #f1f5f9; color: #64748b; }
+.seating-chart-container .base-btn.reset { 
+    background: #f8fafc;
+    color: #475569;
+    border-color: #e2e8f0;
+}
 
+.seating-chart-container .base-btn.randomize {
+    background: #2563eb;
+    color: white;
+}
+
+.seating-chart-container .base-btn.save {
+    background: #16a34a;
+    color: white;
+}
+
+.seating-chart-container .base-btn.print-st, 
+.seating-chart-container .base-btn.print-tc {
+    background: #0f172a;
+    color: white;
+}
+
+.seating-chart-container .base-btn:hover {
+    filter: brightness(0.95);
+    transform: translateY(-1px);
+}
+
+/* Workspace Layout */
 .seating-chart-container .seating-main-workspace {
-    display: grid;
-    grid-template-columns: 1fr 280px;
+    display: flex;
     gap: 1.5rem;
+    align-items: start;
+    width: 100%;
 }
 
-.seating-chart-container .seating-main-workspace.student-view { grid-template-columns: 1fr; }
+.seating-chart-container .seating-main-workspace.student-view {
+    justify-content: center;
+    padding: 2rem 0;
+    min-height: calc(100vh - 200px);
+}
 
 .seating-chart-container .classroom-area {
     background: white;
-    padding: 1.5rem;
-    border-radius: 16px;
-    border: 1px solid #e2e8f0;
+    padding: 2.5rem 1.5rem;
+    border-radius: 20px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     display: flex;
     flex-direction: column;
     align-items: center;
+    border: 1px solid #f1f5f9;
+    width: fit-content;
+    min-width: 0;
 }
 
 .seating-chart-container .blackboard-indicator {
     width: 60%;
-    height: 44px;
-    background-color: #064e3b;
-    border: 6px solid #78350f;
+    min-width: 250px;
+    height: 40px;
+    background: #064e3b;
+    border: 4px solid #78350f;
     border-radius: 4px;
+    margin-top: 0.5rem;
     margin-bottom: 2rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
     position: relative;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .seating-chart-container .blackboard-indicator::after {
-    content: "칠판 / 교탁";
-    color: rgba(255,255,255,0.8);
-    font-size: 0.9rem;
-    font-weight: 800;
+    content: '칠 판';
+    font-size: 1rem;
+    font-weight: 900;
+    color: rgba(255, 255, 255, 0.9);
+    letter-spacing: 0.5em;
 }
 
-.seating-chart-container .grid-container { display: flex; flex-direction: column; gap: 0.6rem; }
-.seating-chart-container .grid-row { display: flex; gap: 0.6rem; }
+.seating-chart-container .grid-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    width: 100%;
+}
 
+.seating-chart-container .grid-row {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+}
+
+/* Student Cards & Slots */
 .seating-chart-container .seat-slot {
-    width: 76px; height: 54px;
-    background-color: #f8fafc;
-    border: 2px dashed #e2e8f0;
-    border-radius: 8px;
+    width: 140px;
+    height: 70px;
+    background: #f1f5f9;
+    border: 2px dashed #cbd5e1;
+    border-radius: 10px;
     display: flex;
     justify-content: center;
     align-items: center;
+    transition: all 0.2s;
     position: relative;
 }
 
-.seating-chart-container .seat-slot.occupied { background: white; border-style: solid; }
-.seating-chart-container .seat-slot.blocked { background: #f1f5f9; opacity: 0.6; }
-.seating-chart-container .seat-slot.blocked::after { content: "✕"; color: #cbd5e1; }
+.seating-chart-container .seat-slot.occupied {
+    border-color: transparent !important;
+    background: transparent !important;
+}
+
+.seating-chart-container .seat-slot.blocked {
+    background: #475569;
+    border-color: #1e293b;
+    cursor: not-allowed;
+}
+
+.seating-chart-container .seat-slot.blocked::after {
+    content: '사용 불가';
+    position: absolute;
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #cbd5e1;
+}
+
+.seating-chart-container .seat-slot.gap {
+    margin-right: 1rem;
+}
 
 .seating-chart-container .student-card {
-    width: calc(100% - 4px);
-    height: calc(100% - 4px);
+    width: 140px;
+    height: 70px;
     background: white;
-    border-radius: 6px;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    padding: 0 0.5rem;
+    align-items: center;
+    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    cursor: grab;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    user-select: none;
+    gap: 0.5rem;
+}
+
+.seating-chart-container .student-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px -5px rgba(0, 0, 0, 0.1);
+    border-color: #3b82f6;
+    background: #f0f7ff;
+}
+
+.seating-chart-container .student-card .student-no {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.5rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    min-width: 40px;
+    height: 24px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.seating-chart-container .student-card .student-no.male {
+    color: #1d4ed8;
+    background: #eff6ff;
+    border: 1.5px solid #dbeafe;
+}
+
+.seating-chart-container .student-card .student-no.female {
+    color: #be123c;
+    background: #fff1f2;
+    border: 1.5px solid #ffe4e6;
+}
+
+.seating-chart-container .student-card .student-name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #1e293b;
+    white-space: nowrap;
+}
+
+/* Pool Panel */
+.seating-chart-container .student-pool-panel {
+    background: #f8fafc;
+    padding: 1rem;
+    border-radius: 24px;
+    height: calc(100vh - 200px);
     display: flex;
     flex-direction: column;
+    position: sticky;
+    top: 1rem;
+    border: 1px solid #e2e8f0;
+    width: 480px;
+    flex-shrink: 0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.seating-chart-container .pool-header {
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1.5px solid #e2e8f0;
+}
+
+.seating-chart-container .pool-header h3 {
+    font-size: 1.1rem;
+    color: #0f172a;
+    font-weight: 800;
+}
+
+.seating-chart-container .pool-list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.4rem;
+    overflow-y: auto;
+    padding-right: 0.75rem;
+}
+
+/* Constraints Panel */
+.seating-chart-container .constraints-panel {
+    margin-top: 4rem;
+    padding-top: 3rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.seating-chart-container .constraints-header {
+    margin-bottom: 2.5rem;
+}
+
+.seating-chart-container .constraints-header h2 {
+    font-size: 1.5rem;
+    color: #0f172a;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.seating-chart-container .constraints-header p {
+    color: #64748b;
+    font-size: 0.95rem;
+}
+
+.seating-chart-container .constraints-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+}
+
+.seating-chart-container .constraint-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s;
+}
+
+.seating-chart-container .card-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.seating-chart-container .mini-add-btn {
+    background: #f1f5f9;
+    color: #475569;
+    border: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+/* Modals */
+.seating-chart-container .chart-modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
     justify-content: center;
     align-items: center;
-    cursor: grab;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    transition: 0.2s;
+    z-index: 10000;
 }
 
-.seating-chart-container .student-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-.seating-chart-container .student-card .student-no { font-size: 0.6rem; font-weight: 800; padding: 1px 4px; border-radius: 4px; }
-.seating-chart-container .student-card .student-no.male { background: #eff6ff; color: #2563eb; }
-.seating-chart-container .student-card .student-no.female { background: #fff1f2; color: #e11d48; }
-
-.seating-chart-container .student-card .student-name { font-size: 0.85rem; font-weight: 800; color: #1e293b; text-align: center; }
-
-.seating-chart-container .remove-seat-btn {
-    position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; background: #ef4444; color: white;
-    border-radius: 50%; display: none; justify-content: center; align-items: center; font-size: 0.75rem; cursor: pointer;
+.seating-chart-container .chart-modal {
+    background: white;
+    width: 600px;
+    max-width: 90vw;
+    border-radius: 24px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+    max-height: 80vh;
 }
 
-.seating-chart-container .student-card:hover .remove-seat-btn { display: flex; }
-
-.seating-chart-container .student-pool-panel {
-    background: white; padding: 1rem; border-radius: 16px; border: 1px solid #e2e8f0;
+.seating-chart-container .modal-header {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.seating-chart-container .pool-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.4rem; overflow-y: auto; max-height: 500px; }
-
-.seating-chart-container .constraints-panel { margin-top: 4rem; padding-top: 3rem; border-top: 1px solid #e2e8f0; }
-.seating-chart-container .constraints-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
-.seating-chart-container .constraint-card { background: white; border: 1px solid #e2e8f0; border-radius: 20px; padding: 1.5rem; transition: 0.2s; }
-
-.seating-chart-container .chart-modal-overlay {
-    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
-    display: flex; justify-content: center; align-items: center; z-index: 10000;
+.seating-chart-container .modal-body {
+    padding: 1.5rem 2rem;
+    overflow-y: auto;
 }
 
-.seating-chart-container .chart-modal { background: white; width: 600px; max-width: 90vw; border-radius: 24px; display: flex; flex-direction: column; max-height: 80vh; }
-.seating-chart-container .modal-header { padding: 1.5rem 2rem; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
-.seating-chart-container .modal-body { padding: 1.5rem 2rem; overflow-y: auto; }
-.seating-chart-container .modal-footer { padding: 1.5rem 2rem; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
-.seating-chart-container .m-btn { padding: 0.6rem 1.2rem; border-radius: 10px; font-weight: 700; cursor: pointer; border: none; }
+.seating-chart-container .modal-footer {
+    padding: 1.5rem 2rem;
+    border-top: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8fafc;
+    border-radius: 0 0 24px 24px;
+}
+
+.seating-chart-container .m-btn {
+    padding: 0.6rem 1.2rem;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+}
+
 .seating-chart-container .m-btn.confirm { background: #3b82f6; color: white; }
 .seating-chart-container .m-btn.cancel { background: #e2e8f0; color: #475569; }
 
-.seating-chart-container .modal-student-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 0.75rem; }
-.seating-chart-container .modal-student-item { background: #f8fafc; border: 1px solid #e2e8f0; padding: 0.75rem; border-radius: 12px; cursor: pointer; display: flex; flex-direction: column; align-items: center; }
-.seating-chart-container .modal-student-item.selected { background: #eff6ff; border-color: #3b82f6; }
-
-/* Global Body Overrides for Student Mode */
-body.student-mode-active .sidebar,
-body.student-mode-active .main-header,
-body.student-mode-active .hamburger-btn {
-    display: none !important;
+/* Student Mode Visual Enhancements */
+.seating-chart-container.student-view-container .student-card {
+    width: 200px;
+    height: 100px;
+    gap: 1.25rem;
+    padding: 1rem;
 }
 
-body.student-mode-active .main-content { margin-left: 0 !important; padding: 0 !important; width: 100% !important; }
+.seating-chart-container.student-view-container .student-no {
+    font-size: 1.2rem;
+    min-width: 60px;
+    height: 36px;
+}
 
+.seating-chart-container.student-view-container .student-name {
+    font-size: 1.8rem;
+    font-weight: 800;
+}
+
+/* Animations */
 @keyframes popIn {
     0% { transform: scale(0.8); opacity: 0; }
     100% { transform: scale(1); opacity: 1; }
 }
 
+.seating-chart-container .revealed {
+    animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Print Overrides */
 @media print {
-    .sidebar, .main-header, .hamburger-btn, .setup-bar, .seating-header, .student-pool-panel, .constraints-panel { display: none !important; }
-    .seating-chart-container { padding: 0 !important; background: white !important; }
-    .blackboard-indicator { background-color: #064e3b !important; -webkit-print-color-adjust: exact; }
+    .sidebar, .main-header, .hamburger-btn, .setup-bar, .seating-header, .student-pool-panel, .constraints-panel {
+        display: none !important;
+    }
+    
+    .seating-chart-container {
+        padding: 0 !important;
+        background: white !important;
+    }
+
+    .seating-chart-container .classroom-area {
+        box-shadow: none !important;
+        border: none !important;
+    }
+
+    .seating-chart-container .blackboard-indicator {
+        background-color: #064e3b !important;
+        -webkit-print-color-adjust: exact;
+    }
 }

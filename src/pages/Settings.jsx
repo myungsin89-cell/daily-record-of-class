@@ -952,7 +952,7 @@ const Settings = () => {
                                 onClick={handleExportGradesToSheet}
                                 disabled={isGoogleBusy}
                             >
-                                {isGoogleBusy ? '처리 중...' : '📊 성적 → 시트'}
+                                {isGoogleBusy ? '처리 중...' : '성적 → 시트'}
                             </Button>
                         </div>
                     </div>
