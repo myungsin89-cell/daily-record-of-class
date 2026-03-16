@@ -45,9 +45,11 @@ const SeatingChart = () => {
     const [youtubeUrl, setYoutubeUrl] = useState('https://www.youtube.com/watch?v=FcsS6c-mY0A'); // Default cinematic music
     const [isMusicEnabled, setIsMusicEnabled] = useState(true);
     const [showMusicSettings, setShowMusicSettings] = useState(false);
+    const [isConfigLoaded, setIsConfigLoaded] = useState(false);
     const [isApiLoaded, setIsApiLoaded] = useState(window.YT && window.YT.Player ? true : false);
     const [isPlayerReady, setIsPlayerReady] = useState(false);
     const ytPlayerRef = useRef(null);
+    const lastInitId = useRef(0);
 
     // Calculate unassigned students
     const unassignedStudents = students?.filter(s => 
@@ -81,14 +83,16 @@ const SeatingChart = () => {
     // Initialize Grid and Load Saved Config
     useEffect(() => {
         const loadConfig = async () => {
-            if (!currentClass?.id) return;
+            if (!currentClass?.id) {
+                setIsConfigLoaded(true);
+                return;
+            }
             
             try {
                 const saved = await getData(STORES.SEATING_CONFIGS, currentClass.id);
                 if (saved) {
                     setGridConfig(saved.gridConfig || { rows: 5, cols: 6, pairSize: 2 });
                     setConstraints(migrateConstraints(saved.constraints));
-                    // Load useFemaleSeats from saved constraints, default to true if not found
                     setUseFemaleSeats(saved.useFemaleSeats !== undefined ? saved.useFemaleSeats : true);
                     setGrid(saved.grid || generateEmptyGrid(5, 6, 2));
                     if (saved.youtubeUrl) setYoutubeUrl(saved.youtubeUrl);
@@ -97,7 +101,9 @@ const SeatingChart = () => {
                 }
             } catch (e) {
                 console.error("Failed to load seating config:", e);
-                setGrid(generateEmptyGrid(5, 6, 2)); // Fallback to empty grid
+                setGrid(generateEmptyGrid(5, 6, 2));
+            } finally {
+                setIsConfigLoaded(true);
             }
         };
         loadConfig();
@@ -162,10 +168,10 @@ const SeatingChart = () => {
 
     // 2. Reactive Player Initialization
     useEffect(() => {
-        if (isApiLoaded && youtubeUrl) {
+        if (isApiLoaded && isConfigLoaded && youtubeUrl) {
             initYoutubePlayer();
         }
-    }, [isApiLoaded, youtubeUrl]);
+    }, [isApiLoaded, isConfigLoaded, youtubeUrl]);
 
     const extractVideoId = (url) => {
         if (!url) return null;
@@ -178,13 +184,27 @@ const SeatingChart = () => {
         const videoId = extractVideoId(youtubeUrl);
         if (!videoId || !window.YT || !window.YT.Player) return;
 
-        console.log("Initializing Player with ID:", videoId);
+        // Unique ID for this initialization attempt
+        const currentInitId = ++lastInitId.current;
+
+        console.log(`[YT] Starting init #${currentInitId} for ${videoId}`);
+
+        // Destroy existing player instance to free resources
+        if (ytPlayerRef.current) {
+            try {
+                if (typeof ytPlayerRef.current.destroy === 'function') {
+                    ytPlayerRef.current.destroy();
+                }
+            } catch (e) {
+                console.warn("[YT] Destroy failed:", e);
+            }
+            ytPlayerRef.current = null;
+        }
 
         const container = document.getElementById('yt-player-container');
         if (container) {
             container.innerHTML = '<div id="yt-player-placeholder"></div>';
         } else {
-            console.warn("Player container not found");
             return;
         }
 
@@ -203,28 +223,32 @@ const SeatingChart = () => {
                     'rel': 0,
                     'modestbranding': 1,
                     'showinfo': 0,
-                    'enablejsapi': 1
+                    'enablejsapi': 1,
+                    'origin': window.location.origin
                 },
                 events: {
                     'onReady': (event) => {
-                        console.log("Successfully Connected to YouTube");
+                        if (lastInitId.current !== currentInitId) {
+                            console.log(`[YT] Ignoring stale ready for init #${currentInitId}`);
+                            return;
+                        }
+                        console.log(`[YT] Player Ready for init #${currentInitId}`);
                         setIsPlayerReady(true);
                         event.target.setVolume(50);
                     },
                     'onError': (e) => {
-                        console.error("YouTube Error:", e.data);
+                        if (lastInitId.current !== currentInitId) return;
+                        console.error("[YT] Error:", e.data);
                         setIsPlayerReady(false);
-                        if (e.data === 150 || e.data === 101) {
-                            alert("이 영상은 사이트 내 재생이 금지되어 있습니다.\n다른 영상을 사용해 주세요.");
-                        }
                     },
                     'onStateChange': (event) => {
+                        if (lastInitId.current !== currentInitId) return;
                         if (event.data === -1) setIsPlayerReady(true);
                     }
                 }
             });
         } catch (err) {
-            console.error("Player Initialization Failed:", err);
+            console.error("[YT] Crash:", err);
         }
     };
 
@@ -702,6 +726,13 @@ const SeatingChart = () => {
                                             }}
                                         >
                                             ⏹️ 정지
+                                        </button>
+                                        <button 
+                                            className="m-btn retry-btn"
+                                            title="음악이 나오지 않으면 눌러주세요"
+                                            onClick={initYoutubePlayer}
+                                        >
+                                            🔄 재연결
                                         </button>
                                     </div>
                                     <p className="yt-hint">※ 주소를 넣고 창을 닫으면 자동 저장됩니다.</p>
