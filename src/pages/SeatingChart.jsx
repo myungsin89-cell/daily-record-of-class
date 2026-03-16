@@ -137,33 +137,27 @@ const SeatingChart = () => {
             firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
         }
 
-        // Global callback for YT API
-        const oldCallback = window.onYouTubeIframeAPIReady;
-        window.onYouTubeIframeAPIReady = () => {
-            if (oldCallback) oldCallback();
-            console.log("YouTube API Loaded via callback");
+        // Handle the ready callback
+        const handleYTReady = () => {
+            console.log("YouTube API Ready - Initializing...");
             initYoutubePlayer();
         };
 
-        // If API is already loaded (e.g. navigation back to this page)
         if (window.YT && window.YT.Player) {
-            console.log("YouTube API already exists");
-            initYoutubePlayer();
+            handleYTReady();
+        } else {
+            window.onYouTubeIframeAPIReady = handleYTReady;
         }
 
-        // Safety check: if stuck in 'Preparing' for too long
-        const timer = setTimeout(() => {
+        // Safety retry if stuck in preparing
+        const retryTimer = setInterval(() => {
             if (!isPlayerReady && window.YT && window.YT.Player) {
-                console.log("Safety init attempt...");
+                console.log("Retrying YT Initialization...");
                 initYoutubePlayer();
             }
-        }, 3000);
+        }, 5000);
 
-        return () => {
-            clearTimeout(timer);
-            // Don't destroy player here to avoid race conditions with quick tab switches, 
-            // but we can clean up if needed.
-        };
+        return () => clearInterval(retryTimer);
     }, []);
 
     useEffect(() => {
@@ -174,27 +168,33 @@ const SeatingChart = () => {
 
     const extractVideoId = (url) => {
         if (!url) return null;
-        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        // Robust regex for various YouTube formats (shorts, mobile, watch, embed)
+        const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?v=)|(shorts\/)|(\&v=))([^#\&\?]*).*/;
         const match = url.match(regExp);
-        return (match && match[2].length === 11) ? match[2] : null;
+        return (match && match[9].length === 11) ? match[9] : null;
     };
 
     const initYoutubePlayer = () => {
         const videoId = extractVideoId(youtubeUrl);
-        if (!videoId || !window.YT || !window.YT.Player) return;
+        if (!videoId || !window.YT || !window.YT.Player) {
+            console.log("Wait for API or ID:", { videoId, api: !!window.YT });
+            return;
+        }
 
-        // 1. Ensure placeholder exists (API replaces the element, so we must recreate it)
+        // Recreate placeholder to avoid API re-use issues
         const container = document.getElementById('yt-player-container');
         if (container) {
             container.innerHTML = '<div id="yt-player-placeholder"></div>';
+        } else {
+            return; // Component not yet rendered
         }
 
         setIsPlayerReady(false);
 
         try {
             ytPlayerRef.current = new window.YT.Player('yt-player-placeholder', {
-                height: '200',
-                width: '200',
+                height: '10',
+                width: '10',
                 videoId: videoId,
                 playerVars: {
                     'autoplay': 0,
@@ -203,29 +203,29 @@ const SeatingChart = () => {
                     'fs': 0,
                     'rel': 0,
                     'modestbranding': 1,
-                    'origin': window.location.origin,
+                    'showinfo': 0,
                     'enablejsapi': 1
                 },
                 events: {
                     'onReady': (event) => {
-                        console.log("YouTube Player Ready");
+                        console.log("Successfully Connected to YouTube");
                         setIsPlayerReady(true);
                         event.target.setVolume(50);
                     },
                     'onError': (e) => {
-                        console.error("YouTube Player Error:", e.data);
-                        // If error, try to show it
+                        console.error("YouTube Error:", e.data);
                         setIsPlayerReady(false);
+                        if (e.data === 150 || e.data === 101) {
+                            alert("이 영상은 사이트 내 재생이 금지되어 있습니다.\n다른 영상을 사용해 주세요.");
+                        }
                     },
                     'onStateChange': (event) => {
-                        if (event.data === -1) { // Unstarted / Ready to play
-                            setIsPlayerReady(true);
-                        }
+                        if (event.data === -1) setIsPlayerReady(true);
                     }
                 }
             });
         } catch (err) {
-            console.error("Critical error during YT player creation:", err);
+            console.error("Player Initialization Failed:", err);
         }
     };
 
@@ -637,13 +637,16 @@ const SeatingChart = () => {
                         </button>
                     </div>
 
-                    {/* YouTube Player Container - Stable wrapper to support re-initialization */}
+                    {/* YouTube Player Container - Needs to be slightly visible for some browsers to allow sound */}
                     <div id="yt-player-container" style={{ 
                         position: 'fixed', 
-                        bottom: '-500px', 
-                        right: '-500px', 
-                        opacity: 0, 
+                        top: '-20px', 
+                        left: '-20px', 
+                        width: '10px', 
+                        height: '10px', 
+                        opacity: 0.01, 
                         pointerEvents: 'none',
+                        overflow: 'hidden',
                         zIndex: -9999
                     }}>
                         <div id="yt-player-placeholder"></div>
