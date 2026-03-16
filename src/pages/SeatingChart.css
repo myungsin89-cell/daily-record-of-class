@@ -905,6 +905,32 @@ body.student-mode-active .layout {
     border-color: #2563eb;
 }
 
+.seating-chart-container .btn-music-setup {
+    background: #0f172a;
+    color: white;
+    padding: 0.6rem 1.25rem;
+    border-radius: 16px;
+    font-size: 0.95rem;
+    font-weight: 800;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+}
+
+.seating-chart-container .btn-music-setup:hover {
+    background: #1e293b;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.seating-chart-container .btn-music-setup:active {
+    transform: translateY(0);
+}
+
 /* Music Help Modal Styles */
 .seating-chart-container .music-help-overlay {
     position: fixed;

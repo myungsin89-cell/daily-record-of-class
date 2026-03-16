@@ -570,10 +570,15 @@ const SeatingChart = () => {
                         <button 
                             className={`music-toggle-btn ${isMusicEnabled ? 'active' : ''}`} 
                             onClick={() => setIsMusicEnabled(!isMusicEnabled)}
-                            onContextMenu={(e) => { e.preventDefault(); setShowMusicSettings(true); }}
-                            title={isMusicEnabled ? "배경음악 우클릭: 음악 주소 설정" : "배경음악 우클릭: 음악 주소 설정"}
+                            title={isMusicEnabled ? "배경음악 끄기" : "배경음악 켜기"}
                         >
                             {isMusicEnabled ? '📺 ON' : '🔇 OFF'}
+                        </button>
+                        <button 
+                            className="base-btn btn-music-setup" 
+                            onClick={() => setShowMusicSettings(true)}
+                        >
+                            🎵 음악넣기
                         </button>
                     </div>
 
