@@ -45,6 +45,7 @@ const SeatingChart = () => {
     const [youtubeUrl, setYoutubeUrl] = useState('https://www.youtube.com/watch?v=FcsS6c-mY0A'); // Default cinematic music
     const [isMusicEnabled, setIsMusicEnabled] = useState(true);
     const [showMusicSettings, setShowMusicSettings] = useState(false);
+    const [isApiLoaded, setIsApiLoaded] = useState(window.YT && window.YT.Player ? true : false);
     const [isPlayerReady, setIsPlayerReady] = useState(false);
     const ytPlayerRef = useRef(null);
 
@@ -137,8 +138,13 @@ const SeatingChart = () => {
         });
     };
 
-    // YouTube IFrame API Integration
+    // 1. YouTube API Loading
     useEffect(() => {
+        if (window.YT && window.YT.Player) {
+            setIsApiLoaded(true);
+            return;
+        }
+
         const scriptId = 'youtube-iframe-api';
         if (!document.getElementById(scriptId)) {
             const tag = document.createElement('script');
@@ -148,38 +154,21 @@ const SeatingChart = () => {
             firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
         }
 
-        // Handle the ready callback
-        const handleYTReady = () => {
-            console.log("YouTube API Ready - Initializing...");
-            initYoutubePlayer();
+        window.onYouTubeIframeAPIReady = () => {
+            console.log("YouTube API Ready Event");
+            setIsApiLoaded(true);
         };
-
-        if (window.YT && window.YT.Player) {
-            handleYTReady();
-        } else {
-            window.onYouTubeIframeAPIReady = handleYTReady;
-        }
-
-        // Safety retry if stuck in preparing
-        const retryTimer = setInterval(() => {
-            if (!isPlayerReady && window.YT && window.YT.Player) {
-                console.log("Retrying YT Initialization...");
-                initYoutubePlayer();
-            }
-        }, 5000);
-
-        return () => clearInterval(retryTimer);
     }, []);
 
+    // 2. Reactive Player Initialization
     useEffect(() => {
-        if (window.YT && window.YT.Player && youtubeUrl) {
+        if (isApiLoaded && youtubeUrl) {
             initYoutubePlayer();
         }
-    }, [youtubeUrl]);
+    }, [isApiLoaded, youtubeUrl]);
 
     const extractVideoId = (url) => {
         if (!url) return null;
-        // Robust regex for various YouTube formats (shorts, mobile, watch, embed)
         const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?v=)|(shorts\/)|(\&v=))([^#\&\?]*).*/;
         const match = url.match(regExp);
         return (match && match[9].length === 11) ? match[9] : null;
@@ -187,17 +176,16 @@ const SeatingChart = () => {
 
     const initYoutubePlayer = () => {
         const videoId = extractVideoId(youtubeUrl);
-        if (!videoId || !window.YT || !window.YT.Player) {
-            console.log("Wait for API or ID:", { videoId, api: !!window.YT });
-            return;
-        }
+        if (!videoId || !window.YT || !window.YT.Player) return;
 
-        // Recreate placeholder to avoid API re-use issues
+        console.log("Initializing Player with ID:", videoId);
+
         const container = document.getElementById('yt-player-container');
         if (container) {
             container.innerHTML = '<div id="yt-player-placeholder"></div>';
         } else {
-            return; // Component not yet rendered
+            console.warn("Player container not found");
+            return;
         }
 
         setIsPlayerReady(false);
