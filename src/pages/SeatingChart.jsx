@@ -42,7 +42,7 @@ const SeatingChart = () => {
     const [dropTarget, setDropTarget] = useState(null); // {r, c}
     
     // YouTube Music State
-    const [youtubeUrl, setYoutubeUrl] = useState('https://www.youtube.com/watch?v=FcsS6c-mY0A'); // Default cinematic music
+    const [youtubeUrl, setYoutubeUrl] = useState('https://www.youtube.com/watch?v=RqnLUQAt2K4'); // Default music link
     const [isMusicEnabled, setIsMusicEnabled] = useState(true);
     const [showMusicSettings, setShowMusicSettings] = useState(false);
     const [isConfigLoaded, setIsConfigLoaded] = useState(false);
