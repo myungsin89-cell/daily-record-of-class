@@ -181,21 +181,12 @@ const SeatingChart = () => {
 
     const initYoutubePlayer = () => {
         const videoId = extractVideoId(youtubeUrl);
-        if (!videoId || !window.YT || !window.YT.Player) {
-            console.warn("Cannot init player: missing videoId or YT API", { videoId, hasYT: !!window.YT });
-            return;
-        }
+        if (!videoId || !window.YT || !window.YT.Player) return;
 
-        // Remove old player if it exists to start fresh
-        if (ytPlayerRef.current) {
-            try {
-                if (typeof ytPlayerRef.current.destroy === 'function') {
-                    ytPlayerRef.current.destroy();
-                }
-            } catch (e) {
-                console.error("Error destroying old player:", e);
-            }
-            ytPlayerRef.current = null;
+        // 1. Ensure placeholder exists (API replaces the element, so we must recreate it)
+        const container = document.getElementById('yt-player-container');
+        if (container) {
+            container.innerHTML = '<div id="yt-player-placeholder"></div>';
         }
 
         setIsPlayerReady(false);
@@ -212,21 +203,22 @@ const SeatingChart = () => {
                     'fs': 0,
                     'rel': 0,
                     'modestbranding': 1,
-                    'origin': window.location.origin
+                    'origin': window.location.origin,
+                    'enablejsapi': 1
                 },
                 events: {
                     'onReady': (event) => {
-                        console.log("YouTube Player is finally READY");
+                        console.log("YouTube Player Ready");
                         setIsPlayerReady(true);
                         event.target.setVolume(50);
                     },
                     'onError': (e) => {
-                        console.error("YouTube Player Error Code:", e.data);
+                        console.error("YouTube Player Error:", e.data);
+                        // If error, try to show it
                         setIsPlayerReady(false);
                     },
                     'onStateChange': (event) => {
-                        // Sometimes ready status is better detected via state change
-                        if (event.data === window.YT.PlayerState.CUED) {
+                        if (event.data === -1) { // Unstarted / Ready to play
                             setIsPlayerReady(true);
                         }
                     }
@@ -433,17 +425,18 @@ const SeatingChart = () => {
 
         // YouTube Music Play
         if (isMusicEnabled) {
-            if (ytPlayerRef.current && isPlayerReady && ytPlayerRef.current.playVideo) {
-                ytPlayerRef.current.playVideo();
+            // Force play attempt directly on user click
+            if (ytPlayerRef.current && ytPlayerRef.current.playVideo) {
+                try {
+                    ytPlayerRef.current.playVideo();
+                } catch (e) {
+                    console.warn("Direct play failed, trying fallback init", e);
+                    initYoutubePlayer();
+                }
             } else {
-                // Fallback attempt to play if not ready or not initialized
-                console.warn("Player not ready, attempting to re-init and play");
                 initYoutubePlayer();
-                setTimeout(() => {
-                    if (ytPlayerRef.current && ytPlayerRef.current.playVideo) {
-                        ytPlayerRef.current.playVideo();
-                    }
-                }, 1500);
+                // We'll have a small delay if it wasn't ready, but subsequent clicks or 
+                // pre-init should handle it.
             }
         }
     };
@@ -644,17 +637,17 @@ const SeatingChart = () => {
                         </button>
                     </div>
 
-                    {/* YouTube Player Container - Invisible but needs some size for certain browsers */}
-                    <div id="yt-player-placeholder" style={{ 
+                    {/* YouTube Player Container - Stable wrapper to support re-initialization */}
+                    <div id="yt-player-container" style={{ 
                         position: 'fixed', 
                         bottom: '-500px', 
                         right: '-500px', 
-                        width: '200px', 
-                        height: '200px', 
                         opacity: 0, 
                         pointerEvents: 'none',
                         zIndex: -9999
-                    }}></div>
+                    }}>
+                        <div id="yt-player-placeholder"></div>
+                    </div>
 
                     {showMusicSettings && (
                         <div 
