@@ -168,10 +168,14 @@ const SeatingChart = () => {
 
     // 2. Reactive Player Initialization
     useEffect(() => {
-        if (isApiLoaded && isConfigLoaded && youtubeUrl) {
-            initYoutubePlayer();
+        if (isApiLoaded && isConfigLoaded && youtubeUrl && mode === 'student') {
+            // Small delay to ensure the DOM element (#yt-player-container) is rendered
+            const timer = setTimeout(() => {
+                initYoutubePlayer();
+            }, 100);
+            return () => clearTimeout(timer);
         }
-    }, [isApiLoaded, isConfigLoaded, youtubeUrl]);
+    }, [isApiLoaded, isConfigLoaded, youtubeUrl, mode]);
 
     const extractVideoId = (url) => {
         if (!url) return null;
