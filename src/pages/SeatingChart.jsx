@@ -472,8 +472,8 @@ const SeatingChart = () => {
     useEffect(() => {
         let timer;
         if (isRevealing && revealedCount < revealOrder.length) {
-            // Initial 4s delay for the first student, then 1.5s interval
-            const delay = (revealedCount === 0) ? 4000 : 1500;
+            // Initial 5s delay for the first student, then 2s interval
+            const delay = (revealedCount === 0) ? 5000 : 2000;
             timer = setTimeout(() => setRevealedCount(prev => prev + 1), delay);
         } else if (revealedCount === revealOrder.length && revealOrder.length > 0) {
             setIsRevealing(false);
