@@ -444,7 +444,9 @@ const SeatingChart = () => {
     useEffect(() => {
         let timer;
         if (isRevealing && revealedCount < revealOrder.length) {
-            timer = setTimeout(() => setRevealedCount(prev => prev + 1), 800);
+            // Initial 4s delay for the first student, then 1.5s interval
+            const delay = (revealedCount === 0) ? 4000 : 1500;
+            timer = setTimeout(() => setRevealedCount(prev => prev + 1), delay);
         } else if (revealedCount === revealOrder.length && revealOrder.length > 0) {
             setIsRevealing(false);
             // YouTube Stop
