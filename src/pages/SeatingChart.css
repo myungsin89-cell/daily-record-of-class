@@ -905,6 +905,63 @@ body.student-mode-active .layout {
     border-color: #2563eb;
 }
 
+/* Music Help Modal Styles */
+.seating-chart-container .music-help-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10001;
+}
+
+.seating-chart-container .music-help-modal {
+    background: white;
+    width: 450px;
+    padding: 2rem;
+    border-radius: 20px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.seating-chart-container .music-help-modal h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.seating-chart-container .music-help-modal p {
+    font-size: 0.95rem;
+    color: #64748b;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+}
+
+.seating-chart-container .music-help-modal ol {
+    margin: 0 0 1.5rem 1.25rem;
+    padding: 0;
+}
+
+.seating-chart-container .music-help-modal li {
+    font-size: 0.9rem;
+    color: #475569;
+    margin-bottom: 0.75rem;
+    line-height: 1.5;
+}
+
+.seating-chart-container .music-help-modal code {
+    background: #f1f5f9;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    color: #e11d48;
+    font-weight: 700;
+}
+
 .seating-chart-container .strategy-selector {
     display: flex;
     background: white;

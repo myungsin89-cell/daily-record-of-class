@@ -43,10 +43,11 @@ const SeatingChart = () => {
     
     // Music State
     const [isMusicEnabled, setIsMusicEnabled] = useState(true);
+    const [showMusicHelp, setShowMusicHelp] = useState(false);
     const audioRef = useRef(null);
 
-    // Audio URL (Suspenseful cinematic music)
-    const REVEAL_BGM_URL = "https://assets.mixkit.co/music/preview/mixkit-tense-suspense-loop-628.mp3";
+    // Audio URL (Local file preferred for stability)
+    const REVEAL_BGM_URL = "/audio/bgm.mp3";
 
     // Calculate unassigned students
     const unassignedStudents = students?.filter(s => 
@@ -326,7 +327,12 @@ const SeatingChart = () => {
                 audioRef.current.volume = 0.5;
             }
             audioRef.current.currentTime = 0;
-            audioRef.current.play().catch(err => console.warn("Audio playback failed:", err));
+            audioRef.current.play().catch(prevErr => {
+                console.warn("Local audio playback failed, trying fallback:", prevErr);
+                // Fallback to online if local fails
+                audioRef.current.src = "https://assets.mixkit.co/music/preview/mixkit-tense-suspense-loop-628.mp3";
+                audioRef.current.play().catch(finalErr => console.error("All audio paths failed:", finalErr));
+            });
         }
     };
 
@@ -522,11 +528,27 @@ const SeatingChart = () => {
                         <button 
                             className={`music-toggle-btn ${isMusicEnabled ? 'active' : ''}`} 
                             onClick={() => setIsMusicEnabled(!isMusicEnabled)}
-                            title={isMusicEnabled ? "배경음악 끄기" : "배경음악 켜기"}
+                            onContextMenu={(e) => { e.preventDefault(); setShowMusicHelp(true); }}
+                            title={isMusicEnabled ? "배경음악 끄기 (우클릭: 설정방법)" : "배경음악 켜기 (우클릭: 설정방법)"}
                         >
                             {isMusicEnabled ? '🎵 ON' : '🔇 OFF'}
                         </button>
                     </div>
+
+                    {showMusicHelp && (
+                        <div className="music-help-overlay" onClick={() => setShowMusicHelp(false)}>
+                            <div className="music-help-modal" onClick={e => e.stopPropagation()}>
+                                <h3>🎵 배경 음악 설정 방법</h3>
+                                <p>현재 음악 파일이 준비되지 않았습니다. 아래 순서대로 파일을 넣어주세요.</p>
+                                <ol>
+                                    <li>준비한 음악 파일의 이름을 <strong>bgm.mp3</strong>로 바꿉니다.</li>
+                                    <li>앱 폴더 내 <code>public/audio/</code> 폴더에 파일을 넣습니다.</li>
+                                    <li>앱을 새로고침하면 자리 배치 시 음악이 나옵니다!</li>
+                                </ol>
+                                <button className="m-btn confirm" onClick={() => setShowMusicHelp(false)}>확인</button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
