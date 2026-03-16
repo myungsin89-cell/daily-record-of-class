@@ -128,29 +128,41 @@ const SeatingChart = () => {
 
     // YouTube IFrame API Integration
     useEffect(() => {
-        // Load YouTube API script
-        if (!window.YT) {
+        const scriptId = 'youtube-iframe-api';
+        if (!document.getElementById(scriptId)) {
             const tag = document.createElement('script');
+            tag.id = scriptId;
             tag.src = "https://www.youtube.com/iframe_api";
             const firstScriptTag = document.getElementsByTagName('script')[0];
             firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
         }
 
+        // Global callback for YT API
+        const oldCallback = window.onYouTubeIframeAPIReady;
         window.onYouTubeIframeAPIReady = () => {
-            console.log("YouTube API Ready");
+            if (oldCallback) oldCallback();
+            console.log("YouTube API Loaded via callback");
             initYoutubePlayer();
         };
 
-        // If API is already loaded but component remounts
+        // If API is already loaded (e.g. navigation back to this page)
         if (window.YT && window.YT.Player) {
+            console.log("YouTube API already exists");
             initYoutubePlayer();
         }
 
-        return () => {
-            if (ytPlayerRef.current) {
-                ytPlayerRef.current.destroy();
-                ytPlayerRef.current = null;
+        // Safety check: if stuck in 'Preparing' for too long
+        const timer = setTimeout(() => {
+            if (!isPlayerReady && window.YT && window.YT.Player) {
+                console.log("Safety init attempt...");
+                initYoutubePlayer();
             }
+        }, 3000);
+
+        return () => {
+            clearTimeout(timer);
+            // Don't destroy player here to avoid race conditions with quick tab switches, 
+            // but we can clean up if needed.
         };
     }, []);
 
@@ -169,44 +181,60 @@ const SeatingChart = () => {
 
     const initYoutubePlayer = () => {
         const videoId = extractVideoId(youtubeUrl);
-        if (!videoId || !window.YT || !window.YT.Player) return;
+        if (!videoId || !window.YT || !window.YT.Player) {
+            console.warn("Cannot init player: missing videoId or YT API", { videoId, hasYT: !!window.YT });
+            return;
+        }
+
+        // Remove old player if it exists to start fresh
+        if (ytPlayerRef.current) {
+            try {
+                if (typeof ytPlayerRef.current.destroy === 'function') {
+                    ytPlayerRef.current.destroy();
+                }
+            } catch (e) {
+                console.error("Error destroying old player:", e);
+            }
+            ytPlayerRef.current = null;
+        }
 
         setIsPlayerReady(false);
 
-        // If player already exists, just change the video
-        if (ytPlayerRef.current && ytPlayerRef.current.loadVideoById) {
-            try {
-                ytPlayerRef.current.cueVideoById(videoId);
-                return;
-            } catch (e) {
-                console.warn("Failed to cue video, re-initializing player", e);
-            }
-        }
-
-        ytPlayerRef.current = new window.YT.Player('yt-player-placeholder', {
-            height: '1',
-            width: '1',
-            videoId: videoId,
-            playerVars: {
-                'autoplay': 0,
-                'controls': 0,
-                'disablekb': 1,
-                'fs': 0,
-                'rel': 0,
-                'origin': window.location.origin
-            },
-            events: {
-                'onReady': (event) => {
-                    console.log("YouTube Player Ready");
-                    setIsPlayerReady(true);
-                    event.target.setVolume(50);
+        try {
+            ytPlayerRef.current = new window.YT.Player('yt-player-placeholder', {
+                height: '200',
+                width: '200',
+                videoId: videoId,
+                playerVars: {
+                    'autoplay': 0,
+                    'controls': 0,
+                    'disablekb': 1,
+                    'fs': 0,
+                    'rel': 0,
+                    'modestbranding': 1,
+                    'origin': window.location.origin
                 },
-                'onError': (e) => {
-                    console.error("YouTube Player Error:", e.data);
-                    setIsPlayerReady(false);
+                events: {
+                    'onReady': (event) => {
+                        console.log("YouTube Player is finally READY");
+                        setIsPlayerReady(true);
+                        event.target.setVolume(50);
+                    },
+                    'onError': (e) => {
+                        console.error("YouTube Player Error Code:", e.data);
+                        setIsPlayerReady(false);
+                    },
+                    'onStateChange': (event) => {
+                        // Sometimes ready status is better detected via state change
+                        if (event.data === window.YT.PlayerState.CUED) {
+                            setIsPlayerReady(true);
+                        }
+                    }
                 }
-            }
-        });
+            });
+        } catch (err) {
+            console.error("Critical error during YT player creation:", err);
+        }
     };
 
     const handleRandomize = () => {
@@ -616,7 +644,17 @@ const SeatingChart = () => {
                         </button>
                     </div>
 
-                    <div id="yt-player-placeholder" style={{ position: 'absolute', top: '-10px', left: '-10px', width: '1px', height: '1px', opacity: 0, pointerEvents: 'none' }}></div>
+                    {/* YouTube Player Container - Invisible but needs some size for certain browsers */}
+                    <div id="yt-player-placeholder" style={{ 
+                        position: 'fixed', 
+                        bottom: '-500px', 
+                        right: '-500px', 
+                        width: '200px', 
+                        height: '200px', 
+                        opacity: 0, 
+                        pointerEvents: 'none',
+                        zIndex: -9999
+                    }}></div>
 
                     {showMusicSettings && (
                         <div 
