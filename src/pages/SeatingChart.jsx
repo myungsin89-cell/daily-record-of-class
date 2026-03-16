@@ -585,17 +585,28 @@ const SeatingChart = () => {
                     <div id="yt-player-placeholder" style={{ display: 'none' }}></div>
 
                     {showMusicSettings && (
-                        <div className="music-help-overlay" onClick={() => setShowMusicSettings(false)}>
-                            <div className="music-help-modal" onClick={e => e.stopPropagation()}>
+                        <div 
+                            className="music-help-overlay" 
+                            onClick={(e) => {
+                                if (e.target === e.currentTarget) setShowMusicSettings(false);
+                            }}
+                        >
+                            <div className="music-help-modal">
                                 <h3>📺 유튜브 배경 음악 설정</h3>
                                 <p>자리 공개 시 재생할 유튜브 영상 주소를 입력해주세요.</p>
                                 <div className="yt-input-group">
-                                    <input 
-                                        type="text" 
-                                        placeholder="https://www.youtube.com/watch?v=..." 
-                                        value={youtubeUrl}
-                                        onChange={(e) => setYoutubeUrl(e.target.value)}
-                                    />
+                                    <div className="yt-input-wrapper">
+                                        <input 
+                                            type="text" 
+                                            placeholder="https://www.youtube.com/watch?v=..." 
+                                            value={youtubeUrl}
+                                            onChange={(e) => setYoutubeUrl(e.target.value)}
+                                            autoFocus
+                                        />
+                                        {youtubeUrl && (
+                                            <button className="yt-clear-btn" onClick={() => setYoutubeUrl('')} title="주소 지우기">×</button>
+                                        )}
+                                    </div>
                                     <p className="yt-hint">※ 주소를 넣고 창을 닫으면 자동 저장됩니다.</p>
                                 </div>
                                 <button className="m-btn confirm" onClick={() => setShowMusicSettings(false)}>설정 완료</button>

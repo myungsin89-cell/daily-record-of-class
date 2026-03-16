@@ -906,25 +906,28 @@ body.student-mode-active .layout {
 }
 
 .seating-chart-container .btn-music-setup {
-    background: #0f172a;
-    color: white;
-    padding: 0.6rem 1.25rem;
-    border-radius: 16px;
-    font-size: 0.95rem;
-    font-weight: 800;
+    background: transparent;
+    color: #475569;
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 700;
     transition: all 0.2s;
     border: none;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
     white-space: nowrap;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    text-decoration-color: rgba(71, 85, 105, 0.3);
 }
 
 .seating-chart-container .btn-music-setup:hover {
-    background: #1e293b;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    background: rgba(15, 23, 42, 0.05);
+    color: #1e293b;
+    text-decoration-color: #1e293b;
 }
 
 .seating-chart-container .btn-music-setup:active {
@@ -955,15 +958,43 @@ body.student-mode-active .layout {
     margin-bottom: 1.5rem;
 }
 
-.seating-chart-container .yt-input-group input {
+.seating-chart-container .yt-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
     width: 100%;
-    padding: 0.8rem 1rem;
+}
+
+.seating-chart-container .yt-input-wrapper input {
+    width: 100%;
+    padding: 0.8rem 2.8rem 0.8rem 1rem;
     border: 2px solid #e2e8f0;
     border-radius: 12px;
     font-size: 0.95rem;
     color: #1e293b;
-    margin-bottom: 0.5rem;
     transition: all 0.2s;
+}
+
+.seating-chart-container .yt-clear-btn {
+    position: absolute;
+    right: 0.8rem;
+    background: #f1f5f9;
+    color: #94a3b8;
+    border: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: all 0.2s;
+}
+
+.seating-chart-container .yt-clear-btn:hover {
+    background: #e2e8f0;
+    color: #64748b;
 }
 
 .seating-chart-container .yt-input-group input:focus {
