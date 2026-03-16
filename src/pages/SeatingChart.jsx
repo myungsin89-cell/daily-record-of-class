@@ -572,7 +572,7 @@ const SeatingChart = () => {
                             onClick={() => setIsMusicEnabled(!isMusicEnabled)}
                             title={isMusicEnabled ? "배경음악 끄기" : "배경음악 켜기"}
                         >
-                            {isMusicEnabled ? '📺 ON' : '🔇 OFF'}
+                            {isMusicEnabled ? '🔊 음악 켬' : '🔇 음악 끔'}
                         </button>
                         <button 
                             className="base-btn btn-music-setup" 
