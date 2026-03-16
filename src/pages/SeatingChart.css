@@ -1357,6 +1357,7 @@ body.student-mode-active .layout {
     margin-bottom: 0.5rem;
     background: linear-gradient(135deg, #fff 0%, #cbd5e1 100%);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     letter-spacing: -0.02em;
 }

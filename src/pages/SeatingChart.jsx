@@ -416,17 +416,39 @@ const SeatingChart = () => {
 
     // Reveal Logic
     const startReveal = () => {
+        if (!students || students.length === 0) {
+            alert('학생 정보가 없습니다.');
+            return;
+        }
+
+        // 1. Generate new random grid immediately
+        const newGrid = assignSeatsRandomly(students, grid, constraints, useFemaleSeats);
+        setGrid(newGrid);
+
         setIsShuffling(true); // Start shuffling animation
         setRevealedCount(0);
         
-        // Let the shuffling animation play for 4 seconds (same as initial music delay)
-        setTimeout(() => {
-            setIsShuffling(false);
-            setIsRevealing(true);
-        }, 4000);
-        
+        // 2. YouTube Music Play - Start immediately with shuffling
+        if (isMusicEnabled) {
+            if (ytPlayerRef.current && ytPlayerRef.current.playVideo) {
+                try {
+                    ytPlayerRef.current.unMute();
+                    ytPlayerRef.current.seekTo(0);
+                    ytPlayerRef.current.playVideo();
+                    console.log("Reveal Play Command Sent (Shuffle Start)");
+                } catch (e) {
+                    console.warn("Reveal play failed, trying re-init", e);
+                    initYoutubePlayer();
+                }
+            } else {
+                console.warn("Player not fully ready for reveal, attempting forced start");
+                initYoutubePlayer();
+            }
+        }
+
+        // 3. Prepare reveal order based on the NEW grid
         const filledSeats = [];
-        grid.forEach((row, r) => {
+        newGrid.forEach((row, r) => {
             row.forEach((seat, c) => {
                 if (seat.studentId) {
                     const student = students?.find(s => s.id === seat.studentId);
@@ -435,15 +457,10 @@ const SeatingChart = () => {
             });
         });
 
-        if (revealStrategy === 'all') {
-            setRevealOrder(filledSeats);
-            setRevealedCount(filledSeats.length);
-            setIsRevealing(false);
-            return;
-        }
-
         let ordered = [];
-        if (revealStrategy === 'one-by-one') {
+        if (revealStrategy === 'all') {
+            ordered = filledSeats;
+        } else if (revealStrategy === 'one-by-one') {
             ordered = [...filledSeats].sort(() => Math.random() - 0.5);
         } else if (revealStrategy === 'male-first') {
             const males = filledSeats.filter(s => s.gender === '남').sort(() => Math.random() - 0.5);
@@ -457,38 +474,29 @@ const SeatingChart = () => {
         
         setRevealOrder(ordered);
 
-        // YouTube Music Play
-        if (isMusicEnabled) {
-            if (ytPlayerRef.current && ytPlayerRef.current.playVideo) {
-                try {
-                    ytPlayerRef.current.unMute();
-                    ytPlayerRef.current.seekTo(0);
-                    ytPlayerRef.current.playVideo();
-                    console.log("Reveal Play Command Sent");
-                } catch (e) {
-                    console.warn("Reveal play failed, trying re-init", e);
-                    initYoutubePlayer();
-                }
+        // 4. Let the shuffling animation play for 6 seconds (Increased from 4s)
+        setTimeout(() => {
+            setIsShuffling(false);
+            if (revealStrategy === 'all') {
+                setRevealedCount(ordered.length);
+                setIsRevealing(false);
             } else {
-                console.warn("Player not fully ready for reveal, attempting forced start");
-                initYoutubePlayer();
+                setIsRevealing(true);
             }
-        }
+        }, 6000);
     };
 
     useEffect(() => {
         let timer;
         if (isRevealing && revealedCount < revealOrder.length) {
-            // Initial delay is now handled by isShuffling overlay, 
-            // so we keep the interval consistent or small for the first student.
+            // Reveal interval
             const delay = (revealedCount === 0) ? 1000 : 2000;
             timer = setTimeout(() => setRevealedCount(prev => prev + 1), delay);
-        } else if (revealedCount === revealOrder.length && revealOrder.length > 0) {
+        } else if (isRevealing && revealedCount === revealOrder.length && revealOrder.length > 0) {
+            // End reveal state
             setIsRevealing(false);
-            // YouTube Stop
-            if (ytPlayerRef.current && ytPlayerRef.current.stopVideo) {
-                ytPlayerRef.current.stopVideo();
-            }
+            // We removed the automatic stopVideo here to prevent premature cutoff (especially in 'all' mode)
+            // Music will keep playing until manual stop or back button
         }
         return () => clearTimeout(timer);
     }, [isRevealing, revealedCount, revealOrder]);
@@ -604,6 +612,10 @@ const SeatingChart = () => {
                     setMode('teacher');
                     setIsRevealing(false);
                     setRevealedCount(0);
+                    // Stop music when leaving student mode
+                    if (ytPlayerRef.current && ytPlayerRef.current.stopVideo) {
+                        try { ytPlayerRef.current.stopVideo(); } catch(e) {}
+                    }
                 }} title="설정으로 돌아가기">←</button>
             )}
 
@@ -682,7 +694,14 @@ const SeatingChart = () => {
                         </button>
                         <button 
                             className={`music-toggle-btn ${isMusicEnabled ? 'active' : ''}`} 
-                            onClick={() => setIsMusicEnabled(!isMusicEnabled)}
+                            onClick={() => {
+                                const nextValue = !isMusicEnabled;
+                                setIsMusicEnabled(nextValue);
+                                // If turning off, stop video
+                                if (!nextValue && ytPlayerRef.current && ytPlayerRef.current.stopVideo) {
+                                    try { ytPlayerRef.current.stopVideo(); } catch(e) {}
+                                }
+                            }}
                             title={isMusicEnabled ? "배경음악 끄기" : "배경음악 켜기"}
                         >
                             {isMusicEnabled ? '🔊 음악 켬' : '🔇 음악 끔'}
