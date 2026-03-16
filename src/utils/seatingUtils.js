@@ -56,8 +56,8 @@ const canSitTogether = (student1Id, student2Id, avoidances) => {
 /**
  * Assigns students to seats based on complex AI constraints with strict avoidance verification
  */
-export const assignSeatsRandomly = (students, grid, constraints) => {
-    const { avoidances = [], frontPreference = [], pairs = [], useFemaleSeats = true } = constraints;
+export const assignSeatsRandomly = (students, grid, constraints, useFemaleSeats) => {
+    const { avoidances = [], frontPreference = [], pairs = [] } = constraints;
 
     // Helper: Find student ID at specific coordinates
     const getStudentAt = (targetGrid, r, c) => {
@@ -96,7 +96,7 @@ export const assignSeatsRandomly = (students, grid, constraints) => {
     };
 
     let bestGrid = null;
-    let maxAttempts = 100;
+    let maxAttempts = 200; // Increased attempts
     
     // Retry loop to find a configuration that satisfies ALL avoidances
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -110,6 +110,7 @@ export const assignSeatsRandomly = (students, grid, constraints) => {
             row.forEach((seat, c) => {
                 if (seat.genderPreference === 'blocked') return;
                 const seatRef = { r, c };
+                // use useFemaleSeats from the parameter properly
                 if (useFemaleSeats && seat.genderPreference === '여') femaleOnlySeats.push(seatRef);
                 else neutralSeats.push(seatRef);
                 if (r <= 1) frontSideSeats.push(seatRef);
@@ -120,16 +121,23 @@ export const assignSeatsRandomly = (students, grid, constraints) => {
         
         // Helper to find N adjacent seats starting from (r, c)
         const findAdjacentSeats = (r, c, n, pool) => {
-            // Primarily check horizontal neighbors
-            const horizontal = [];
-            for(let i=0; i<n; i++) {
-                const targetC = c + i;
-                if (pool.some(s => s.r === r && s.c === targetC) && !getSeat(r, targetC).studentId) {
-                    horizontal.push({r, c: targetC});
-                } else break;
+            const seats = [];
+            for (let i = 0; i < n; i++) {
+                const currentC = c + i;
+                // Check if seat exists in pool and is not already taken
+                const seatInPool = pool.find(s => s.r === r && s.c === currentC);
+                if (!seatInPool) return null;
+                
+                const seat = getSeat(r, currentC);
+                if (seat.studentId) return null;
+                
+                seats.push({r, c: currentC});
+                
+                // If we need more seats but the current one is an aisle (isGap), 
+                // we cannot continue for a mandatory pair
+                if (i < n - 1 && seat.isGap) return null;
             }
-            if (horizontal.length === n) return horizontal;
-            return null;
+            return seats;
         };
 
         let unplacedStudents = shuffle([...students]);
@@ -139,16 +147,23 @@ export const assignSeatsRandomly = (students, grid, constraints) => {
             const groupStudents = unplacedStudents.filter(s => group.studentIds.includes(s.id));
             if (groupStudents.length < 2) return;
 
+            // Sort group students by gender if useFemaleSeats is on to match pool structure
+            const sortedGroup = [...groupStudents].sort((a, b) => {
+                if (a.gender === '여' && b.gender !== '여') return -1;
+                if (a.gender !== '여' && b.gender === '여') return 1;
+                return 0;
+            });
+
             const targetPool = shuffle([...femaleOnlySeats, ...neutralSeats]);
             for (let seat of targetPool) {
                 if (getSeat(seat.r, seat.c).studentId) continue;
                 
-                const adjacent = findAdjacentSeats(seat.r, seat.c, groupStudents.length, targetPool);
+                const adjacent = findAdjacentSeats(seat.r, seat.c, sortedGroup.length, targetPool);
                 if (adjacent) {
                     // Check gender constraints for the whole group
                     let genderOk = true;
                     for(let i=0; i<adjacent.length; i++) {
-                        const s = groupStudents[i];
+                        const s = sortedGroup[i];
                         const st = getSeat(adjacent[i].r, adjacent[i].c);
                         if (useFemaleSeats && st.genderPreference === '여' && s.gender !== '여') {
                             genderOk = false;
@@ -159,7 +174,7 @@ export const assignSeatsRandomly = (students, grid, constraints) => {
 
                     // Place them
                     adjacent.forEach((seatPos, idx) => {
-                        getSeat(seatPos.r, seatPos.c).studentId = groupStudents[idx].id;
+                        getSeat(seatPos.r, seatPos.c).studentId = sortedGroup[idx].id;
                     });
                     unplacedStudents = unplacedStudents.filter(s => !group.studentIds.includes(s.id));
                     break;
@@ -169,7 +184,7 @@ export const assignSeatsRandomly = (students, grid, constraints) => {
 
         // Step 2: Front Preference
         const frontStudents = unplacedStudents.filter(s => frontPreference.includes(s.id));
-        frontStudents.forEach(student => {
+        shuffle(frontStudents).forEach(student => {
             const targetPool = shuffle(frontSideSeats.filter(s => !getSeat(s.r, s.c).studentId));
             for (let seat of targetPool) {
                 if (useFemaleSeats && getSeat(seat.r, seat.c).genderPreference === '여' && student.gender !== '여') continue;

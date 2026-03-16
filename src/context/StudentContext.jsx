@@ -109,6 +109,31 @@ export const StudentProvider = ({ children }) => {
         }));
     };
 
+    const updateJournalEntry = (studentId, entryId, updatedEntry) => {
+        setJournals((prev) => {
+            const studentEntries = prev[studentId] || [];
+            const updatedEntries = studentEntries.map(entry => 
+                entry.id === entryId ? { ...entry, ...updatedEntry } : entry
+            );
+            return {
+                ...prev,
+                [studentId]: updatedEntries
+            };
+        });
+    };
+
+    const deleteJournalEntry = (studentId, entryId) => {
+        if (!window.confirm('기록을 삭제하시겠습니까?')) return;
+        setJournals((prev) => {
+            const studentEntries = prev[studentId] || [];
+            const updatedEntries = studentEntries.filter(entry => entry.id !== entryId);
+            return {
+                ...prev,
+                [studentId]: updatedEntries
+            };
+        });
+    };
+
     const saveEvaluation = (studentId, evaluation) => {
         setEvaluations((prev) => ({
             ...prev,
@@ -168,6 +193,8 @@ export const StudentProvider = ({ children }) => {
                 updateAttendance,
                 journals,
                 addJournalEntry,
+                updateJournalEntry,
+                deleteJournalEntry,
                 evaluations,
                 saveEvaluation,
                 finalizedEvaluations,

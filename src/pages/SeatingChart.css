@@ -552,6 +552,13 @@ body.student-mode-active .layout {
     border-bottom: 1px solid #f1f5f9;
 }
 
+.seating-chart-container .card-title h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #0f172a;
+}
+
 .seating-chart-container .mini-add-btn {
     background: #f1f5f9;
     color: #475569;
@@ -561,6 +568,100 @@ body.student-mode-active .layout {
     font-size: 0.8rem;
     font-weight: 700;
     cursor: pointer;
+    transition: all 0.2s;
+}
+
+.seating-chart-container .mini-add-btn:hover {
+    background: #e2e8f0;
+    color: #1e293b;
+}
+
+/* Front Preference Buttons */
+.seating-chart-container .preference-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.seating-chart-container .preference-btn {
+    padding: 0.4rem 0.8rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.seating-chart-container .preference-btn:hover {
+    border-color: #3b82f6;
+    color: #3b82f6;
+    background: #eff6ff;
+}
+
+.seating-chart-container .preference-btn.active {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: white;
+    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
+}
+
+/* Active List Items (Avoidance/Pairing) */
+.seating-chart-container .constraint-active-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 200px;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+}
+
+.seating-chart-container .active-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.6rem 0.8rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.seating-chart-container .active-item.avoidance {
+    background: #fff1f2;
+    color: #e11d48;
+    border: 1px solid #fecdd3;
+}
+
+.seating-chart-container .active-item.pairing {
+    background: #f0fdf4;
+    color: #16a34a;
+    border: 1px solid #bbf7d0;
+}
+
+.seating-chart-container .active-item .del-btn {
+    background: none;
+    border: none;
+    font-size: 1.1rem;
+    color: currentColor;
+    opacity: 0.5;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 0;
+}
+
+.seating-chart-container .active-item .del-btn:hover {
+    opacity: 1;
+}
+
+.seating-chart-container .empty-msg {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    text-align: center;
+    margin: 1rem 0;
+    font-style: italic;
 }
 
 /* Modals */
@@ -620,23 +721,114 @@ body.student-mode-active .layout {
 .seating-chart-container .m-btn.confirm { background: #3b82f6; color: white; }
 .seating-chart-container .m-btn.cancel { background: #e2e8f0; color: #475569; }
 
-/* Student Mode Visual Enhancements */
+.seating-chart-container .modal-student-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 0.75rem;
+    padding: 0.5rem;
+}
+
+.seating-chart-container .modal-student-item {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 0.8rem 0.5rem;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    transition: all 0.2s;
+}
+
+.seating-chart-container .modal-student-item:hover {
+    border-color: #cbd5e1;
+    background: #f1f5f9;
+    transform: translateY(-2px);
+}
+
+.seating-chart-container .modal-student-item.selected {
+    background: #eff6ff;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.seating-chart-container .modal-student-item .m-no {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #94a3b8;
+}
+
+.seating-chart-container .modal-student-item .m-name {
+    font-weight: 800;
+    color: #1e293b;
+    font-size: 0.95rem;
+}
+
+.seating-chart-container .modal-student-item.selected .m-name {
+    color: #2563eb;
+}
+
+.seating-chart-container .modal-footer {
+    padding: 1.5rem 2rem;
+    border-top: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8fafc;
+    border-radius: 0 0 24px 24px;
+}
+
+.seating-chart-container .selected-count {
+    font-size: 0.9rem;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.seating-chart-container .modal-btns {
+    display: flex;
+    gap: 0.75rem;
+}
+
+/* Student Mode Enhancement: Responsive Grid & Slot Scaling */
+.seating-chart-container.student-view-container .grid-container {
+    gap: 1.5rem;
+}
+
+.seating-chart-container.student-view-container .grid-row {
+    gap: 1.5rem;
+}
+
+.seating-chart-container.student-view-container .seat-slot {
+    width: 200px;
+    height: 100px;
+    border-width: 3px;
+    border-radius: 15px;
+}
+
+.seating-chart-container.student-view-container .seat-slot.gap {
+    margin-right: 2rem;
+}
+
 .seating-chart-container.student-view-container .student-card {
     width: 200px;
     height: 100px;
     gap: 1.25rem;
     padding: 1rem;
+    border-radius: 15px;
+    box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.15);
 }
 
 .seating-chart-container.student-view-container .student-no {
     font-size: 1.2rem;
     min-width: 60px;
-    height: 36px;
+    height: 40px;
+    border-width: 2px;
 }
 
 .seating-chart-container.student-view-container .student-name {
     font-size: 1.8rem;
-    font-weight: 800;
+    font-weight: 900;
 }
 
 /* Animations */
@@ -649,24 +841,116 @@ body.student-mode-active .layout {
     animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* Print Overrides */
+/* --- Print Logic --- */
 @media print {
-    .sidebar, .main-header, .hamburger-btn, .setup-bar, .seating-header, .student-pool-panel, .constraints-panel {
-        display: none !important;
+    @page {
+        size: landscape;
+        margin: 5mm;
     }
     
-    .seating-chart-container {
+    /* Hide all UI elements except the seating grid */
+    .sidebar,
+    .main-header,
+    .hamburger-btn,
+    .mobile-sidebar-overlay,
+    .changelog-overlay,
+    .install-banner,
+    .seating-chart-container .seating-header,
+    .seating-chart-container .setup-bar,
+    .seating-chart-container .disclosure-controls,
+    .seating-chart-container .student-pool-panel,
+    .seating-chart-container .constraints-panel,
+    .seating-chart-container .remove-seat-btn,
+    .seating-chart-container .stealth-back-btn {
+        display: none !important;
+    }
+
+    /* Reset Global Layout for Print */
+    .layout,
+    .main-content,
+    .page-content {
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: center !important;
+        width: 100% !important;
+        min-height: 98vh !important;
+        margin: 0 !important;
         padding: 0 !important;
         background: white !important;
+        position: static !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .seating-chart-container {
+        padding: 0 !important;
+        margin: 0 !important;
+        background: white !important;
+        width: 100% !important;
+        height: auto !important;
+        overflow: visible !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+    }
+
+    .seating-chart-container .seating-main-workspace {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
 
     .seating-chart-container .classroom-area {
         box-shadow: none !important;
         border: none !important;
+        margin: 0 auto !important;
+        padding: 5mm !important;
+        width: fit-content !important;
+        max-width: 100% !important;
+        page-break-inside: avoid;
+        break-inside: avoid;
+        background: white !important;
+    }
+
+    .seating-chart-container .student-card {
+        page-break-inside: avoid;
+        break-inside: avoid;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: none !important;
     }
 
     .seating-chart-container .blackboard-indicator {
+        margin-bottom: 8mm !important;
         background-color: #064e3b !important;
-        -webkit-print-color-adjust: exact;
+        border-color: #78350f !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
+}
+
+/* Teacher View (Rotated View for Teacher perspective) */
+.seating-chart-container.printing.print-teacher .classroom-area {
+    flex-direction: column-reverse; /* Put Blackboard at the bottom */
+}
+
+.seating-chart-container.printing.print-teacher .grid-container {
+    transform: rotate(180deg);
+}
+
+.seating-chart-container.printing.print-teacher .student-card {
+    transform: rotate(180deg);
+}
+
+/* Ensure empty slot text also stays upright in teacher view */
+.seating-chart-container.printing.print-teacher .seat-slot.blocked::after {
+    transform: rotate(180deg);
+}
+
+.seating-chart-container.printing.print-teacher .blackboard-indicator {
+    margin-top: 2.5rem;
+    margin-bottom: 0.5rem;
 }

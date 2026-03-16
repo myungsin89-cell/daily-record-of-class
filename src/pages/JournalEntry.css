@@ -119,14 +119,86 @@
 
 .record-item {
     display: flex;
-    gap: var(--spacing-lg);
+    flex-direction: column;
     padding: 1rem;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
     border-left: 3px solid var(--color-border);
     background-color: #f8fafc;
     border-radius: 0 var(--radius-md) var(--radius-md) 0;
     transition: var(--transition-base);
-    align-items: flex-start;
+    align-items: stretch;
+}
+
+.record-item.is-editing {
+    background-color: white;
+    border-left-color: var(--color-primary);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.record-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.record-actions {
+    display: flex;
+    gap: 0.5rem;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.record-item:hover .record-actions,
+.record-item.is-editing .record-actions {
+    opacity: 1;
+}
+
+.action-btn {
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.action-btn.edit {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.action-btn.delete {
+    background: #fef2f2;
+    color: #ef4444;
+}
+
+.action-btn.save {
+    background: var(--color-primary);
+    color: white;
+}
+
+.action-btn.cancel {
+    background: #e2e8f0;
+    color: #64748b;
+}
+
+.action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.edit-textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 0.75rem;
+    border: 2px solid var(--color-primary);
+    border-radius: var(--radius-md);
+    font-size: 0.95rem;
+    font-family: inherit;
+    resize: vertical;
+    margin-top: 0.5rem;
 }
 
 .record-item:hover {

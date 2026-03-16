@@ -3,6 +3,16 @@
 
 export const CHANGELOG = [
     {
+        version: '1.2.0',
+        date: '2026-03-16',
+        title: '✨ 자리 배치 디자인 복구 및 기록 수정 기능 추가',
+        changes: [
+            '📍 자리 배치도 메뉴 디자인 및 제약 조건 설정 화면 복구',
+            '📝 학생 기록(학급일지) 내역 수정 및 삭제 기능 추가',
+            '🤝 필수 짝꿍 배정 로직 및 인쇄 레이아웃 개선',
+        ]
+    },
+    {
         version: '1.1.0',
         date: '2026-03-03',
         title: '🛠️ 안정성 개선 및 구글 로그인 유지',
@@ -26,4 +36,4 @@ export const CHANGELOG = [
 ];
 
 // 현재 버전
-export const APP_VERSION = '1.1.0';
+export const APP_VERSION = '1.2.0';

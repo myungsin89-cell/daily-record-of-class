@@ -20,6 +20,83 @@ export const GoogleProvider = ({ children }) => {
     const tokenClientRef = useRef(null);
     const tokenExpiryRef = useRef(null);
 
+    // 토큰 응답 처리 (initTokenClient보다 먼저 정의되어야 함)
+    const handleTokenResponse = useCallback(async (response) => {
+        if (response.error) {
+            console.error('Google token error:', response.error);
+            // 무음 재인증(prompt: '') 실패는 사용자에게 에러를 직접 보여주지 않음
+            if (response.error === 'immediate_failed' || response.error === 'interaction_required') {
+                console.warn('Silent re-auth failed (manual interaction may be needed later)');
+                return;
+            }
+            setError(`인증 실패: ${response.error}`);
+            return;
+        }
+
+        setAccessToken(response.access_token);
+        setIsGoogleConnected(true);
+        setError(null);
+
+        // 토큰 만료 시간 설정 (기본 3600초)
+        const expiresIn = response.expires_in || 3600;
+        const expiryTime = Date.now() + expiresIn * 1000;
+        tokenExpiryRef.current = expiryTime;
+
+        // 토큰을 localStorage에 저장 → 페이지 새로고침 후에도 유지
+        localStorage.setItem('google_access_token', response.access_token);
+        localStorage.setItem('google_token_expiry', String(expiryTime));
+
+        // 사용자 정보 가져오기
+        try {
+            const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                headers: { Authorization: `Bearer ${response.access_token}` },
+            });
+            if (userInfoRes.ok) {
+                const userInfo = await userInfoRes.json();
+                const userData = {
+                    email: userInfo.email,
+                    name: userInfo.name,
+                    picture: userInfo.picture,
+                };
+                setGoogleUser(userData);
+                localStorage.setItem('google_connected_user', JSON.stringify(userData));
+            }
+        } catch (err) {
+            console.warn('사용자 정보 가져오기 실패:', err);
+        }
+    }, []);
+
+    // 토큰 에러 처리
+    const handleTokenError = useCallback((error) => {
+        console.error('Token client error:', error);
+        if (error.type === 'popup_closed') {
+            // 팝업 닫힘 — 사용자 취소
+            return;
+        }
+        if (error.type === 'popup_failed_to_open') {
+            setError('팝업이 차단되었습니다. 브라우저 팝업 차단을 해제해주세요.');
+            return;
+        }
+        setError('Google 인증 중 오류가 발생했습니다.');
+    }, []);
+
+    // Token Client 초기화 (handleTokenResponse, handleTokenError 이후에 정의)
+    const initTokenClient = useCallback(() => {
+        if (!window.google?.accounts?.oauth2) {
+            console.error('[GoogleContext] GIS oauth2 not available');
+            return;
+        }
+
+        console.log('[GoogleContext] Initializing token client...');
+        tokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
+            client_id: GOOGLE_CONFIG.CLIENT_ID,
+            scope: GOOGLE_CONFIG.SCOPES,
+            callback: handleTokenResponse,
+            error_callback: handleTokenError,
+        });
+        console.log('[GoogleContext] Token client initialized:', !!tokenClientRef.current);
+    }, [handleTokenResponse, handleTokenError]);
+
     // 저장된 연결 상태 + 토큰 즉시 복원 (UI 깜빡임 방지)
     useEffect(() => {
         const savedGoogle = localStorage.getItem('google_connected_user');
@@ -93,7 +170,6 @@ export const GoogleProvider = ({ children }) => {
                 const savedGoogle = localStorage.getItem('google_connected_user');
                 if (savedGoogle && tokenClientRef.current) {
                     try {
-                        // prompt: '' → 사용자의 브라우저에 Google 세션이 있으면 팝업 없이 토큰 발급
                         tokenClientRef.current.requestAccessToken({ prompt: '' });
                     } catch (err) {
                         console.warn('자동 재인증 실패 (수동 로그인 필요):', err);
@@ -105,79 +181,13 @@ export const GoogleProvider = ({ children }) => {
                 setError('Google 로그인 서비스를 불러오지 못했습니다.');
                 setIsLoading(false);
             });
-    }, []);
+    }, [initTokenClient]);
 
-    // Token Client 초기화
-    const initTokenClient = useCallback(() => {
-        if (!window.google?.accounts?.oauth2) return;
-
-        tokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
-            client_id: GOOGLE_CONFIG.CLIENT_ID,
-            scope: GOOGLE_CONFIG.SCOPES,
-            callback: handleTokenResponse,
-            error_callback: handleTokenError,
-        });
-    }, []);
-
-    // 토큰 응답 처리
-    const handleTokenResponse = useCallback(async (response) => {
-        if (response.error) {
-            console.error('Google token error:', response.error);
-            // 무음 재인증(prompt: '') 실패는 사용자에게 에러를 직접 보여주지 않음 (필요할 때 수동 로그인 유도)
-            if (response.error === 'immediate_failed' || response.error === 'interaction_required') {
-                console.warn('Silent re-auth failed (manual interaction may be needed later)');
-                return;
-            }
-            setError(`인증 실패: ${response.error}`);
-            return;
-        }
-
-        setAccessToken(response.access_token);
-        setIsGoogleConnected(true);
-        setError(null);
-
-        // 토큰 만료 시간 설정 (기본 3600초)
-        const expiresIn = response.expires_in || 3600;
-        const expiryTime = Date.now() + expiresIn * 1000;
-        tokenExpiryRef.current = expiryTime;
-
-        // 토큰을 localStorage에 저장 → 페이지 새로고침 후에도 유지
-        localStorage.setItem('google_access_token', response.access_token);
-        localStorage.setItem('google_token_expiry', String(expiryTime));
-
-        // 사용자 정보 가져오기
-        try {
-            const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                headers: { Authorization: `Bearer ${response.access_token}` },
-            });
-            if (userInfoRes.ok) {
-                const userInfo = await userInfoRes.json();
-                const userData = {
-                    email: userInfo.email,
-                    name: userInfo.name,
-                    picture: userInfo.picture,
-                };
-                setGoogleUser(userData);
-                localStorage.setItem('google_connected_user', JSON.stringify(userData));
-            }
-        } catch (err) {
-            console.warn('사용자 정보 가져오기 실패:', err);
-        }
-    }, []);
-
-    // 토큰 에러 처리
-    const handleTokenError = useCallback((error) => {
-        console.error('Token client error:', error);
-        if (error.type === 'popup_closed') {
-            // 팝업 닫힘 — 사용자 취소
-            return;
-        }
-        setError('Google 인증 중 오류가 발생했습니다.');
-    }, []);
-
-    // Google 계정 연결
+    // Google 계정 연결 (수동 — 팝업 표시)
     const connectGoogle = useCallback(() => {
         setError(null);
+        console.log('[GoogleContext] connectGoogle called, tokenClient:', !!tokenClientRef.current);
+
         if (!tokenClientRef.current) {
             setError('Google 로그인 서비스가 준비되지 않았습니다. 페이지를 새로고침 해주세요.');
             return;
@@ -185,10 +195,12 @@ export const GoogleProvider = ({ children }) => {
 
         // 토큰이 있고 아직 유효하면 재인증 불필요
         if (accessToken && tokenExpiryRef.current && Date.now() < tokenExpiryRef.current - 60000) {
+            console.log('[GoogleContext] Token still valid, skipping re-auth');
             return;
         }
 
-        tokenClientRef.current.requestAccessToken(); // 수동 연결 시에는 팝업이 뜨도록 prompt: '' 제거
+        console.log('[GoogleContext] Requesting access token with consent prompt...');
+        tokenClientRef.current.requestAccessToken({ prompt: 'consent' });
     }, [accessToken]);
 
     // Google 계정 연결 해제

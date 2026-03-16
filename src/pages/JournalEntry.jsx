@@ -4,11 +4,15 @@ import { useStudentContext } from '../context/StudentContext';
 import './JournalEntry.css';
 
 const JournalEntry = () => {
-    const { students, journals, addJournalEntry, attendance } = useStudentContext();
+    const { students, journals, addJournalEntry, updateJournalEntry, deleteJournalEntry, attendance } = useStudentContext();
     const [selectedStudentId, setSelectedStudentId] = useState(null);
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [entryContent, setEntryContent] = useState('');
     const [showAttendanceDetails, setShowAttendanceDetails] = useState(false);
+
+    // Editing State
+    const [editingId, setEditingId] = useState(null);
+    const [editContent, setEditContent] = useState('');
 
     // Auto-save states
     const [lastSaved, setLastSaved] = useState(null);
@@ -29,7 +33,23 @@ const JournalEntry = () => {
 
         addJournalEntry(selectedStudentId, newEntry);
         setEntryContent('');
-        updateSaveStatus();
+    };
+
+    const handleStartEdit = (entry) => {
+        setEditingId(entry.id);
+        setEditContent(entry.content);
+    };
+
+    const handleCancelEdit = () => {
+        setEditingId(null);
+        setEditContent('');
+    };
+
+    const handleSaveEdit = (entryId) => {
+        if (!editContent.trim()) return;
+        updateJournalEntry(selectedStudentId, entryId, { content: editContent });
+        setEditingId(null);
+        setEditContent('');
     };
 
     // Auto-save function
@@ -402,9 +422,33 @@ const JournalEntry = () => {
                                             </div>
                                             <div className="date-entries">
                                                 {entries.map((entry) => (
-                                                    <div key={entry.id} className="record-item">
-                                                        <span className="record-time">{formatTime(entry.date)}</span>
-                                                        <span className="record-content">{entry.content}</span>
+                                                    <div key={entry.id} className={`record-item ${editingId === entry.id ? 'is-editing' : ''}`}>
+                                                        <div className="record-header">
+                                                            <span className="record-time">{formatTime(entry.date)}</span>
+                                                            <div className="record-actions">
+                                                                {editingId === entry.id ? (
+                                                                    <>
+                                                                        <button className="action-btn save" onClick={() => handleSaveEdit(entry.id)}>저장</button>
+                                                                        <button className="action-btn cancel" onClick={handleCancelEdit}>취소</button>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <button className="action-btn edit" onClick={() => handleStartEdit(entry)}>수정</button>
+                                                                        <button className="action-btn delete" onClick={() => deleteJournalEntry(selectedStudentId, entry.id)}>삭제</button>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        {editingId === entry.id ? (
+                                                            <textarea
+                                                                className="edit-textarea"
+                                                                value={editContent}
+                                                                onChange={(e) => setEditContent(e.target.value)}
+                                                                autoFocus
+                                                            />
+                                                        ) : (
+                                                            <span className="record-content">{entry.content}</span>
+                                                        )}
                                                     </div>
                                                 ))}
                                             </div>
