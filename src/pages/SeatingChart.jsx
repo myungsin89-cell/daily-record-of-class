@@ -663,13 +663,11 @@ const SeatingChart = () => {
                             className={`base-btn btn-music-setup ${isPlayerReady ? 'ready' : 'loading'}`} 
                             onClick={() => setShowMusicSettings(true)}
                         >
-                            {isMusicEnabled ? (
-                                <>
-                                    <span className="music-status-dot"></span>
-                                    {isPlayerReady ? '✅ 음악준비완료' : '⏳ 음악 준비중...'}
-                                </>
-                            ) : (
-                                '🔗 음악링크 설정'
+                            <span className="music-setup-label">🔗 음악링크</span>
+                            {isMusicEnabled && (
+                                <span className={`music-status-badge ${isPlayerReady ? 'ready' : 'loading'}`}>
+                                    {isPlayerReady ? '✅' : '⏳'}
+                                </span>
                             )}
                         </button>
                     </div>
