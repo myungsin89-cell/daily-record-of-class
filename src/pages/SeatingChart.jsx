@@ -118,12 +118,23 @@ const SeatingChart = () => {
             classId: currentClass.id,
             gridConfig,
             constraints,
-            useFemaleSeats, // Save the useFemaleSeats state
-            youtubeUrl,    // Save YouTube URL
+            useFemaleSeats,
+            youtubeUrl,
             grid,
             updatedAt: new Date().toISOString()
         });
         alert('자리 배치가 저장되었습니다.');
+    };
+
+    const saveMusicLink = async (newUrl) => {
+        if (!currentClass?.id) return;
+        const saved = await getData(STORES.SEATING_CONFIGS, currentClass.id) || {};
+        await saveData(STORES.SEATING_CONFIGS, {
+            ...saved,
+            classId: currentClass.id,
+            youtubeUrl: newUrl,
+            updatedAt: new Date().toISOString()
+        });
     };
 
     // YouTube IFrame API Integration
@@ -705,7 +716,10 @@ const SeatingChart = () => {
                                     </div>
                                     <p className="yt-hint">※ 주소를 넣고 창을 닫으면 자동 저장됩니다.</p>
                                 </div>
-                                <button className="m-btn confirm" onClick={() => setShowMusicSettings(false)}>설정 완료</button>
+                                <button className="m-btn confirm" onClick={() => {
+                                    setShowMusicSettings(false);
+                                    saveMusicLink(youtubeUrl);
+                                }}>설정 완료</button>
                             </div>
                         </div>
                     )}
