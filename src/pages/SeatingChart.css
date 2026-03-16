@@ -997,6 +997,34 @@ body.student-mode-active .layout {
     color: #64748b;
 }
 
+.seating-chart-container .yt-test-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.seating-chart-container .yt-test-actions .m-btn {
+    flex: 1;
+    padding: 0.5rem;
+    font-size: 0.85rem;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 700;
+}
+
+.seating-chart-container .yt-test-actions .m-btn:hover:not(:disabled) {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+}
+
+.seating-chart-container .yt-test-actions .test-play-btn.loading {
+    opacity: 0.6;
+    cursor: wait;
+}
+
 .seating-chart-container .yt-input-group input:focus {
     border-color: #3b82f6;
     outline: none;

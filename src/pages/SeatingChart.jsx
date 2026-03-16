@@ -45,6 +45,7 @@ const SeatingChart = () => {
     const [youtubeUrl, setYoutubeUrl] = useState('https://www.youtube.com/watch?v=FcsS6c-mY0A'); // Default cinematic music
     const [isMusicEnabled, setIsMusicEnabled] = useState(true);
     const [showMusicSettings, setShowMusicSettings] = useState(false);
+    const [isPlayerReady, setIsPlayerReady] = useState(false);
     const ytPlayerRef = useRef(null);
 
     // Calculate unassigned students
@@ -137,7 +138,13 @@ const SeatingChart = () => {
 
         window.onYouTubeIframeAPIReady = () => {
             console.log("YouTube API Ready");
+            initYoutubePlayer();
         };
+
+        // If API is already loaded but component remounts
+        if (window.YT && window.YT.Player) {
+            initYoutubePlayer();
+        }
 
         return () => {
             if (ytPlayerRef.current) {
@@ -147,7 +154,14 @@ const SeatingChart = () => {
         };
     }, []);
 
+    useEffect(() => {
+        if (window.YT && window.YT.Player && youtubeUrl) {
+            initYoutubePlayer();
+        }
+    }, [youtubeUrl]);
+
     const extractVideoId = (url) => {
+        if (!url) return null;
         const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
         const match = url.match(regExp);
         return (match && match[2].length === 11) ? match[2] : null;
@@ -155,27 +169,41 @@ const SeatingChart = () => {
 
     const initYoutubePlayer = () => {
         const videoId = extractVideoId(youtubeUrl);
-        if (!videoId) return;
+        if (!videoId || !window.YT || !window.YT.Player) return;
 
-        if (ytPlayerRef.current) {
-            ytPlayerRef.current.loadVideoById(videoId);
-            return;
+        setIsPlayerReady(false);
+
+        // If player already exists, just change the video
+        if (ytPlayerRef.current && ytPlayerRef.current.loadVideoById) {
+            try {
+                ytPlayerRef.current.cueVideoById(videoId);
+                return;
+            } catch (e) {
+                console.warn("Failed to cue video, re-initializing player", e);
+            }
         }
 
         ytPlayerRef.current = new window.YT.Player('yt-player-placeholder', {
-            height: '0',
-            width: '0',
+            height: '1',
+            width: '1',
             videoId: videoId,
             playerVars: {
                 'autoplay': 0,
                 'controls': 0,
                 'disablekb': 1,
                 'fs': 0,
-                'rel': 0
+                'rel': 0,
+                'origin': window.location.origin
             },
             events: {
                 'onReady': (event) => {
+                    console.log("YouTube Player Ready");
+                    setIsPlayerReady(true);
                     event.target.setVolume(50);
+                },
+                'onError': (e) => {
+                    console.error("YouTube Player Error:", e.data);
+                    setIsPlayerReady(false);
                 }
             }
         });
@@ -377,12 +405,18 @@ const SeatingChart = () => {
 
         // YouTube Music Play
         if (isMusicEnabled) {
-            initYoutubePlayer();
-            setTimeout(() => {
-                if (ytPlayerRef.current && ytPlayerRef.current.playVideo) {
-                    ytPlayerRef.current.playVideo();
-                }
-            }, 500);
+            if (ytPlayerRef.current && isPlayerReady && ytPlayerRef.current.playVideo) {
+                ytPlayerRef.current.playVideo();
+            } else {
+                // Fallback attempt to play if not ready or not initialized
+                console.warn("Player not ready, attempting to re-init and play");
+                initYoutubePlayer();
+                setTimeout(() => {
+                    if (ytPlayerRef.current && ytPlayerRef.current.playVideo) {
+                        ytPlayerRef.current.playVideo();
+                    }
+                }, 1500);
+            }
         }
     };
 
@@ -582,7 +616,7 @@ const SeatingChart = () => {
                         </button>
                     </div>
 
-                    <div id="yt-player-placeholder" style={{ display: 'none' }}></div>
+                    <div id="yt-player-placeholder" style={{ position: 'absolute', top: '-10px', left: '-10px', width: '1px', height: '1px', opacity: 0, pointerEvents: 'none' }}></div>
 
                     {showMusicSettings && (
                         <div 
@@ -606,6 +640,29 @@ const SeatingChart = () => {
                                         {youtubeUrl && (
                                             <button className="yt-clear-btn" onClick={() => setYoutubeUrl('')} title="주소 지우기">×</button>
                                         )}
+                                    </div>
+                                    <div className="yt-test-actions">
+                                        <button 
+                                            className={`m-btn test-play-btn ${!isPlayerReady ? 'loading' : ''}`}
+                                            disabled={!isPlayerReady}
+                                            onClick={() => {
+                                                if (ytPlayerRef.current && ytPlayerRef.current.playVideo) {
+                                                    ytPlayerRef.current.playVideo();
+                                                }
+                                            }}
+                                        >
+                                            {isPlayerReady ? '▶️ 테스트 재생' : '⏳ 준비 중...'}
+                                        </button>
+                                        <button 
+                                            className="m-btn test-stop-btn"
+                                            onClick={() => {
+                                                if (ytPlayerRef.current && ytPlayerRef.current.stopVideo) {
+                                                    ytPlayerRef.current.stopVideo();
+                                                }
+                                            }}
+                                        >
+                                            ⏹️ 정지
+                                        </button>
                                     </div>
                                     <p className="yt-hint">※ 주소를 넣고 창을 닫으면 자동 저장됩니다.</p>
                                 </div>
