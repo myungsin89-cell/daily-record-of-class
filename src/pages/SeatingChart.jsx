@@ -425,18 +425,19 @@ const SeatingChart = () => {
 
         // YouTube Music Play
         if (isMusicEnabled) {
-            // Force play attempt directly on user click
             if (ytPlayerRef.current && ytPlayerRef.current.playVideo) {
                 try {
+                    ytPlayerRef.current.unMute();
+                    ytPlayerRef.current.seekTo(0);
                     ytPlayerRef.current.playVideo();
+                    console.log("Reveal Play Command Sent");
                 } catch (e) {
-                    console.warn("Direct play failed, trying fallback init", e);
+                    console.warn("Reveal play failed, trying re-init", e);
                     initYoutubePlayer();
                 }
             } else {
+                console.warn("Player not fully ready for reveal, attempting forced start");
                 initYoutubePlayer();
-                // We'll have a small delay if it wasn't ready, but subsequent clicks or 
-                // pre-init should handle it.
             }
         }
     };
@@ -619,8 +620,12 @@ const SeatingChart = () => {
                         <button className="base-btn fullscreen-btn" onClick={toggleFullscreen} title="전체화면">전체화면 📺</button>
                     </div>
                     <div className="reveal-main-action">
-                        <button className="btn-reveal-start" onClick={startReveal} disabled={isRevealing || (revealedCount > 0 && revealedCount === revealOrder.length)}>
-                            {revealedCount > 0 ? (revealedCount === revealOrder.length ? '전체 공개 완료' : '전체 공개 중...') : '자리 공개 시작!'}
+                        <button 
+                            className="btn-reveal-start" 
+                            onClick={startReveal} 
+                            disabled={isRevealing || (revealedCount > 0 && revealedCount === revealOrder.length) || (isMusicEnabled && !isPlayerReady)}
+                        >
+                            {isMusicEnabled && !isPlayerReady ? '🎼 준비 중...' : (revealedCount > 0 ? (revealedCount === revealOrder.length ? '전체 공개 완료' : '전체 공개 중...') : '자리 공개 시작!')}
                         </button>
                         <button 
                             className={`music-toggle-btn ${isMusicEnabled ? 'active' : ''}`} 
