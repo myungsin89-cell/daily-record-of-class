@@ -48,6 +48,7 @@ const SeatingChart = () => {
     const [isConfigLoaded, setIsConfigLoaded] = useState(false);
     const [isApiLoaded, setIsApiLoaded] = useState(window.YT && window.YT.Player ? true : false);
     const [isPlayerReady, setIsPlayerReady] = useState(false);
+    const [isShuffling, setIsShuffling] = useState(false);
     const ytPlayerRef = useRef(null);
     const lastInitId = useRef(0);
 
@@ -415,8 +416,14 @@ const SeatingChart = () => {
 
     // Reveal Logic
     const startReveal = () => {
-        setIsRevealing(true);
+        setIsShuffling(true); // Start shuffling animation
         setRevealedCount(0);
+        
+        // Let the shuffling animation play for 4 seconds (same as initial music delay)
+        setTimeout(() => {
+            setIsShuffling(false);
+            setIsRevealing(true);
+        }, 4000);
         
         const filledSeats = [];
         grid.forEach((row, r) => {
@@ -472,8 +479,9 @@ const SeatingChart = () => {
     useEffect(() => {
         let timer;
         if (isRevealing && revealedCount < revealOrder.length) {
-            // Initial 5s delay for the first student, then 2s interval
-            const delay = (revealedCount === 0) ? 5000 : 2000;
+            // Initial delay is now handled by isShuffling overlay, 
+            // so we keep the interval consistent or small for the first student.
+            const delay = (revealedCount === 0) ? 1000 : 2000;
             timer = setTimeout(() => setRevealedCount(prev => prev + 1), delay);
         } else if (revealedCount === revealOrder.length && revealOrder.length > 0) {
             setIsRevealing(false);
@@ -565,6 +573,22 @@ const SeatingChart = () => {
 
     return (
         <div ref={containerRef} className={`seating-chart-container ${printMode ? `printing print-${printMode}` : ''} ${mode === 'student' ? 'student-view-container' : ''}`}>
+            {/* Shuffling Animation Overlay */}
+            {isShuffling && (
+                <div className="shuffle-overlay">
+                    <div className="shuffle-content">
+                        <div className="shuffle-dice">🎲</div>
+                        <div className="shuffle-text">
+                            <h2>학생들을 공정하게 랜덤 배치 중입니다...</h2>
+                            <p>잠시만 기다려 주세요!</p>
+                        </div>
+                        <div className="shuffle-loader">
+                            <div className="shuffle-bar"></div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {mode === 'teacher' && (
                 <header className="seating-header">
                     <h1><span>🪑</span> 자리 배치</h1>
@@ -652,9 +676,9 @@ const SeatingChart = () => {
                         <button 
                             className="btn-reveal-start" 
                             onClick={startReveal} 
-                            disabled={isRevealing || (revealedCount > 0 && revealedCount === revealOrder.length) || (isMusicEnabled && !isPlayerReady)}
+                            disabled={isRevealing || isShuffling || (revealedCount > 0 && revealedCount === revealOrder.length) || (isMusicEnabled && !isPlayerReady)}
                         >
-                            {isMusicEnabled && !isPlayerReady ? '🎼 준비 중...' : (revealedCount > 0 ? (revealedCount === revealOrder.length ? '전체 공개 완료' : '전체 공개 중...') : '자리 공개 시작!')}
+                            {isMusicEnabled && !isPlayerReady ? '🎼 준비 중...' : (isShuffling ? '🎲 배치 중...' : (revealedCount > 0 ? (revealedCount === revealOrder.length ? '전체 공개 완료' : '전체 공개 중...') : '랜덤배치 시작!'))}
                         </button>
                         <button 
                             className={`music-toggle-btn ${isMusicEnabled ? 'active' : ''}`} 
