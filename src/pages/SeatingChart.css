@@ -849,6 +849,62 @@ body.student-mode-active .layout {
     gap: 2rem;
 }
 
+/* Reveal Main Action Layout */
+.seating-chart-container .reveal-main-action {
+    display: flex;
+    gap: 1rem;
+    align-items: stretch;
+}
+
+.seating-chart-container .btn-reveal-start {
+    flex: 1;
+    padding: 1.25rem;
+    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+    color: white;
+    border: none;
+    border-radius: 16px;
+    font-size: 1.4rem;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.4);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.seating-chart-container .music-toggle-btn {
+    width: 80px;
+    background: #f1f5f9;
+    border: 2px solid #e2e8f0;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s;
+    gap: 0.25rem;
+}
+
+.seating-chart-container .music-toggle-btn.active {
+    background: #fff;
+    border-color: #3b82f6;
+    color: #2563eb;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+}
+
+.seating-chart-container .music-toggle-btn:hover {
+    transform: translateY(-2px);
+    background: #fff;
+    border-color: #cbd5e1;
+}
+
+.seating-chart-container .music-toggle-btn.active:hover {
+    border-color: #2563eb;
+}
+
 .seating-chart-container .strategy-selector {
     display: flex;
     background: white;

@@ -40,6 +40,13 @@ const SeatingChart = () => {
     const [dragSource, setDragSource] = useState(null); // 'pool' or 'grid'
     const [dragCoords, setDragCoords] = useState(null); // {r, c}
     const [dropTarget, setDropTarget] = useState(null); // {r, c}
+    
+    // Music State
+    const [isMusicEnabled, setIsMusicEnabled] = useState(true);
+    const audioRef = useRef(null);
+
+    // Audio URL (Suspenseful cinematic music)
+    const REVEAL_BGM_URL = "https://assets.mixkit.co/music/preview/mixkit-tense-suspense-loop-628.mp3";
 
     // Calculate unassigned students
     const unassignedStudents = students?.filter(s => 
@@ -310,6 +317,17 @@ const SeatingChart = () => {
         }
         
         setRevealOrder(ordered);
+
+        // Music Play
+        if (isMusicEnabled) {
+            if (!audioRef.current) {
+                audioRef.current = new Audio(REVEAL_BGM_URL);
+                audioRef.current.loop = true;
+                audioRef.current.volume = 0.5;
+            }
+            audioRef.current.currentTime = 0;
+            audioRef.current.play().catch(err => console.warn("Audio playback failed:", err));
+        }
     };
 
     useEffect(() => {
@@ -318,6 +336,18 @@ const SeatingChart = () => {
             timer = setTimeout(() => setRevealedCount(prev => prev + 1), 800);
         } else if (revealedCount === revealOrder.length && revealOrder.length > 0) {
             setIsRevealing(false);
+            // Music Stop (Fade out)
+            if (audioRef.current) {
+                const fadeOut = setInterval(() => {
+                    if (audioRef.current.volume > 0.05) {
+                        audioRef.current.volume -= 0.05;
+                    } else {
+                        audioRef.current.pause();
+                        audioRef.current.volume = 0.5;
+                        clearInterval(fadeOut);
+                    }
+                }, 100);
+            }
         }
         return () => clearTimeout(timer);
     }, [isRevealing, revealedCount, revealOrder]);
@@ -485,9 +515,18 @@ const SeatingChart = () => {
                         </div>
                         <button className="base-btn fullscreen-btn" onClick={toggleFullscreen} title="전체화면">전체화면 📺</button>
                     </div>
-                    <button className="btn-reveal-start" onClick={startReveal} disabled={isRevealing || (revealedCount > 0 && revealedCount === revealOrder.length)}>
-                        {revealedCount > 0 ? (revealedCount === revealOrder.length ? '전체 공개 완료' : '랜덤 배치 중...') : '랜덤 배치 시작!'}
-                    </button>
+                    <div className="reveal-main-action">
+                        <button className="btn-reveal-start" onClick={startReveal} disabled={isRevealing || (revealedCount > 0 && revealedCount === revealOrder.length)}>
+                            {revealedCount > 0 ? (revealedCount === revealOrder.length ? '전체 공개 완료' : '전체 공개 중...') : '자리 공개 시작!'}
+                        </button>
+                        <button 
+                            className={`music-toggle-btn ${isMusicEnabled ? 'active' : ''}`} 
+                            onClick={() => setIsMusicEnabled(!isMusicEnabled)}
+                            title={isMusicEnabled ? "배경음악 끄기" : "배경음악 켜기"}
+                        >
+                            {isMusicEnabled ? '🎵 ON' : '🔇 OFF'}
+                        </button>
+                    </div>
                 </div>
             )}
 
