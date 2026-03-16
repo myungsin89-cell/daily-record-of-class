@@ -578,7 +578,7 @@ const SeatingChart = () => {
                             className="base-btn btn-music-setup" 
                             onClick={() => setShowMusicSettings(true)}
                         >
-                            🎵 음악넣기
+                            🔗 음악링크
                         </button>
                     </div>
 
