@@ -3,7 +3,7 @@
 
 export const CHANGELOG = [
     {
-        version: '1.2.0',
+        version: '1.3.0',
         date: '2026-03-16',
         title: '🎨 자리 배치 메뉴 대대적 개선 및 기능 통합',
         changes: [
@@ -40,4 +40,4 @@ export const CHANGELOG = [
 ];
 
 // 현재 버전
-export const APP_VERSION = '1.2.0';
+export const APP_VERSION = '1.3.0';
