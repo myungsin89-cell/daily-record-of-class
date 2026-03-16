@@ -41,13 +41,11 @@ const SeatingChart = () => {
     const [dragCoords, setDragCoords] = useState(null); // {r, c}
     const [dropTarget, setDropTarget] = useState(null); // {r, c}
     
-    // Music State
+    // YouTube Music State
+    const [youtubeUrl, setYoutubeUrl] = useState('https://www.youtube.com/watch?v=FcsS6c-mY0A'); // Default cinematic music
     const [isMusicEnabled, setIsMusicEnabled] = useState(true);
-    const [showMusicHelp, setShowMusicHelp] = useState(false);
-    const audioRef = useRef(null);
-
-    // Audio URL (Local file preferred for stability)
-    const REVEAL_BGM_URL = "/audio/bgm.mp3";
+    const [showMusicSettings, setShowMusicSettings] = useState(false);
+    const ytPlayerRef = useRef(null);
 
     // Calculate unassigned students
     const unassignedStudents = students?.filter(s => 
@@ -91,6 +89,7 @@ const SeatingChart = () => {
                     // Load useFemaleSeats from saved constraints, default to true if not found
                     setUseFemaleSeats(saved.useFemaleSeats !== undefined ? saved.useFemaleSeats : true);
                     setGrid(saved.grid || generateEmptyGrid(5, 6, 2));
+                    if (saved.youtubeUrl) setYoutubeUrl(saved.youtubeUrl);
                 } else {
                     setGrid(generateEmptyGrid(5, 6, 2));
                 }
@@ -119,10 +118,67 @@ const SeatingChart = () => {
             gridConfig,
             constraints,
             useFemaleSeats, // Save the useFemaleSeats state
+            youtubeUrl,    // Save YouTube URL
             grid,
             updatedAt: new Date().toISOString()
         });
         alert('자리 배치가 저장되었습니다.');
+    };
+
+    // YouTube IFrame API Integration
+    useEffect(() => {
+        // Load YouTube API script
+        if (!window.YT) {
+            const tag = document.createElement('script');
+            tag.src = "https://www.youtube.com/iframe_api";
+            const firstScriptTag = document.getElementsByTagName('script')[0];
+            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        }
+
+        window.onYouTubeIframeAPIReady = () => {
+            console.log("YouTube API Ready");
+        };
+
+        return () => {
+            if (ytPlayerRef.current) {
+                ytPlayerRef.current.destroy();
+                ytPlayerRef.current = null;
+            }
+        };
+    }, []);
+
+    const extractVideoId = (url) => {
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        const match = url.match(regExp);
+        return (match && match[2].length === 11) ? match[2] : null;
+    };
+
+    const initYoutubePlayer = () => {
+        const videoId = extractVideoId(youtubeUrl);
+        if (!videoId) return;
+
+        if (ytPlayerRef.current) {
+            ytPlayerRef.current.loadVideoById(videoId);
+            return;
+        }
+
+        ytPlayerRef.current = new window.YT.Player('yt-player-placeholder', {
+            height: '0',
+            width: '0',
+            videoId: videoId,
+            playerVars: {
+                'autoplay': 0,
+                'controls': 0,
+                'disablekb': 1,
+                'fs': 0,
+                'rel': 0
+            },
+            events: {
+                'onReady': (event) => {
+                    event.target.setVolume(50);
+                }
+            }
+        });
     };
 
     const handleRandomize = () => {
@@ -319,20 +375,14 @@ const SeatingChart = () => {
         
         setRevealOrder(ordered);
 
-        // Music Play
+        // YouTube Music Play
         if (isMusicEnabled) {
-            if (!audioRef.current) {
-                audioRef.current = new Audio(REVEAL_BGM_URL);
-                audioRef.current.loop = true;
-                audioRef.current.volume = 0.5;
-            }
-            audioRef.current.currentTime = 0;
-            audioRef.current.play().catch(prevErr => {
-                console.warn("Local audio playback failed, trying fallback:", prevErr);
-                // Fallback to online if local fails
-                audioRef.current.src = "https://assets.mixkit.co/music/preview/mixkit-tense-suspense-loop-628.mp3";
-                audioRef.current.play().catch(finalErr => console.error("All audio paths failed:", finalErr));
-            });
+            initYoutubePlayer();
+            setTimeout(() => {
+                if (ytPlayerRef.current && ytPlayerRef.current.playVideo) {
+                    ytPlayerRef.current.playVideo();
+                }
+            }, 500);
         }
     };
 
@@ -342,17 +392,9 @@ const SeatingChart = () => {
             timer = setTimeout(() => setRevealedCount(prev => prev + 1), 800);
         } else if (revealedCount === revealOrder.length && revealOrder.length > 0) {
             setIsRevealing(false);
-            // Music Stop (Fade out)
-            if (audioRef.current) {
-                const fadeOut = setInterval(() => {
-                    if (audioRef.current.volume > 0.05) {
-                        audioRef.current.volume -= 0.05;
-                    } else {
-                        audioRef.current.pause();
-                        audioRef.current.volume = 0.5;
-                        clearInterval(fadeOut);
-                    }
-                }, 100);
+            // YouTube Stop
+            if (ytPlayerRef.current && ytPlayerRef.current.stopVideo) {
+                ytPlayerRef.current.stopVideo();
             }
         }
         return () => clearTimeout(timer);
@@ -528,24 +570,30 @@ const SeatingChart = () => {
                         <button 
                             className={`music-toggle-btn ${isMusicEnabled ? 'active' : ''}`} 
                             onClick={() => setIsMusicEnabled(!isMusicEnabled)}
-                            onContextMenu={(e) => { e.preventDefault(); setShowMusicHelp(true); }}
-                            title={isMusicEnabled ? "배경음악 끄기 (우클릭: 설정방법)" : "배경음악 켜기 (우클릭: 설정방법)"}
+                            onContextMenu={(e) => { e.preventDefault(); setShowMusicSettings(true); }}
+                            title={isMusicEnabled ? "배경음악 우클릭: 음악 주소 설정" : "배경음악 우클릭: 음악 주소 설정"}
                         >
-                            {isMusicEnabled ? '🎵 ON' : '🔇 OFF'}
+                            {isMusicEnabled ? '📺 ON' : '🔇 OFF'}
                         </button>
                     </div>
 
-                    {showMusicHelp && (
-                        <div className="music-help-overlay" onClick={() => setShowMusicHelp(false)}>
+                    <div id="yt-player-placeholder" style={{ display: 'none' }}></div>
+
+                    {showMusicSettings && (
+                        <div className="music-help-overlay" onClick={() => setShowMusicSettings(false)}>
                             <div className="music-help-modal" onClick={e => e.stopPropagation()}>
-                                <h3>🎵 배경 음악 설정 방법</h3>
-                                <p>현재 음악 파일이 준비되지 않았습니다. 아래 순서대로 파일을 넣어주세요.</p>
-                                <ol>
-                                    <li>준비한 음악 파일의 이름을 <strong>bgm.mp3</strong>로 바꿉니다.</li>
-                                    <li>앱 폴더 내 <code>public/audio/</code> 폴더에 파일을 넣습니다.</li>
-                                    <li>앱을 새로고침하면 자리 배치 시 음악이 나옵니다!</li>
-                                </ol>
-                                <button className="m-btn confirm" onClick={() => setShowMusicHelp(false)}>확인</button>
+                                <h3>📺 유튜브 배경 음악 설정</h3>
+                                <p>자리 공개 시 재생할 유튜브 영상 주소를 입력해주세요.</p>
+                                <div className="yt-input-group">
+                                    <input 
+                                        type="text" 
+                                        placeholder="https://www.youtube.com/watch?v=..." 
+                                        value={youtubeUrl}
+                                        onChange={(e) => setYoutubeUrl(e.target.value)}
+                                    />
+                                    <p className="yt-hint">※ 주소를 넣고 창을 닫으면 자동 저장됩니다.</p>
+                                </div>
+                                <button className="m-btn confirm" onClick={() => setShowMusicSettings(false)}>설정 완료</button>
                             </div>
                         </div>
                     )}

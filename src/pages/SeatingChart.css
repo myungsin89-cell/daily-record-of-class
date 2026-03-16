@@ -925,6 +925,33 @@ body.student-mode-active .layout {
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
 }
 
+.seating-chart-container .yt-input-group {
+    margin-bottom: 1.5rem;
+}
+
+.seating-chart-container .yt-input-group input {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+    transition: all 0.2s;
+}
+
+.seating-chart-container .yt-input-group input:focus {
+    border-color: #3b82f6;
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+.seating-chart-container .yt-hint {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    margin: 0;
+}
+
 .seating-chart-container .music-help-modal h3 {
     margin: 0 0 1rem 0;
     font-size: 1.25rem;
