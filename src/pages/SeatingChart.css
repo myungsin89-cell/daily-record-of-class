@@ -831,6 +831,107 @@ body.student-mode-active .layout {
     font-weight: 900;
 }
 
+/* Disclosure Controls & Strategy Selector (Premium Restoration) */
+.seating-chart-container .disclosure-controls {
+    width: 100%;
+    max-width: 1000px;
+    margin-bottom: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    animation: popIn 0.8s ease-out;
+}
+
+.seating-chart-container .disclosure-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+}
+
+.seating-chart-container .strategy-selector {
+    display: flex;
+    background: white;
+    padding: 0.5rem;
+    border-radius: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.seating-chart-container .strategy-selector button {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: none;
+    background: transparent;
+    color: #64748b;
+    font-weight: 700;
+    font-size: 0.95rem;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.seating-chart-container .strategy-selector button:hover {
+    background: #f8fafc;
+    color: #1e293b;
+}
+
+.seating-chart-container .strategy-selector button.active {
+    background: #2563eb;
+    color: white;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+.seating-chart-container .fullscreen-btn {
+    background: #0f172a;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.seating-chart-container .btn-reveal-start {
+    width: 100%;
+    padding: 1.25rem;
+    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+    color: white;
+    border: none;
+    border-radius: 16px;
+    font-size: 1.4rem;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.4);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.seating-chart-container .btn-reveal-start:hover:not(:disabled) {
+    transform: translateY(-3px) scale(1.01);
+    box-shadow: 0 15px 30px -5px rgba(37, 99, 235, 0.5);
+    filter: brightness(1.1);
+}
+
+.seating-chart-container .btn-reveal-start:active:not(:disabled) {
+    transform: translateY(0) scale(0.99);
+}
+
+.seating-chart-container .btn-reveal-start:disabled {
+    background: #cbd5e1;
+    color: #94a3b8;
+    box-shadow: none;
+    cursor: not-allowed;
+    text-shadow: none;
+}
+
 /* Animations */
 @keyframes popIn {
     0% { transform: scale(0.8); opacity: 0; }
