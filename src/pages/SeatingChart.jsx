@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useStudentContext } from '../context/StudentContext';
 import { useClass } from '../context/ClassContext';
 import { getData, saveData, STORES } from '../db/indexedDB';
@@ -52,10 +52,27 @@ const SeatingChart = () => {
     const ytPlayerRef = useRef(null);
     const lastInitId = useRef(0);
 
+    // memoize sorted students
+    const sortedStudents = useMemo(() => {
+        if (!students) return [];
+        return [...students].sort((a, b) => {
+            const numA = Number(a.attendanceNumber);
+            const numB = Number(b.attendanceNumber);
+            
+            if (isNaN(numA) && isNaN(numB)) return 0;
+            if (isNaN(numA)) return 1;
+            if (isNaN(numB)) return -1;
+            
+            return numA - numB;
+        });
+    }, [students]);
+
     // Calculate unassigned students
-    const unassignedStudents = students?.filter(s => 
-        !grid.some(row => row.some(seat => seat.studentId === s.id))
-    ) || [];
+    const unassignedStudents = useMemo(() => {
+        return sortedStudents.filter(s => 
+            !grid.some(row => row.some(seat => seat.studentId === s.id))
+        );
+    }, [sortedStudents, grid]);
 
     // Constraint Migration Helper
     const migrateConstraints = (rawConstraints) => {
@@ -880,7 +897,7 @@ const SeatingChart = () => {
                                 <h3>앞자리 선호 학생</h3>
                             </div>
                             <div className="preference-list">
-                                {students?.map(s => (
+                                {sortedStudents.map(s => (
                                     <button 
                                         key={s.id}
                                         className={`preference-btn ${constraints.frontPreference.includes(s.id) ? 'active' : ''}`}
@@ -946,7 +963,7 @@ const SeatingChart = () => {
                         <div className="modal-body">
                             <p className="modal-desc">함께 앉을 수 없거나(금지), 꼭 여럿이 붙어 앉아야 하는(필수) 학생들을 선택하세요.</p>
                             <div className="modal-student-grid">
-                                {students?.map(s => (
+                                {sortedStudents.map(s => (
                                     <div 
                                         key={s.id} 
                                         className={`modal-student-item ${selectedInModal.includes(s.id) ? 'selected' : ''}`}

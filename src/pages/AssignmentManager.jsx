@@ -18,6 +18,21 @@ const AssignmentManager = () => {
     const [newAssignmentTitle, setNewAssignmentTitle] = useState('');
     const { updateSaveStatus } = useSaveStatus();
     const [isLoaded, setIsLoaded] = useState(false);
+    
+    // memoize sorted students
+    const sortedStudents = React.useMemo(() => {
+        if (!students) return [];
+        return [...students].sort((a, b) => {
+            const numA = Number(a.attendanceNumber);
+            const numB = Number(b.attendanceNumber);
+            
+            if (isNaN(numA) && isNaN(numB)) return 0;
+            if (isNaN(numA)) return 1;
+            if (isNaN(numB)) return -1;
+            
+            return numA - numB;
+        });
+    }, [students]);
 
     // Load assignments from localStorage when class changes
     useEffect(() => {
@@ -188,7 +203,7 @@ const AssignmentManager = () => {
                                 <h2>{selectedAssignment.title}</h2>
                                 <div className="progress-bar-container">
                                     <div className="progress-text">
-                                        제출 현황: {getStats(selectedAssignment).completed} / {students ? students.length : 0}
+                                    제출 현황: {getStats(selectedAssignment).completed} / {sortedStudents.length}
                                         ({getStats(selectedAssignment).rate}%)
                                     </div>
                                     <div className="progress-track">
@@ -201,7 +216,7 @@ const AssignmentManager = () => {
                             </div>
 
                             <div className="student-grid">
-                                {students && students.map(student => {
+                                {sortedStudents.map(student => {
                                     const submission = selectedAssignment.submissions[student.id] || { status: 'incomplete', note: '' };
                                     const isCompleted = submission.status === 'completed';
 
