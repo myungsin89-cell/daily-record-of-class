@@ -6,7 +6,7 @@
  */
 
 const DB_NAME = 'ClassDiaryDB';
-const DB_VERSION = 5; // Increment version to add seating_configs store
+const DB_VERSION = 6; // Increment version to add seating_history store
 
 // Object Store names
 const STORES = {
@@ -19,7 +19,8 @@ const STORES = {
     SETTINGS: 'settings',
     FIELD_TRIPS: 'field_trips',
     HOLIDAYS: 'holidays',
-    SEATING_CONFIGS: 'seating_configs'
+    SEATING_CONFIGS: 'seating_configs',
+    SEATING_HISTORY: 'seating_history'
 };
 
 /**
@@ -85,6 +86,10 @@ export const initDB = () => {
             }
             if (!db.objectStoreNames.contains(STORES.SEATING_CONFIGS)) {
                 db.createObjectStore(STORES.SEATING_CONFIGS, { keyPath: 'classId' });
+            }
+            if (!db.objectStoreNames.contains(STORES.SEATING_HISTORY)) {
+                const historyStore = db.createObjectStore(STORES.SEATING_HISTORY, { keyPath: 'id', autoIncrement: true });
+                historyStore.createIndex('classId', 'classId', { unique: false });
             }
 
             console.log('IndexedDB upgrade complete');
@@ -168,6 +173,27 @@ export const getAllData = async (storeName) => {
 
         request.onerror = () => {
             reject(new Error(`Failed to get all data from ${storeName}`));
+        };
+    });
+};
+
+/**
+ * Get all data from a store by an index value
+ */
+export const getAllDataByIndex = async (storeName, indexName, value) => {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(storeName, 'readonly');
+        const store = transaction.objectStore(storeName);
+        const index = store.index(indexName);
+        const request = index.getAll(value);
+
+        request.onsuccess = () => {
+            resolve(request.result);
+        };
+
+        request.onerror = () => {
+            reject(new Error(`Failed to get data by index from ${storeName}`));
         };
     });
 };

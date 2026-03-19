@@ -1236,7 +1236,139 @@ body.student-mode-active .layout {
     animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
+/* --- Seating History Panel --- */
+.seating-chart-container .seating-history-panel {
+    margin-top: 3rem;
+    padding-top: 2.5rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.seating-chart-container .history-header {
+    margin-bottom: 1.5rem;
+}
+
+.seating-chart-container .history-header h2 {
+    font-size: 1.4rem;
+    color: #0f172a;
+    font-weight: 800;
+    margin-bottom: 0.4rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.seating-chart-container .history-header p {
+    font-size: 0.9rem;
+    color: #64748b;
+}
+
+.seating-chart-container .history-empty {
+    font-size: 0.9rem;
+    color: #94a3b8;
+    font-style: italic;
+    text-align: center;
+    padding: 2rem;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 1px dashed #e2e8f0;
+}
+
+.seating-chart-container .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.seating-chart-container .history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.9rem 1.25rem;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    transition: all 0.2s;
+}
+
+.seating-chart-container .history-item:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.06);
+}
+
+.seating-chart-container .history-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.seating-chart-container .history-name {
+    font-weight: 800;
+    color: #1e293b;
+    font-size: 0.95rem;
+}
+
+.seating-chart-container .history-date {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.seating-chart-container .history-pairs-count {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #2563eb;
+    background: #eff6ff;
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    border: 1px solid #dbeafe;
+}
+
+.seating-chart-container .history-del-btn {
+    padding: 0.35rem 0.75rem;
+    border-radius: 8px;
+    border: 1px solid #fecaca;
+    background: #fff1f2;
+    color: #e11d48;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.seating-chart-container .history-del-btn:hover {
+    background: #ffe4e6;
+    border-color: #fda4af;
+}
+
+/* Save Name Modal */
+.seating-chart-container .save-name-modal .modal-body {
+    padding-bottom: 0.5rem;
+}
+
+.seating-chart-container .save-name-input {
+    width: 100%;
+    padding: 0.85rem 1rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-top: 0.5rem;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+.seating-chart-container .save-name-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
 /* --- Flipped (Teacher Perspective) View --- */
+
 .seating-chart-container .classroom-area.flipped {
     flex-direction: column-reverse;
 }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useStudentContext } from '../context/StudentContext';
 import { useClass } from '../context/ClassContext';
-import { getData, saveData, STORES } from '../db/indexedDB';
+import { getData, saveData, deleteData, getAllDataByIndex, STORES } from '../db/indexedDB';
 import { generateEmptyGrid, assignSeatsRandomly } from '../utils/seatingUtils';
 import './SeatingChart.css';
 
@@ -32,6 +32,11 @@ const SeatingChart = () => {
     const [revealOrder, setRevealOrder] = useState([]);
     const [printMode, setPrintMode] = useState(null); // 'standard' | 'teacher'
     const [isFlipped, setIsFlipped] = useState(true); // false: student view (blackboard top), true: teacher view (blackboard bottom)
+
+    // Seating History State
+    const [seatingHistory, setSeatingHistory] = useState([]);
+    const [showSaveModal, setShowSaveModal] = useState(false);
+    const [saveNameInput, setSaveNameInput] = useState('');
 
     // New state for female seats
     const [useFemaleSeats, setUseFemaleSeats] = useState(true);
@@ -128,6 +133,22 @@ const SeatingChart = () => {
         loadConfig();
     }, [currentClass]);
 
+    // Load seating history for current class
+    useEffect(() => {
+        const loadHistory = async () => {
+            if (!currentClass?.id) return;
+            try {
+                const history = await getAllDataByIndex(STORES.SEATING_HISTORY, 'classId', currentClass.id);
+                // Sort newest first
+                const sorted = [...history].sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
+                setSeatingHistory(sorted);
+            } catch (e) {
+                console.error('Failed to load seating history:', e);
+            }
+        };
+        loadHistory();
+    }, [currentClass]);
+
     // Handle Body Class for Student Mode (Hiding Sidebar/Header)
     useEffect(() => {
         if (mode === 'student') {
@@ -150,6 +171,73 @@ const SeatingChart = () => {
             updatedAt: new Date().toISOString()
         });
         alert('자리 배치가 저장되었습니다.');
+    };
+
+    // Open save modal
+    const handleSaveClick = () => {
+        const now = new Date();
+        const defaultName = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} 자리배치`;
+        setSaveNameInput(defaultName);
+        setShowSaveModal(true);
+    };
+
+    // Extract seat pairs from grid (students sitting in same pairSize group)
+    const extractSeatPairs = (currentGrid) => {
+        const pairs = [];
+        currentGrid.forEach(row => {
+            for (let c = 0; c < row.length; c += gridConfig.pairSize) {
+                const group = [];
+                for (let p = 0; p < gridConfig.pairSize; p++) {
+                    const seat = row[c + p];
+                    if (seat?.studentId) group.push(seat.studentId);
+                }
+                if (group.length >= 2) pairs.push(group);
+            }
+        });
+        return pairs;
+    };
+
+    // Confirm save: persist config + history entry
+    const handleHistorySave = async () => {
+        const name = saveNameInput.trim();
+        if (!name) { alert('저장 이름을 입력해주세요.'); return; }
+        if (!currentClass?.id) return;
+
+        // Save current config (existing behavior)
+        await saveData(STORES.SEATING_CONFIGS, {
+            classId: currentClass.id,
+            gridConfig,
+            constraints,
+            useFemaleSeats,
+            youtubeUrl,
+            grid,
+            updatedAt: new Date().toISOString()
+        });
+
+        // Save history entry
+        const pairs = extractSeatPairs(grid);
+        await saveData(STORES.SEATING_HISTORY, {
+            classId: currentClass.id,
+            name,
+            grid,
+            gridConfig,
+            pairs, // [[ studentId, studentId, ... ], ...]
+            savedAt: new Date().toISOString()
+        });
+
+        // Reload history
+        const updated = await getAllDataByIndex(STORES.SEATING_HISTORY, 'classId', currentClass.id);
+        setSeatingHistory([...updated].sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt)));
+
+        setShowSaveModal(false);
+        alert(`'${name}' 이름으로 자리배치가 기록되었습니다.`);
+    };
+
+    // Delete a history entry
+    const handleDeleteHistory = async (id) => {
+        if (!window.confirm('이 기록을 삭제하시겠습니까?')) return;
+        await deleteData(STORES.SEATING_HISTORY, id);
+        setSeatingHistory(prev => prev.filter(h => h.id !== id));
     };
 
     const saveMusicLink = async (newUrl) => {
@@ -681,7 +769,7 @@ const SeatingChart = () => {
                         <div className="btn-group main">
                             <button className="base-btn reset" onClick={resetGrid}>초기화</button>
                             <button className="base-btn randomize" onClick={handleRandomize} disabled={!validation.isValid}>자동 랜덤 배치</button>
-                            <button className="base-btn save" onClick={handleSave}>저장</button>
+                            <button className="base-btn save" onClick={handleSaveClick}>저장</button>
                         </div>
                         <div className="btn-group print">
                             <button className="base-btn print-st" onClick={() => handlePrint('standard')}>학생용 인쇄</button>
@@ -818,7 +906,7 @@ const SeatingChart = () => {
             )}
 
             <main className={`seating-main-workspace ${mode === 'student' ? 'student-view' : ''}`}>
-                <section className={`classroom-area ${isFlipped ? 'flipped' : ''}`}>
+                <section className={`classroom-area ${!printMode && isFlipped ? 'flipped' : ''}`}>
                     <div className="blackboard-indicator"></div>
                     <div className="grid-container">
                         {grid.map((row, r) => (
@@ -960,6 +1048,67 @@ const SeatingChart = () => {
                 </div>
             )}
 
+            {/* Save Name Modal */}
+            {showSaveModal && (
+                <div className="chart-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowSaveModal(false); }}>
+                    <div className="chart-modal save-name-modal">
+                        <div className="modal-header">
+                            <h2>📋 자리배치 기록 저장</h2>
+                            <button className="close-btn" onClick={() => setShowSaveModal(false)}>×</button>
+                        </div>
+                        <div className="modal-body">
+                            <p className="modal-desc">이 자리배치를 어떤 이름으로 기록할까요?</p>
+                            <input
+                                className="save-name-input"
+                                type="text"
+                                value={saveNameInput}
+                                onChange={(e) => setSaveNameInput(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleHistorySave()}
+                                placeholder="예: 2025.03 1학기 자리배치"
+                                autoFocus
+                            />
+                        </div>
+                        <div className="modal-footer">
+                            <span />
+                            <div className="modal-btns">
+                                <button className="m-btn cancel" onClick={() => setShowSaveModal(false)}>취소</button>
+                                <button className="m-btn confirm" onClick={handleHistorySave}>저장하기</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Seating History Panel */}
+            {mode === 'teacher' && (
+                <div className="seating-history-panel">
+                    <div className="history-header">
+                        <h2>📁 자리배치 기록</h2>
+                        <p>저장된 자리배치 기록입니다. 향후 짝 배정 시 이전 짝 정보가 활용됩니다.</p>
+                    </div>
+                    {seatingHistory.length === 0 ? (
+                        <p className="history-empty">아직 저장된 기록이 없습니다. 저장 버튼을 눌러 기록을 남겨보세요.</p>
+                    ) : (
+                        <div className="history-list">
+                            {seatingHistory.map(entry => {
+                                const date = new Date(entry.savedAt);
+                                const dateStr = `${date.getFullYear()}.${String(date.getMonth()+1).padStart(2,'0')}.${String(date.getDate()).padStart(2,'0')} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+                                return (
+                                    <div key={entry.id} className="history-item">
+                                        <div className="history-info">
+                                            <span className="history-name">{entry.name}</span>
+                                            <span className="history-date">{dateStr}</span>
+                                            <span className="history-pairs-count">짝 그룹 {entry.pairs?.length || 0}개</span>
+                                        </div>
+                                        <button className="history-del-btn" onClick={() => handleDeleteHistory(entry.id)}>삭제</button>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* Student Select Modal */}
             {isModalOpen && (
                 <div className="chart-modal-overlay">
@@ -998,3 +1147,4 @@ const SeatingChart = () => {
 };
 
 export default SeatingChart;
+
