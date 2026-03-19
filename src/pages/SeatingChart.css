@@ -329,6 +329,7 @@ body.student-mode-active .layout {
     border: 1px solid #f1f5f9;
     width: fit-content;
     min-width: 0;
+    transition: all 0.4s ease;
 }
 
 .seating-chart-container .blackboard-indicator {
@@ -484,12 +485,42 @@ body.student-mode-active .layout {
     margin-bottom: 1rem;
     padding-bottom: 0.5rem;
     border-bottom: 1.5px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .seating-chart-container .pool-header h3 {
     font-size: 1.1rem;
     color: #0f172a;
     font-weight: 800;
+}
+
+/* Flip Toggle Button */
+.seating-chart-container .flip-toggle-btn {
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    color: #475569;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.seating-chart-container .flip-toggle-btn:hover {
+    background: #e2e8f0;
+    color: #1e293b;
+    transform: translateY(-1px);
+}
+
+.seating-chart-container .flip-toggle-btn.active {
+    background: #2563eb;
+    color: white;
+    border-color: #2563eb;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
 }
 
 .seating-chart-container .pool-list {
@@ -1203,6 +1234,28 @@ body.student-mode-active .layout {
 
 .seating-chart-container .revealed {
     animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* --- Flipped (Teacher Perspective) View --- */
+.seating-chart-container .classroom-area.flipped {
+    flex-direction: column-reverse;
+}
+
+.seating-chart-container .classroom-area.flipped .grid-container {
+    transform: rotate(180deg);
+}
+
+.seating-chart-container .classroom-area.flipped .student-card {
+    transform: rotate(180deg);
+}
+
+.seating-chart-container .classroom-area.flipped .seat-slot.blocked::after {
+    transform: rotate(180deg);
+}
+
+.seating-chart-container .classroom-area.flipped .blackboard-indicator {
+    margin-top: 2rem;
+    margin-bottom: 0.5rem;
 }
 
 /* --- Print Logic --- */

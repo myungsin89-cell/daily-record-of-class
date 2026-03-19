@@ -31,6 +31,7 @@ const SeatingChart = () => {
     const [isRevealing, setIsRevealing] = useState(false);
     const [revealOrder, setRevealOrder] = useState([]);
     const [printMode, setPrintMode] = useState(null); // 'standard' | 'teacher'
+    const [isFlipped, setIsFlipped] = useState(false); // false: student view (blackboard top), true: teacher view (blackboard bottom)
 
     // New state for female seats
     const [useFemaleSeats, setUseFemaleSeats] = useState(true);
@@ -683,8 +684,9 @@ const SeatingChart = () => {
                             <button className="base-btn save" onClick={handleSave}>저장</button>
                         </div>
                         <div className="btn-group print">
-                            <button className="base-btn print-st" onClick={() => handlePrint('standard')}>학생용 인쇄</button>
-                            <button className="base-btn print-tc" onClick={() => handlePrint('teacher')}>교사용 인쇄</button>
+                            <button className="base-btn print-st" onClick={() => handlePrint(isFlipped ? 'teacher' : 'standard')}>
+                                {isFlipped ? '교사용 인쇄 🖨️' : '학생용 인쇄 🖨️'}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -817,7 +819,7 @@ const SeatingChart = () => {
             )}
 
             <main className={`seating-main-workspace ${mode === 'student' ? 'student-view' : ''}`}>
-                <section className="classroom-area">
+                <section className={`classroom-area ${isFlipped ? 'flipped' : ''}`}>
                     <div className="blackboard-indicator"></div>
                     <div className="grid-container">
                         {grid.map((row, r) => (
@@ -869,6 +871,13 @@ const SeatingChart = () => {
                     <aside className="student-pool-panel">
                         <div className="pool-header">
                             <h3>미배정 학생 ({unassignedStudents.length})</h3>
+                            <button 
+                                className={`flip-toggle-btn ${isFlipped ? 'active' : ''}`}
+                                onClick={() => setIsFlipped(prev => !prev)}
+                                title={isFlipped ? '학생 시점으로 전환 (칠판 위)' : '교사 시점으로 전환 (칠판 아래)'}
+                            >
+                                {isFlipped ? '👁️ 교사 시점' : '🔄 시점 반전'}
+                            </button>
                         </div>
                         <div className="pool-list">
                             {unassignedStudents.map(student => (
