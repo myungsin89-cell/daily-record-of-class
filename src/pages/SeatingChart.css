@@ -1409,6 +1409,7 @@ body.student-mode-active .layout {
     .seating-chart-container .disclosure-controls,
     .seating-chart-container .student-pool-panel,
     .seating-chart-container .constraints-panel,
+    .seating-chart-container .seating-history-panel,
     .seating-chart-container .remove-seat-btn,
     .seating-chart-container .stealth-back-btn {
         display: none !important;
