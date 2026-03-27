@@ -1194,7 +1194,7 @@ body.student-mode-active .layout {
 }
 
 .seating-chart-container .btn-reveal-start {
-    width: 100%;
+    flex: 2; /* Make the main start button larger */
     padding: 1.25rem;
     background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
     color: white;
@@ -1208,19 +1208,45 @@ body.student-mode-active .layout {
     text-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
+.seating-chart-container .btn-reveal-rerandom {
+    flex: 1;
+    padding: 1.25rem;
+    background: #ffffff;
+    color: #475569;
+    border: 2px solid #e2e8f0;
+    border-radius: 16px;
+    font-size: 1.1rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.seating-chart-container .btn-reveal-rerandom:hover:not(:disabled) {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #1e293b;
+    transform: translateY(-2px);
+}
+
 .seating-chart-container .btn-reveal-start:hover:not(:disabled) {
     transform: translateY(-3px) scale(1.01);
     box-shadow: 0 15px 30px -5px rgba(37, 99, 235, 0.5);
     filter: brightness(1.1);
 }
 
-.seating-chart-container .btn-reveal-start:active:not(:disabled) {
+.seating-chart-container .btn-reveal-start:active:not(:disabled),
+.seating-chart-container .btn-reveal-rerandom:active:not(:disabled) {
     transform: translateY(0) scale(0.99);
 }
 
-.seating-chart-container .btn-reveal-start:disabled {
+.seating-chart-container .btn-reveal-start:disabled,
+.seating-chart-container .btn-reveal-rerandom:disabled {
     background: #cbd5e1;
     color: #94a3b8;
+    border-color: #cbd5e1;
     box-shadow: none;
     cursor: not-allowed;
     text-shadow: none;

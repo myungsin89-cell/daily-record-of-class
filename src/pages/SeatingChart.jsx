@@ -521,15 +521,17 @@ const SeatingChart = () => {
     const validation = validateAssignment();
 
     // Reveal Logic
-    const startReveal = () => {
+    const startReveal = (shouldRandomize = true) => {
         if (!students || students.length === 0) {
             alert('학생 정보가 없습니다.');
             return;
         }
 
-        // 1. Generate new random grid immediately
-        const newGrid = assignSeatsRandomly(students, grid, constraints, useFemaleSeats);
-        setGrid(newGrid);
+        let newGrid = grid;
+        if (shouldRandomize) {
+            newGrid = assignSeatsRandomly(students, grid, constraints, useFemaleSeats);
+            setGrid(newGrid);
+        }
 
         setIsShuffling(true); // Start shuffling animation
         setRevealedCount(0);
@@ -591,6 +593,10 @@ const SeatingChart = () => {
             }
         }, 6000);
     };
+
+    const isGridAssigned = useMemo(() => {
+        return grid.some(row => row.some(seat => seat.studentId !== null));
+    }, [grid]);
 
     useEffect(() => {
         let timer;
@@ -791,13 +797,35 @@ const SeatingChart = () => {
                         <button className="base-btn fullscreen-btn" onClick={toggleFullscreen} title="전체화면">전체화면 📺</button>
                     </div>
                     <div className="reveal-main-action">
-                        <button 
-                            className="btn-reveal-start" 
-                            onClick={startReveal} 
-                            disabled={isRevealing || isShuffling || (revealedCount > 0 && revealedCount === revealOrder.length) || (isMusicEnabled && !isPlayerReady)}
-                        >
-                            {isMusicEnabled && !isPlayerReady ? '🎼 준비 중...' : (isShuffling ? '🎲 배치 중...' : (revealedCount > 0 ? (revealedCount === revealOrder.length ? '전체 공개 완료' : '전체 공개 중...') : '랜덤배치 시작!'))}
-                        </button>
+                        {isGridAssigned ? (
+                            <>
+                                <button 
+                                    className="btn-reveal-start" 
+                                    onClick={() => startReveal(false)} 
+                                    disabled={isRevealing || isShuffling || (revealedCount > 0 && revealedCount === revealOrder.length) || (isMusicEnabled && !isPlayerReady)}
+                                >
+                                    {isMusicEnabled && !isPlayerReady ? '🎼 준비 중...' : (isShuffling ? '🎲 배치 중...' : (revealedCount > 0 ? (revealedCount === revealOrder.length ? '전체 공개 완료' : '전체 공개 중...') : '현재 배치로 공개 시작!'))}
+                                </button>
+                                {!isRevealing && !isShuffling && revealedCount === 0 && (
+                                    <button 
+                                        className="btn-reveal-rerandom" 
+                                        onClick={() => startReveal(true)} 
+                                        disabled={isMusicEnabled && !isPlayerReady}
+                                        title="현재 배치를 무시하고 다시 랜덤하게 섞어서 공개합니다"
+                                    >
+                                        다시 랜덤 배치 후 공개
+                                    </button>
+                                )}
+                            </>
+                        ) : (
+                            <button 
+                                className="btn-reveal-start" 
+                                onClick={() => startReveal(true)} 
+                                disabled={isRevealing || isShuffling || (revealedCount > 0 && revealedCount === revealOrder.length) || (isMusicEnabled && !isPlayerReady)}
+                            >
+                                {isMusicEnabled && !isPlayerReady ? '🎼 준비 중...' : (isShuffling ? '🎲 배치 중...' : (revealedCount > 0 ? (revealedCount === revealOrder.length ? '전체 공개 완료' : '전체 공개 중...') : '랜덤배치 시작!'))}
+                            </button>
+                        )}
                         <button 
                             className={`music-toggle-btn ${isMusicEnabled ? 'active' : ''}`} 
                             onClick={() => {
