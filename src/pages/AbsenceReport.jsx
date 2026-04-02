@@ -527,7 +527,7 @@ const AbsenceReport = () => {
                     </div>
 
                     <div class="section-area">
-                        <p class="s-item">1. 결석기간:  ${sYear}년  ${sMonth}월  ${sDay}일  ~  ${eYear}년  ${eMonth}월  ${eDay}일</p>
+                        <p class="s-item">1. 결석기간:  ${sYear}년  ${sMonth}월  ${sDay}일  ~  ${eYear}년  ${eMonth}월  ${eDay}일  (${record.schoolDays}일간)</p>
 
                         <p class="s-item">2. 결석사유:  ${reason}</p>
 
@@ -543,7 +543,7 @@ const AbsenceReport = () => {
                     <div class="date-line">${tYear}년    ${tMonth}월   ${tDay}일</div>
 
                     <div class="teacher-line">
-                        <span>담 임 교 사 :</span>
+                        <span>학부모/(담임교사) :</span>
                         <span class="teacher-name">${teacherName || ''}</span>
                         <span class="seal-cell">
                             (인)
