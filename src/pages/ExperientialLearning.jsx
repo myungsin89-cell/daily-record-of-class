@@ -361,17 +361,6 @@ const ExperientialLearning = () => {
                     <div class="title ${isFirstPage ? 'p1-title' : 'other-title'}">
                         교외 체험 학습 대장
                     </div>
-                    <table class="approval-box">
-                        <tr>
-                            <td class="label-cell" rowspan="2">결<br/>재</td>
-                            <td class="header-cell">담임</td>
-                            <td class="header-cell">학년부장</td>
-                        </tr>
-                        <tr>
-                            <td class="sign-cell">${sealImage ? `<img src="${sealImage}" class="box-seal"/>` : ''}</td>
-                            <td class="sign-cell"></td>
-                        </tr>
-                    </table>
                     <div class="header-info ${isFirstPage ? 'p1-header' : 'other-header'}">
                         <div>${year}학년도 ${semester}</div>
                         <div style="display:flex; gap:20px">
@@ -456,44 +445,6 @@ const ExperientialLearning = () => {
                         width:11mm; 
                         height:14mm; 
                         opacity:0.85; 
-                    }
-                    .approval-box {
-                        position: absolute;
-                        top: 15mm;
-                        right: 15mm;
-                        border: 1.2px solid #000;
-                        border-collapse: collapse;
-                    }
-                    .approval-box td {
-                        border: 1px solid #000;
-                        text-align: center;
-                        font-size: 10pt;
-                        padding: 0;
-                        color: #000;
-                    }
-                    .approval-box .label-cell {
-                        width: 7mm;
-                        font-size: 10pt;
-                        padding: 1.5mm 0;
-                        line-height: 1.3;
-                    }
-                    .approval-box .header-cell {
-                        height: 7mm;
-                        width: 22mm;
-                    }
-                    .approval-box .sign-cell {
-                        height: 12mm;
-                        width: 22mm;
-                        position: relative;
-                    }
-                    .box-seal {
-                        position: absolute;
-                        top: 50%;
-                        left: 50%;
-                        transform: translate(-50%, -50%);
-                        width: 11mm;
-                        height: 14mm;
-                        opacity: 0.85;
                     }
                 </style>
             </head>

@@ -532,7 +532,7 @@ const AbsenceReport = () => {
                         <p class="s-item">2. 결석사유:  ${reason}</p>
 
                         <p class="s-item">3. 학부모 의견서</p>
-                        <p class="s-sub">학부모 소견: 위 학생은 ( ${reason || '    '} )으로 인하여 결석하고자 함</p>
+                        <p class="s-sub">학부모 소견: </p>
 
                         <p class="s-item">4. 담임교사 확인서</p>
                         <p class="s-sub">담임소견: 위 학생은 ( ${reason || '    '} )으로 인하여 결석함</p>
