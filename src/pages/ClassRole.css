@@ -563,42 +563,41 @@
 }
 
 @media print {
-    /* 화면 요소 전부 숨기기 */
-    html, body {
-        height: auto !important;
-        overflow: visible !important;
-    }
-
-    body > *,
-    #root > * {
-        display: none !important;
+    body * {
+        visibility: hidden;
     }
 
     .cr-print-area {
-        display: block !important;
-        position: static !important;
+        visibility: visible;
+        position: absolute;
+        top: 0;
+        left: 0;
         width: 100%;
         background: white;
         font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
-        page-break-after: avoid;
-        page-break-inside: avoid;
+    }
+
+    .cr-print-area * {
+        visibility: visible;
     }
 
     /* 헤더 배너 */
     .cr-print-header-bar {
-        background: #16a34a;
-        border-radius: 10px;
-        padding: 18px 24px 14px;
-        margin-bottom: 18px;
+        border-left: 8px solid #16a34a;
+        border-bottom: 2px solid #16a34a;
+        padding: 14px 16px 12px;
+        margin-bottom: 14px;
         display: flex;
         align-items: flex-end;
         justify-content: space-between;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
 
     .cr-print-title {
-        font-size: 26px;
+        font-size: 28px;
         font-weight: 900;
-        color: white;
+        color: #14532d;
         letter-spacing: 0.1em;
         margin: 0;
         line-height: 1;
@@ -606,9 +605,19 @@
 
     .cr-print-subtitle {
         font-size: 13px;
-        color: #bbf7d0;
+        color: #15803d;
         margin: 0;
-        font-weight: 500;
+        font-weight: 600;
+    }
+
+    /* 장식선 */
+    .cr-print-deco {
+        height: 3px;
+        background: #16a34a;
+        border-radius: 2px;
+        margin-bottom: 14px;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
 
     /* 통계 박스 */
@@ -620,25 +629,24 @@
 
     .cr-print-stat-box {
         flex: 1;
-        border: 1.5px solid #bbf7d0;
+        border: 2px solid #16a34a;
         border-radius: 8px;
         padding: 8px 12px;
         text-align: center;
-        background: #f0fdf4;
     }
 
     .cr-print-stat-label {
         font-size: 10px;
         color: #15803d;
-        font-weight: 600;
+        font-weight: 700;
         display: block;
-        margin-bottom: 2px;
+        margin-bottom: 3px;
         letter-spacing: 0.05em;
     }
 
     .cr-print-stat-value {
-        font-size: 17px;
-        font-weight: 800;
+        font-size: 20px;
+        font-weight: 900;
         color: #14532d;
     }
 
@@ -648,6 +656,7 @@
         border-collapse: collapse;
         font-size: 13px;
         table-layout: fixed;
+        border: 2px solid #15803d;
     }
 
     .cr-print-table colgroup col:nth-child(1) { width: 13%; }
@@ -655,17 +664,21 @@
     .cr-print-table colgroup col:nth-child(3) { width: 8%; }
     .cr-print-table colgroup col:nth-child(4) { width: 52%; }
 
-    .cr-print-table thead tr {
-        background: #15803d;
+    .cr-print-table th {
+        padding: 11px 12px;
+        text-align: left;
+        font-weight: 800;
+        font-size: 12px;
+        color: #14532d;
+        letter-spacing: 0.06em;
+        border-bottom: 2px solid #15803d;
+        border-right: 1px solid #bbf7d0;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
 
-    .cr-print-table th {
-        padding: 10px 12px;
-        text-align: left;
-        font-weight: 700;
-        font-size: 12px;
-        color: white;
-        letter-spacing: 0.06em;
+    .cr-print-table th:last-child {
+        border-right: none;
     }
 
     .cr-print-table th:nth-child(3) {
@@ -675,26 +688,26 @@
     .cr-print-table td {
         padding: 10px 12px;
         border-bottom: 1px solid #d1fae5;
+        border-right: 1px solid #d1fae5;
         vertical-align: middle;
         color: #1e293b;
         font-size: 13px;
-        line-height: 1.5;
+        line-height: 1.6;
         word-break: keep-all;
     }
 
-    .cr-print-table tbody tr:nth-child(even) td {
-        background: #f0fdf4;
+    .cr-print-table td:last-child {
+        border-right: none;
     }
 
-    .cr-print-table tbody tr:nth-child(odd) td {
-        background: white;
+    .cr-print-table tbody tr:last-child td {
+        border-bottom: none;
     }
 
-    /* 왼쪽 역할명 강조 */
     .cr-print-role {
-        font-weight: 700;
+        font-weight: 800;
         color: #14532d;
-        font-size: 13px;
+        font-size: 14px;
     }
 
     .cr-print-desc {
@@ -703,9 +716,9 @@
 
     .cr-print-count {
         text-align: center;
-        font-weight: 700;
+        font-weight: 800;
         color: #15803d;
-        font-size: 14px;
+        font-size: 15px;
     }
 
     .cr-print-students {
@@ -718,7 +731,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        border-top: 2px solid #bbf7d0;
+        border-top: 2px solid #16a34a;
         padding-top: 8px;
     }
 
@@ -728,17 +741,9 @@
     }
 
     .cr-print-footer-right {
-        font-size: 11px;
+        font-size: 12px;
         color: #15803d;
-        font-weight: 600;
-    }
-
-    /* 장식선 */
-    .cr-print-deco {
-        height: 4px;
-        background: linear-gradient(90deg, #16a34a, #4ade80, #16a34a);
-        border-radius: 2px;
-        margin-bottom: 14px;
+        font-weight: 700;
     }
 }
 
