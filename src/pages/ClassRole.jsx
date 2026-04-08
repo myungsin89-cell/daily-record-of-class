@@ -142,24 +142,19 @@ const ClassRole = () => {
         const printArea = document.querySelector('.cr-print-area');
         if (!printArea) { window.print(); return; }
 
-        // 자연 높이 측정을 위해 임시 표시
-        const origStyle = printArea.style.cssText;
-        printArea.style.cssText = 'display:block !important; position:fixed; top:-9999px; left:0; width:178mm; visibility:hidden; zoom:1;';
+        // 높이 측정: 임시로 화면에 표시
+        printArea.style.cssText = 'display:block;position:absolute;top:-9999px;left:0;width:178mm;zoom:1;';
         const naturalHeight = printArea.scrollHeight;
-        printArea.style.cssText = origStyle;
+        printArea.style.cssText = '';
 
-        // A4 세로 콘텐츠 높이(297mm - 위아래 14mm 여백 = 269mm → px)
-        const A4_H = 269 * (96 / 25.4);
-        // 0.5배 이상, 1.6배 이하로 제한
-        const zoom = Math.min(1.6, Math.max(0.5, A4_H / naturalHeight));
+        // A4 콘텐츠 높이: 297mm - 28mm(여백) = 269mm → 96dpi 기준 px
+        const A4_H_PX = 269 * (96 / 25.4);
+        const zoom = Math.min(1.5, Math.max(0.45, A4_H_PX / naturalHeight));
 
-        const styleEl = document.createElement('style');
-        styleEl.id = 'cr-print-zoom';
-        styleEl.textContent = `@media print { .cr-print-area { zoom: ${zoom.toFixed(4)} !important; } }`;
-        document.head.appendChild(styleEl);
-
+        // zoom을 인라인 스타일로 직접 적용 (@ media print 인젝션보다 안정적)
+        printArea.style.zoom = String(zoom);
         window.print();
-        document.getElementById('cr-print-zoom')?.remove();
+        printArea.style.zoom = '';
     };
 
     if (!students || students.length === 0) {

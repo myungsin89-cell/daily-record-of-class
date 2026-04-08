@@ -563,12 +563,50 @@
 }
 
 @media print {
-    /* 레이아웃 요소 완전 제거 (display:none → 공간도 차지 안 함) */
+    /* ── 레이아웃 높이 초기화 (min-height:100vh 등 제거) ── */
+    html, body {
+        height: auto !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: white !important;
+    }
+
+    .layout {
+        display: block !important;
+        min-height: 0 !important;
+        height: auto !important;
+        flex: none !important;
+    }
+
+    .main-content {
+        display: block !important;
+        margin-left: 0 !important;
+        min-height: 0 !important;
+        height: auto !important;
+        flex: none !important;
+        background: white !important;
+    }
+
+    .page-content {
+        display: block !important;
+        padding: 0 !important;
+        min-height: 0 !important;
+        height: auto !important;
+        flex: none !important;
+    }
+
+    .cr-page {
+        display: block !important;
+        padding: 0 !important;
+        min-height: 0 !important;
+        height: auto !important;
+    }
+
+    /* ── UI 요소 숨기기 ── */
     .sidebar,
     .main-header,
     .mobile-sidebar-overlay,
-    .header-left,
-    .header-actions,
     .cr-header,
     .cr-summary,
     .cr-table-wrap,
@@ -578,36 +616,16 @@
         display: none !important;
     }
 
-    html, body {
-        margin: 0 !important;
-        padding: 0 !important;
-        background: white !important;
-    }
-
-    .layout, .main-content, .page-content, .cr-page {
-        display: block !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        overflow: visible !important;
-        background: white !important;
-        height: auto !important;
-        min-height: unset !important;
-        max-height: unset !important;
-    }
-
-    /* 인쇄 영역 표시 */
+    /* ── 인쇄 영역 표시 ── */
     .cr-print-area {
         display: block !important;
         position: static !important;
-        width: 100%;
-        background: white;
+        width: 100% !important;
+        background: white !important;
         font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
         box-sizing: border-box;
         overflow: visible !important;
-    }
-
-    .cr-print-area * {
-        visibility: visible !important;
+        transform-origin: top left;
     }
 
     /* 헤더 배너 */
