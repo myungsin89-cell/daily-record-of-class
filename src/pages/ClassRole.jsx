@@ -1,0 +1,293 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { useStudentContext } from '../context/StudentContext';
+import { useClass } from '../context/ClassContext';
+import { useAuth } from '../context/AuthContext';
+import './ClassRole.css';
+
+const ClassRole = () => {
+    const { students } = useStudentContext();
+    const { currentClass } = useClass();
+    const { user } = useAuth();
+    const rawClassId = currentClass?.id || 'default';
+    const classId = user ? `${user.username}_${rawClassId}` : rawClassId;
+    const storageKey = `class_roles_${classId}`;
+
+    const sortedStudents = useMemo(() => {
+        if (!students) return [];
+        return [...students].sort((a, b) => {
+            const numA = Number(a.attendanceNumber);
+            const numB = Number(b.attendanceNumber);
+            if (isNaN(numA) && isNaN(numB)) return 0;
+            if (isNaN(numA)) return 1;
+            if (isNaN(numB)) return -1;
+            return numA - numB;
+        });
+    }, [students]);
+
+    const [roles, setRoles] = useState([]);
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [showAssignModal, setShowAssignModal] = useState(null); // role index
+    const [editingRole, setEditingRole] = useState(null); // role index for editing
+    const [form, setForm] = useState({ name: '', description: '', count: 1 });
+    const [selectedStudents, setSelectedStudents] = useState([]);
+
+    useEffect(() => {
+        const saved = localStorage.getItem(storageKey);
+        if (saved) {
+            try { setRoles(JSON.parse(saved)); } catch { setRoles([]); }
+        } else {
+            setRoles([]);
+        }
+    }, [storageKey]);
+
+    const saveRoles = (newRoles) => {
+        setRoles(newRoles);
+        localStorage.setItem(storageKey, JSON.stringify(newRoles));
+    };
+
+    const openAddModal = () => {
+        setForm({ name: '', description: '', count: 1 });
+        setEditingRole(null);
+        setShowAddModal(true);
+    };
+
+    const openEditModal = (index) => {
+        const role = roles[index];
+        setForm({ name: role.name, description: role.description, count: role.count });
+        setEditingRole(index);
+        setShowAddModal(true);
+    };
+
+    const handleFormSubmit = () => {
+        if (!form.name.trim()) return;
+        const count = Math.max(1, Number(form.count) || 1);
+
+        if (editingRole !== null) {
+            // 편집: 인원 수가 줄었으면 초과된 배정 학생 잘라내기
+            const updated = roles.map((r, i) => {
+                if (i !== editingRole) return r;
+                const trimmedStudents = (r.assignedStudents || []).slice(0, count);
+                return { ...r, name: form.name.trim(), description: form.description.trim(), count, assignedStudents: trimmedStudents };
+            });
+            saveRoles(updated);
+        } else {
+            const newRole = {
+                id: Date.now(),
+                name: form.name.trim(),
+                description: form.description.trim(),
+                count,
+                assignedStudents: [],
+            };
+            saveRoles([...roles, newRole]);
+        }
+        setShowAddModal(false);
+    };
+
+    const handleDeleteRole = (index) => {
+        if (!window.confirm(`'${roles[index].name}' 역할을 삭제하시겠습니까?`)) return;
+        saveRoles(roles.filter((_, i) => i !== index));
+    };
+
+    const openAssignModal = (index) => {
+        setSelectedStudents(roles[index].assignedStudents || []);
+        setShowAssignModal(index);
+    };
+
+    const toggleStudentAssign = (studentId) => {
+        const role = roles[showAssignModal];
+        const maxCount = role.count;
+        setSelectedStudents(prev => {
+            if (prev.includes(studentId)) {
+                return prev.filter(id => id !== studentId);
+            }
+            if (prev.length >= maxCount) return prev;
+            return [...prev, studentId];
+        });
+    };
+
+    const handleAssignSave = () => {
+        const updated = roles.map((r, i) =>
+            i === showAssignModal ? { ...r, assignedStudents: selectedStudents } : r
+        );
+        saveRoles(updated);
+        setShowAssignModal(null);
+    };
+
+    const getStudentById = (id) => sortedStudents.find(s => s.id === id);
+
+    if (!students || students.length === 0) {
+        return (
+            <div className="cr-empty">
+                <div className="cr-empty-icon">👥</div>
+                <p>학생 명단이 없습니다.</p>
+                <p className="cr-empty-sub">학생 관리에서 학생을 먼저 추가해주세요.</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="cr-page">
+            <div className="cr-header">
+                <h1 className="cr-title">🎭 일인일역</h1>
+                <button className="cr-add-btn" onClick={openAddModal}>+ 역할 추가</button>
+            </div>
+
+            {roles.length === 0 ? (
+                <div className="cr-no-roles">
+                    <p>아직 등록된 역할이 없습니다.</p>
+                    <p className="cr-no-roles-sub">역할 추가 버튼을 눌러 일인일역을 만들어보세요.</p>
+                </div>
+            ) : (
+                <div className="cr-table-wrap">
+                    <table className="cr-table">
+                        <thead>
+                            <tr>
+                                <th>역할</th>
+                                <th>내용</th>
+                                <th>인원</th>
+                                <th>담당 학생</th>
+                                <th>관리</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {roles.map((role, index) => {
+                                const assigned = (role.assignedStudents || []).map(id => getStudentById(id)).filter(Boolean);
+                                const filled = assigned.length;
+                                const isFull = filled >= role.count;
+                                return (
+                                    <tr key={role.id} className={isFull ? 'cr-row-full' : 'cr-row-incomplete'}>
+                                        <td className="cr-role-name">{role.name}</td>
+                                        <td className="cr-role-desc">{role.description || <span className="cr-empty-desc">-</span>}</td>
+                                        <td className="cr-role-count">
+                                            <span className={`cr-count-badge ${isFull ? 'full' : ''}`}>
+                                                {filled}/{role.count}
+                                            </span>
+                                        </td>
+                                        <td className="cr-role-students">
+                                            {assigned.length === 0 ? (
+                                                <span className="cr-unassigned">미배정</span>
+                                            ) : (
+                                                <div className="cr-student-chips">
+                                                    {assigned.map(s => (
+                                                        <span key={s.id} className={`cr-chip cr-chip-${s.gender}`}>
+                                                            {s.attendanceNumber}번 {s.name}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </td>
+                                        <td className="cr-role-actions">
+                                            <button className="cr-btn cr-btn-assign" onClick={() => openAssignModal(index)}>
+                                                배정
+                                            </button>
+                                            <button className="cr-btn cr-btn-edit" onClick={() => openEditModal(index)}>
+                                                수정
+                                            </button>
+                                            <button className="cr-btn cr-btn-delete" onClick={() => handleDeleteRole(index)}>
+                                                삭제
+                                            </button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+
+            {/* 역할 추가/수정 모달 */}
+            {showAddModal && (
+                <div className="cr-modal-overlay" onClick={() => setShowAddModal(false)}>
+                    <div className="cr-modal" onClick={e => e.stopPropagation()}>
+                        <div className="cr-modal-header">
+                            <h2>{editingRole !== null ? '역할 수정' : '역할 추가'}</h2>
+                            <button className="cr-modal-close" onClick={() => setShowAddModal(false)}>×</button>
+                        </div>
+                        <div className="cr-modal-body">
+                            <div className="cr-form-group">
+                                <label>역할명 *</label>
+                                <input
+                                    type="text"
+                                    value={form.name}
+                                    onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                                    placeholder="예: 청소 담당, 환경 미화원"
+                                    className="cr-input"
+                                />
+                            </div>
+                            <div className="cr-form-group">
+                                <label>내용</label>
+                                <input
+                                    type="text"
+                                    value={form.description}
+                                    onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                                    placeholder="예: 매일 교실 바닥 청소"
+                                    className="cr-input"
+                                />
+                            </div>
+                            <div className="cr-form-group">
+                                <label>인원 수</label>
+                                <input
+                                    type="number"
+                                    value={form.count}
+                                    min={1}
+                                    max={sortedStudents.length}
+                                    onChange={e => setForm(f => ({ ...f, count: e.target.value }))}
+                                    className="cr-input cr-input-number"
+                                />
+                            </div>
+                        </div>
+                        <div className="cr-modal-footer">
+                            <button className="cr-modal-cancel" onClick={() => setShowAddModal(false)}>취소</button>
+                            <button
+                                className="cr-modal-confirm"
+                                onClick={handleFormSubmit}
+                                disabled={!form.name.trim()}
+                            >
+                                {editingRole !== null ? '수정 완료' : '추가'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 학생 배정 모달 */}
+            {showAssignModal !== null && (
+                <div className="cr-modal-overlay" onClick={() => setShowAssignModal(null)}>
+                    <div className="cr-modal cr-assign-modal" onClick={e => e.stopPropagation()}>
+                        <div className="cr-modal-header">
+                            <h2>학생 배정 — {roles[showAssignModal]?.name}</h2>
+                            <button className="cr-modal-close" onClick={() => setShowAssignModal(null)}>×</button>
+                        </div>
+                        <div className="cr-modal-sub">
+                            {selectedStudents.length}/{roles[showAssignModal]?.count}명 선택됨
+                        </div>
+                        <div className="cr-assign-grid">
+                            {sortedStudents.map(student => {
+                                const isSelected = selectedStudents.includes(student.id);
+                                const maxReached = selectedStudents.length >= roles[showAssignModal]?.count;
+                                const disabled = !isSelected && maxReached;
+                                return (
+                                    <div
+                                        key={student.id}
+                                        className={`cr-assign-card ${isSelected ? 'selected' : ''} ${disabled ? 'disabled' : ''} cr-gender-${student.gender}`}
+                                        onClick={() => !disabled && toggleStudentAssign(student.id)}
+                                    >
+                                        <div className="cr-assign-check">{isSelected ? '✓' : ''}</div>
+                                        <div className="cr-assign-num">{student.attendanceNumber}번</div>
+                                        <div className="cr-assign-name">{student.name}</div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        <div className="cr-modal-footer">
+                            <button className="cr-modal-cancel" onClick={() => setShowAssignModal(null)}>취소</button>
+                            <button className="cr-modal-confirm" onClick={handleAssignSave}>저장</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default ClassRole;

@@ -30,6 +30,7 @@ import Notepad from './pages/Notepad';
 import Settings from './pages/Settings';
 import SeatingChart from './pages/SeatingChart';
 import RandomOrder from './pages/RandomOrder';
+import ClassRole from './pages/ClassRole';
 
 function App() {
   return (
@@ -65,6 +66,7 @@ function App() {
                               <Route path="/notepad" element={<Notepad />} />
                               <Route path="/seating" element={<SeatingChart />} />
                               <Route path="/random-order" element={<RandomOrder />} />
+                              <Route path="/class-role" element={<ClassRole />} />
                               <Route path="/settings" element={<Settings />} />
                             </Route>
                           </Route>
