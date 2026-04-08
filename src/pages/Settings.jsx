@@ -51,6 +51,7 @@ const Settings = () => {
             { id: 'budget', label: '예산 관리', hidden: false },
             { id: 'assignments', label: '제출 체크', hidden: false },
             { id: 'seating', label: '자리 배치', hidden: false },
+            { id: 'random-order', label: '랜덤 순서', hidden: false },
         ];
         const saved = localStorage.getItem('menuOrder');
         if (saved) {
@@ -79,7 +80,7 @@ const Settings = () => {
             } else {
                 localStorage.setItem('menuOrder', JSON.stringify(updated.map(item => ({
                     id: item.id, label: item.label, hidden: item.hidden,
-                    to: item.id === 'diary' ? '/' : item.id === 'notepad' ? '/notepad' : item.id === 'attendance' ? '/attendance' : item.id === 'journal' ? '/journal-entry' : item.id === 'grades' ? '/grades' : item.id === 'budget' ? '/budget' : item.id === 'seating' ? '/seating' : '/assignments'
+                    to: item.id === 'diary' ? '/' : item.id === 'notepad' ? '/notepad' : item.id === 'attendance' ? '/attendance' : item.id === 'journal' ? '/journal-entry' : item.id === 'grades' ? '/grades' : item.id === 'budget' ? '/budget' : item.id === 'seating' ? '/seating' : item.id === 'random-order' ? '/random-order' : '/assignments'
                 }))));
             }
             // 사이드바에 즉시 반영
@@ -1011,7 +1012,7 @@ const Settings = () => {
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     {sidebarMenuItems.map(item => {
-                        const emojiMap = { diary: '📅', notepad: '📝', attendance: '✅', journal: '📒', grades: '📊', budget: '💰', assignments: '📋', seating: '🪑' };
+                        const emojiMap = { diary: '📅', notepad: '📝', attendance: '✅', journal: '📒', grades: '📊', budget: '💰', assignments: '📋', seating: '🪑', 'random-order': '🔀' };
                         return (
                             <label
                                 key={item.id}
