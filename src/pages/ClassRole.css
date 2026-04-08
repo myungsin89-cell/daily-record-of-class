@@ -568,6 +568,7 @@
     }
 
     .cr-print-area {
+        display: block !important;
         visibility: visible;
         position: absolute;
         top: 0;
