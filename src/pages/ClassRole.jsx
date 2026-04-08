@@ -138,7 +138,29 @@ const ClassRole = () => {
     const totalAssigned = roles.reduce((sum, r) => sum + (r.assignedStudents || []).length, 0);
     const allFull = roles.length > 0 && totalAssigned === totalCapacity;
 
-    const handlePrint = () => window.print();
+    const handlePrint = () => {
+        const printArea = document.querySelector('.cr-print-area');
+        if (!printArea) { window.print(); return; }
+
+        // 자연 높이 측정을 위해 임시 표시
+        const origStyle = printArea.style.cssText;
+        printArea.style.cssText = 'display:block !important; position:fixed; top:-9999px; left:0; width:178mm; visibility:hidden; zoom:1;';
+        const naturalHeight = printArea.scrollHeight;
+        printArea.style.cssText = origStyle;
+
+        // A4 세로 콘텐츠 높이(297mm - 위아래 14mm 여백 = 269mm → px)
+        const A4_H = 269 * (96 / 25.4);
+        // 0.5배 이상, 1.6배 이하로 제한
+        const zoom = Math.min(1.6, Math.max(0.5, A4_H / naturalHeight));
+
+        const styleEl = document.createElement('style');
+        styleEl.id = 'cr-print-zoom';
+        styleEl.textContent = `@media print { .cr-print-area { zoom: ${zoom.toFixed(4)} !important; } }`;
+        document.head.appendChild(styleEl);
+
+        window.print();
+        document.getElementById('cr-print-zoom')?.remove();
+    };
 
     if (!students || students.length === 0) {
         return (
