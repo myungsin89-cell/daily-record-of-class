@@ -309,9 +309,31 @@ const ClassRole = () => {
 
             {/* 인쇄 전용 영역 */}
             <div className="cr-print-area">
-                <div className="cr-print-title">일인 일역</div>
-                <div className="cr-print-subtitle">{currentClass?.name || ''}</div>
+                <div className="cr-print-header-bar">
+                    <div>
+                        <div className="cr-print-title">일인 일역</div>
+                    </div>
+                    <div className="cr-print-subtitle">{currentClass?.name || ''}</div>
+                </div>
+                <div className="cr-print-deco" />
+                <div className="cr-print-stats">
+                    <div className="cr-print-stat-box">
+                        <span className="cr-print-stat-label">전체 역할</span>
+                        <span className="cr-print-stat-value">{roles.length}개</span>
+                    </div>
+                    <div className="cr-print-stat-box">
+                        <span className="cr-print-stat-label">총 인원</span>
+                        <span className="cr-print-stat-value">{totalCapacity}명</span>
+                    </div>
+                    <div className="cr-print-stat-box">
+                        <span className="cr-print-stat-label">배정 완료</span>
+                        <span className="cr-print-stat-value">{totalAssigned}명</span>
+                    </div>
+                </div>
                 <table className="cr-print-table">
+                    <colgroup>
+                        <col /><col /><col /><col />
+                    </colgroup>
                     <thead>
                         <tr>
                             <th>역할</th>
@@ -331,7 +353,7 @@ const ClassRole = () => {
                                     <td className="cr-print-students">
                                         {assigned.length === 0
                                             ? '미배정'
-                                            : assigned.map(s => `${s.attendanceNumber}번 ${s.name}`).join(', ')}
+                                            : assigned.map(s => `${s.attendanceNumber}번 ${s.name}`).join('  ·  ')}
                                     </td>
                                 </tr>
                             );
@@ -339,7 +361,8 @@ const ClassRole = () => {
                     </tbody>
                 </table>
                 <div className="cr-print-footer">
-                    총 {roles.length}개 역할 · {totalCapacity}명 배정
+                    <span className="cr-print-footer-left">인쇄일: {new Date().toLocaleDateString('ko-KR')}</span>
+                    <span className="cr-print-footer-right">총 {roles.length}개 역할 · {totalCapacity}명 배정</span>
                 </div>
             </div>
 
