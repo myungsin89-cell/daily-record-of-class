@@ -239,7 +239,7 @@ const RandomOrder = () => {
                 <div className="ro-section ro-result-section">
                     <div className="ro-section-header-static">
                         <h2 className="ro-section-title">
-                            <span>🎲</span> 급식 순서
+                            <span>🎲</span> 랜덤 순서
                         </h2>
                         <button className="ro-save-btn" onClick={handleSave}>
                             💾 기록 저장
@@ -250,11 +250,11 @@ const RandomOrder = () => {
                         {result.map((student, i) => (
                             <div
                                 key={student.id}
-                                className={`ro-result-card ro-gender-bg-${student.gender} ${i < 3 ? 'ro-top-three' : ''}`}
+                                className={`ro-result-card ro-gender-bg-${student.gender}`}
                                 style={{ animationDelay: `${i * 0.05}s` }}
                             >
                                 <div className="ro-card-order">
-                                    {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}번째`}
+                                    {i + 1}번째
                                 </div>
                                 <div className="ro-card-name">{student.name}</div>
                                 <div className="ro-card-sub">
