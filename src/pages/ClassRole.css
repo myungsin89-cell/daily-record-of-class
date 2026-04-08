@@ -8,7 +8,13 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.cr-header-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
 }
 
 .cr-title {
@@ -32,6 +38,83 @@
 
 .cr-add-btn:hover {
     background: #16a34a;
+}
+
+.cr-print-btn {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.55rem 1rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.cr-print-btn:hover {
+    background: #e2e8f0;
+}
+
+/* 통계 요약 바 */
+.cr-summary {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0.8rem 1.2rem;
+    margin-bottom: 1.2rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.cr-summary.cr-summary-full {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+}
+
+.cr-summary-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.cr-summary-label {
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+.cr-summary-value {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.cr-summary-done {
+    color: #16a34a;
+}
+
+.cr-summary-incomplete {
+    color: #dc2626;
+}
+
+.cr-summary-divider {
+    width: 1px;
+    height: 18px;
+    background: #e2e8f0;
+    margin: 0 0.6rem;
+}
+
+.cr-summary-badge {
+    margin-left: auto;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #16a34a;
+    background: #dcfce7;
+    padding: 0.2rem 0.7rem;
+    border-radius: 20px;
 }
 
 /* Empty states */
@@ -467,6 +550,104 @@
     font-weight: 600;
     color: #1e293b;
     text-align: center;
+}
+
+/* ===== 인쇄 전용 영역 (화면에서는 숨김) ===== */
+.cr-print-area {
+    display: none;
+}
+
+@media print {
+    /* 화면 요소 전부 숨기기 */
+    body * {
+        visibility: hidden;
+    }
+
+    .cr-print-area,
+    .cr-print-area * {
+        visibility: visible;
+    }
+
+    .cr-print-area {
+        display: block;
+        position: fixed;
+        inset: 0;
+        padding: 30px 36px;
+        background: white;
+        font-family: 'Noto Sans KR', sans-serif;
+    }
+
+    .cr-print-title {
+        font-size: 22px;
+        font-weight: 800;
+        color: #1e293b;
+        text-align: center;
+        margin-bottom: 4px;
+        letter-spacing: 0.05em;
+    }
+
+    .cr-print-subtitle {
+        font-size: 13px;
+        color: #64748b;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .cr-print-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+    }
+
+    .cr-print-table th {
+        background: #1e293b;
+        color: white;
+        padding: 9px 12px;
+        text-align: left;
+        font-weight: 700;
+        font-size: 11px;
+        letter-spacing: 0.04em;
+    }
+
+    .cr-print-table td {
+        padding: 8px 12px;
+        border-bottom: 1px solid #e2e8f0;
+        vertical-align: top;
+        color: #1e293b;
+    }
+
+    .cr-print-table tbody tr:nth-child(even) td {
+        background: #f8fafc;
+    }
+
+    .cr-print-role {
+        font-weight: 700;
+        width: 14%;
+        white-space: nowrap;
+    }
+
+    .cr-print-desc {
+        width: 28%;
+        color: #475569;
+    }
+
+    .cr-print-count {
+        width: 8%;
+        text-align: center;
+        font-weight: 600;
+    }
+
+    .cr-print-students {
+        width: 50%;
+        line-height: 1.6;
+    }
+
+    .cr-print-footer {
+        margin-top: 16px;
+        text-align: right;
+        font-size: 11px;
+        color: #94a3b8;
+    }
 }
 
 /* Responsive */

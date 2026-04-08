@@ -133,6 +133,13 @@ const ClassRole = () => {
 
     const getStudentById = (id) => sortedStudents.find(s => s.id === id);
 
+    // 총합 통계
+    const totalCapacity = roles.reduce((sum, r) => sum + (Number(r.count) || 0), 0);
+    const totalAssigned = roles.reduce((sum, r) => sum + (r.assignedStudents || []).length, 0);
+    const allFull = roles.length > 0 && totalAssigned === totalCapacity;
+
+    const handlePrint = () => window.print();
+
     if (!students || students.length === 0) {
         return (
             <div className="cr-empty">
@@ -147,8 +154,35 @@ const ClassRole = () => {
         <div className="cr-page">
             <div className="cr-header">
                 <h1 className="cr-title">🎭 일인 일역</h1>
-                <button className="cr-add-btn" onClick={openAddModal}>+ 역할 추가</button>
+                <div className="cr-header-actions">
+                    {roles.length > 0 && (
+                        <button className="cr-print-btn" onClick={handlePrint}>🖨️ 인쇄</button>
+                    )}
+                    <button className="cr-add-btn" onClick={openAddModal}>+ 역할 추가</button>
+                </div>
             </div>
+
+            {roles.length > 0 && (
+                <div className={`cr-summary ${allFull ? 'cr-summary-full' : ''}`}>
+                    <div className="cr-summary-item">
+                        <span className="cr-summary-label">전체 역할</span>
+                        <span className="cr-summary-value">{roles.length}개</span>
+                    </div>
+                    <div className="cr-summary-divider" />
+                    <div className="cr-summary-item">
+                        <span className="cr-summary-label">총 인원 설정</span>
+                        <span className="cr-summary-value">{totalCapacity}명</span>
+                    </div>
+                    <div className="cr-summary-divider" />
+                    <div className="cr-summary-item">
+                        <span className="cr-summary-label">배정 완료</span>
+                        <span className={`cr-summary-value ${allFull ? 'cr-summary-done' : 'cr-summary-incomplete'}`}>
+                            {totalAssigned}/{totalCapacity}명
+                        </span>
+                    </div>
+                    {allFull && <span className="cr-summary-badge">✅ 배정 완료</span>}
+                </div>
+            )}
 
             {roles.length === 0 ? (
                 <div className="cr-no-roles">
@@ -272,6 +306,42 @@ const ClassRole = () => {
                     </div>
                 </div>
             )}
+
+            {/* 인쇄 전용 영역 */}
+            <div className="cr-print-area">
+                <div className="cr-print-title">일인 일역</div>
+                <div className="cr-print-subtitle">{currentClass?.name || ''}</div>
+                <table className="cr-print-table">
+                    <thead>
+                        <tr>
+                            <th>역할</th>
+                            <th>내용</th>
+                            <th>인원</th>
+                            <th>담당 학생</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {roles.map(role => {
+                            const assigned = (role.assignedStudents || []).map(id => getStudentById(id)).filter(Boolean);
+                            return (
+                                <tr key={role.id}>
+                                    <td className="cr-print-role">{role.name}</td>
+                                    <td className="cr-print-desc">{role.description || '-'}</td>
+                                    <td className="cr-print-count">{role.count}명</td>
+                                    <td className="cr-print-students">
+                                        {assigned.length === 0
+                                            ? '미배정'
+                                            : assigned.map(s => `${s.attendanceNumber}번 ${s.name}`).join(', ')}
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+                <div className="cr-print-footer">
+                    총 {roles.length}개 역할 · {totalCapacity}명 배정
+                </div>
+            </div>
 
             {/* 학생 배정 모달 */}
             {showAssignModal !== null && (
