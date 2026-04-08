@@ -88,6 +88,16 @@ const ClassRole = () => {
         saveRoles(roles.filter((_, i) => i !== index));
     };
 
+    // 현재 역할(index 제외)에 이미 배정된 학생 ID 집합
+    const getAlreadyAssigned = (excludeIndex) => {
+        const ids = new Set();
+        roles.forEach((r, i) => {
+            if (i === excludeIndex) return;
+            (r.assignedStudents || []).forEach(id => ids.add(id));
+        });
+        return ids;
+    };
+
     const openAssignModal = (index) => {
         setSelectedStudents(roles[index].assignedStudents || []);
         setShowAssignModal(index);
@@ -103,6 +113,14 @@ const ClassRole = () => {
             if (prev.length >= maxCount) return prev;
             return [...prev, studentId];
         });
+    };
+
+    const handleRemoveAssigned = (roleIndex, studentId) => {
+        const updated = roles.map((r, i) => {
+            if (i !== roleIndex) return r;
+            return { ...r, assignedStudents: (r.assignedStudents || []).filter(id => id !== studentId) };
+        });
+        saveRoles(updated);
     };
 
     const handleAssignSave = () => {
@@ -128,7 +146,7 @@ const ClassRole = () => {
     return (
         <div className="cr-page">
             <div className="cr-header">
-                <h1 className="cr-title">🎭 일인일역</h1>
+                <h1 className="cr-title">🎭 일인 일역</h1>
                 <button className="cr-add-btn" onClick={openAddModal}>+ 역할 추가</button>
             </div>
 
@@ -171,6 +189,11 @@ const ClassRole = () => {
                                                     {assigned.map(s => (
                                                         <span key={s.id} className={`cr-chip cr-chip-${s.gender}`}>
                                                             {s.attendanceNumber}번 {s.name}
+                                                            <button
+                                                                className="cr-chip-remove"
+                                                                onClick={() => handleRemoveAssigned(index, s.id)}
+                                                                title="배정 해제"
+                                                            >×</button>
                                                         </span>
                                                     ))}
                                                 </div>
@@ -262,22 +285,28 @@ const ClassRole = () => {
                             {selectedStudents.length}/{roles[showAssignModal]?.count}명 선택됨
                         </div>
                         <div className="cr-assign-grid">
-                            {sortedStudents.map(student => {
-                                const isSelected = selectedStudents.includes(student.id);
-                                const maxReached = selectedStudents.length >= roles[showAssignModal]?.count;
-                                const disabled = !isSelected && maxReached;
-                                return (
-                                    <div
-                                        key={student.id}
-                                        className={`cr-assign-card ${isSelected ? 'selected' : ''} ${disabled ? 'disabled' : ''} cr-gender-${student.gender}`}
-                                        onClick={() => !disabled && toggleStudentAssign(student.id)}
-                                    >
-                                        <div className="cr-assign-check">{isSelected ? '✓' : ''}</div>
-                                        <div className="cr-assign-num">{student.attendanceNumber}번</div>
-                                        <div className="cr-assign-name">{student.name}</div>
-                                    </div>
-                                );
-                            })}
+                            {sortedStudents
+                                .filter(student => {
+                                    // 다른 역할에 이미 배정된 학생 제외 (현재 역할에 있는 학생은 유지)
+                                    const alreadyAssigned = getAlreadyAssigned(showAssignModal);
+                                    return !alreadyAssigned.has(student.id);
+                                })
+                                .map(student => {
+                                    const isSelected = selectedStudents.includes(student.id);
+                                    const maxReached = selectedStudents.length >= roles[showAssignModal]?.count;
+                                    const disabled = !isSelected && maxReached;
+                                    return (
+                                        <div
+                                            key={student.id}
+                                            className={`cr-assign-card ${isSelected ? 'selected' : ''} ${disabled ? 'disabled' : ''} cr-gender-${student.gender}`}
+                                            onClick={() => !disabled && toggleStudentAssign(student.id)}
+                                        >
+                                            <div className="cr-assign-check">{isSelected ? '✓' : ''}</div>
+                                            <div className="cr-assign-num">{student.attendanceNumber}번</div>
+                                            <div className="cr-assign-name">{student.name}</div>
+                                        </div>
+                                    );
+                                })}
                         </div>
                         <div className="cr-modal-footer">
                             <button className="cr-modal-cancel" onClick={() => setShowAssignModal(null)}>취소</button>

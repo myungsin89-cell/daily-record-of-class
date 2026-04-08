@@ -14,7 +14,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         { id: 'assignments', to: '/assignments', label: '제출 체크' },
         { id: 'seating', to: '/seating', label: '자리 배치' },
         { id: 'random-order', to: '/random-order', label: '랜덤 순서' },
-        { id: 'class-role', to: '/class-role', label: '일인일역' },
+        { id: 'class-role', to: '/class-role', label: '일인 일역' },
     ];
 
     const [menuItems, setMenuItems] = useState(() => {

@@ -52,7 +52,7 @@ const Settings = () => {
             { id: 'assignments', label: '제출 체크', hidden: false },
             { id: 'seating', label: '자리 배치', hidden: false },
             { id: 'random-order', label: '랜덤 순서', hidden: false },
-            { id: 'class-role', label: '일인일역', hidden: false },
+            { id: 'class-role', label: '일인 일역', hidden: false },
         ];
         const saved = localStorage.getItem('menuOrder');
         if (saved) {
