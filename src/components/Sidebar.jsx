@@ -13,7 +13,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         { id: 'budget', to: '/budget', label: '예산 관리' },
         { id: 'assignments', to: '/assignments', label: '제출 체크' },
         { id: 'seating', to: '/seating', label: '자리 배치' },
-        { id: 'random-order', to: '/random-order', label: '랜덤순서' },
+        { id: 'random-order', to: '/random-order', label: '랜덤 순서' },
     ];
 
     const [menuItems, setMenuItems] = useState(() => {

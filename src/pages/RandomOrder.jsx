@@ -246,15 +246,21 @@ const RandomOrder = () => {
                         </button>
                     </div>
 
-                    <div className="ro-result-list">
+                    <div className="ro-result-cards">
                         {result.map((student, i) => (
-                            <div key={student.id} className={`ro-result-row ${i < 3 ? 'ro-top-three' : ''}`}>
-                                <span className="ro-rank-num">
-                                    {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}위`}
-                                </span>
-                                <span className="ro-result-num">{student.attendanceNumber}번</span>
-                                <span className="ro-result-name">{student.name}</span>
-                                <span className={`ro-result-gender ro-gender-${student.gender}`}>{student.gender}</span>
+                            <div
+                                key={student.id}
+                                className={`ro-result-card ro-gender-bg-${student.gender} ${i < 3 ? 'ro-top-three' : ''}`}
+                                style={{ animationDelay: `${i * 0.05}s` }}
+                            >
+                                <div className="ro-card-order">
+                                    {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}번째`}
+                                </div>
+                                <div className="ro-card-name">{student.name}</div>
+                                <div className="ro-card-sub">
+                                    <span className="ro-card-num">{student.attendanceNumber}번</span>
+                                    <span className={`ro-card-gender ro-gender-${student.gender}`}>{student.gender}</span>
+                                </div>
                             </div>
                         ))}
                     </div>
