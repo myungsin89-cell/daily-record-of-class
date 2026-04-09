@@ -559,7 +559,7 @@
 
 @page {
     size: A4 portrait;
-    margin: 14mm 16mm;
+    margin: 10mm 14mm;
 }
 
 @media print {
