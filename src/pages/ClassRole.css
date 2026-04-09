@@ -625,15 +625,15 @@
         font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
         box-sizing: border-box;
         overflow: visible !important;
-        padding: 0 6mm;
+        padding: 5mm 6mm 0;
     }
 
     /* 헤더 배너 */
     .cr-print-header-bar {
         border-left: 8px solid #16a34a;
         border-bottom: 2px solid #16a34a;
-        padding: 7px 14px;
-        margin-bottom: 7px;
+        padding: 8px 16px;
+        margin-bottom: 8px;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -642,7 +642,7 @@
     }
 
     .cr-print-title {
-        font-size: 24px;
+        font-size: 26px;
         font-weight: 900;
         color: #14532d;
         letter-spacing: 0.1em;
@@ -651,7 +651,7 @@
     }
 
     .cr-print-subtitle {
-        font-size: 13px;
+        font-size: 14px;
         color: #15803d;
         margin: 0;
         font-weight: 700;
@@ -662,7 +662,7 @@
         height: 3px;
         background: #16a34a;
         border-radius: 2px;
-        margin-bottom: 8px;
+        margin-bottom: 10px;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
@@ -670,20 +670,20 @@
     /* 통계 박스 */
     .cr-print-stats {
         display: flex;
-        gap: 8px;
-        margin-bottom: 10px;
+        gap: 10px;
+        margin-bottom: 12px;
     }
 
     .cr-print-stat-box {
         flex: 1;
         border: 2px solid #16a34a;
         border-radius: 6px;
-        padding: 5px 10px;
+        padding: 6px 10px;
         text-align: center;
     }
 
     .cr-print-stat-label {
-        font-size: 10px;
+        font-size: 11px;
         color: #15803d;
         font-weight: 700;
         display: block;
@@ -692,7 +692,7 @@
     }
 
     .cr-print-stat-value {
-        font-size: 18px;
+        font-size: 20px;
         font-weight: 900;
         color: #14532d;
     }
@@ -705,16 +705,16 @@
         border: 2px solid #15803d;
     }
 
-    .cr-print-table colgroup col:nth-child(1) { width: 14%; }
-    .cr-print-table colgroup col:nth-child(2) { width: 26%; }
+    .cr-print-table colgroup col:nth-child(1) { width: 18%; }
+    .cr-print-table colgroup col:nth-child(2) { width: 30%; }
     .cr-print-table colgroup col:nth-child(3) { width: 8%; }
-    .cr-print-table colgroup col:nth-child(4) { width: 52%; }
+    .cr-print-table colgroup col:nth-child(4) { width: 44%; }
 
     .cr-print-table th {
-        padding: 7px 10px;
-        text-align: left;
+        padding: 9px 12px;
+        text-align: center;
         font-weight: 800;
-        font-size: 12px;
+        font-size: 13px;
         color: #14532d;
         letter-spacing: 0.05em;
         border-bottom: 2px solid #15803d;
@@ -724,16 +724,15 @@
     }
 
     .cr-print-table th:last-child { border-right: none; }
-    .cr-print-table th:nth-child(3) { text-align: center; }
 
     .cr-print-table td {
-        padding: 6px 10px;
+        padding: 8px 12px;
         border-bottom: 1px solid #d1fae5;
         border-right: 1px solid #d1fae5;
         vertical-align: middle;
         color: #1e293b;
-        font-size: 12px;
-        line-height: 1.45;
+        font-size: 13px;
+        line-height: 1.5;
         word-break: keep-all;
     }
 
@@ -743,7 +742,8 @@
     .cr-print-role {
         font-weight: 800;
         color: #14532d;
-        font-size: 12px;
+        font-size: 13px;
+        text-align: center;
     }
 
     .cr-print-desc {
@@ -754,7 +754,7 @@
         text-align: center;
         font-weight: 800;
         color: #15803d;
-        font-size: 12px;
+        font-size: 13px;
     }
 
     .cr-print-students {
@@ -763,21 +763,21 @@
 
     /* 푸터 */
     .cr-print-footer {
-        margin-top: 8px;
+        margin-top: 10px;
         display: flex;
         justify-content: space-between;
         align-items: center;
         border-top: 2px solid #16a34a;
-        padding-top: 6px;
+        padding-top: 7px;
     }
 
     .cr-print-footer-left {
-        font-size: 10px;
+        font-size: 11px;
         color: #6b7280;
     }
 
     .cr-print-footer-right {
-        font-size: 10px;
+        font-size: 11px;
         color: #15803d;
         font-weight: 700;
     }
