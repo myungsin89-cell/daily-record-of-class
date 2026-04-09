@@ -625,7 +625,7 @@
         font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
         box-sizing: border-box;
         overflow: visible !important;
-        transform-origin: top left;
+        padding: 0 6mm;
     }
 
     /* 헤더 배너 */
