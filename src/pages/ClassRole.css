@@ -630,10 +630,10 @@
 
     /* 헤더 배너 */
     .cr-print-header-bar {
-        border-left: 10px solid #16a34a;
-        border-bottom: 3px solid #16a34a;
-        padding: 10px 16px 10px;
-        margin-bottom: 10px;
+        border-left: 8px solid #16a34a;
+        border-bottom: 2px solid #16a34a;
+        padding: 7px 14px;
+        margin-bottom: 7px;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -642,16 +642,16 @@
     }
 
     .cr-print-title {
-        font-size: 34px;
+        font-size: 24px;
         font-weight: 900;
         color: #14532d;
-        letter-spacing: 0.12em;
+        letter-spacing: 0.1em;
         margin: 0;
         line-height: 1;
     }
 
     .cr-print-subtitle {
-        font-size: 16px;
+        font-size: 13px;
         color: #15803d;
         margin: 0;
         font-weight: 700;
@@ -659,10 +659,10 @@
 
     /* 장식선 */
     .cr-print-deco {
-        height: 4px;
+        height: 3px;
         background: #16a34a;
         border-radius: 2px;
-        margin-bottom: 12px;
+        margin-bottom: 8px;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
@@ -670,29 +670,29 @@
     /* 통계 박스 */
     .cr-print-stats {
         display: flex;
-        gap: 12px;
-        margin-bottom: 14px;
+        gap: 8px;
+        margin-bottom: 10px;
     }
 
     .cr-print-stat-box {
         flex: 1;
-        border: 2.5px solid #16a34a;
-        border-radius: 8px;
-        padding: 10px 12px;
+        border: 2px solid #16a34a;
+        border-radius: 6px;
+        padding: 5px 10px;
         text-align: center;
     }
 
     .cr-print-stat-label {
-        font-size: 12px;
+        font-size: 10px;
         color: #15803d;
         font-weight: 700;
         display: block;
-        margin-bottom: 4px;
-        letter-spacing: 0.05em;
+        margin-bottom: 2px;
+        letter-spacing: 0.04em;
     }
 
     .cr-print-stat-value {
-        font-size: 26px;
+        font-size: 18px;
         font-weight: 900;
         color: #14532d;
     }
@@ -702,22 +702,22 @@
         width: 100%;
         border-collapse: collapse;
         table-layout: fixed;
-        border: 2.5px solid #15803d;
+        border: 2px solid #15803d;
     }
 
-    .cr-print-table colgroup col:nth-child(1) { width: 13%; }
-    .cr-print-table colgroup col:nth-child(2) { width: 27%; }
+    .cr-print-table colgroup col:nth-child(1) { width: 14%; }
+    .cr-print-table colgroup col:nth-child(2) { width: 26%; }
     .cr-print-table colgroup col:nth-child(3) { width: 8%; }
     .cr-print-table colgroup col:nth-child(4) { width: 52%; }
 
     .cr-print-table th {
-        padding: 13px 14px;
+        padding: 7px 10px;
         text-align: left;
         font-weight: 800;
-        font-size: 15px;
+        font-size: 12px;
         color: #14532d;
-        letter-spacing: 0.06em;
-        border-bottom: 2.5px solid #15803d;
+        letter-spacing: 0.05em;
+        border-bottom: 2px solid #15803d;
         border-right: 1px solid #bbf7d0;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
@@ -727,13 +727,13 @@
     .cr-print-table th:nth-child(3) { text-align: center; }
 
     .cr-print-table td {
-        padding: 12px 14px;
+        padding: 6px 10px;
         border-bottom: 1px solid #d1fae5;
         border-right: 1px solid #d1fae5;
         vertical-align: middle;
         color: #1e293b;
-        font-size: 15px;
-        line-height: 1.7;
+        font-size: 12px;
+        line-height: 1.45;
         word-break: keep-all;
     }
 
@@ -743,7 +743,7 @@
     .cr-print-role {
         font-weight: 800;
         color: #14532d;
-        font-size: 16px;
+        font-size: 12px;
     }
 
     .cr-print-desc {
@@ -754,7 +754,7 @@
         text-align: center;
         font-weight: 800;
         color: #15803d;
-        font-size: 17px;
+        font-size: 12px;
     }
 
     .cr-print-students {
@@ -763,21 +763,21 @@
 
     /* 푸터 */
     .cr-print-footer {
-        margin-top: 14px;
+        margin-top: 8px;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        border-top: 2.5px solid #16a34a;
-        padding-top: 8px;
+        border-top: 2px solid #16a34a;
+        padding-top: 6px;
     }
 
     .cr-print-footer-left {
-        font-size: 13px;
+        font-size: 10px;
         color: #6b7280;
     }
 
     .cr-print-footer-right {
-        font-size: 14px;
+        font-size: 10px;
         color: #15803d;
         font-weight: 700;
     }

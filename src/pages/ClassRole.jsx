@@ -142,19 +142,22 @@ const ClassRole = () => {
         const printArea = document.querySelector('.cr-print-area');
         if (!printArea) { window.print(); return; }
 
-        // 높이 측정: 임시로 화면에 표시
-        printArea.style.cssText = 'display:block;position:absolute;top:-9999px;left:0;width:178mm;zoom:1;';
+        // 높이 측정: 임시로 화면에 표시 (A4 콘텐츠 너비: 210mm - 32mm = 178mm)
+        const prevCss = printArea.style.cssText;
+        printArea.style.cssText = 'display:block !important;position:fixed;visibility:hidden;top:0;left:0;width:178mm;zoom:1;';
         const naturalHeight = printArea.scrollHeight;
-        printArea.style.cssText = '';
+        printArea.style.cssText = prevCss;
 
-        // A4 콘텐츠 높이: 297mm - 28mm(여백) = 269mm → 96dpi 기준 px
-        const A4_H_PX = 269 * (96 / 25.4);
-        const zoom = Math.min(1.5, Math.max(0.45, A4_H_PX / naturalHeight));
+        // A4 콘텐츠 높이: 297mm - 28mm(상하여백) = 269mm
+        const A4_H_MM = 269;
+        const A4_H_PX = A4_H_MM * (96 / 25.4);
+        const zoom = naturalHeight > 0
+            ? Math.min(1.2, Math.max(0.4, A4_H_PX / naturalHeight))
+            : 1;
 
-        // zoom을 인라인 스타일로 직접 적용 (@ media print 인젝션보다 안정적)
         printArea.style.zoom = String(zoom);
         window.print();
-        printArea.style.zoom = '';
+        setTimeout(() => { printArea.style.zoom = ''; }, 500);
     };
 
     if (!students || students.length === 0) {
