@@ -960,8 +960,8 @@ const SeatingChart = () => {
                                             title={mode === 'teacher' && !student ? '클릭: 일반 > 여학생전용 > 사용불가' : ''}
                                         >
                                             {student && revealed ? (
-                                                <div 
-                                                    className={`student-card ${mode === 'student' ? 'revealed' : ''}`}
+                                                <div
+                                                    className={`student-card ${mode === 'student' ? 'revealed' : ''} ${useFemaleSeats ? (student.gender === '남' ? 'card-male' : 'card-female') : ''}`}
                                                     draggable={mode === 'teacher'}
                                                     onDragStart={(e) => onDragStartGrid(e, r, c, student)}
                                                 >
@@ -996,7 +996,7 @@ const SeatingChart = () => {
                         </div>
                         <div className="pool-list">
                             {unassignedStudents.map(student => (
-                                <div key={student.id} className="student-card" draggable onDragStart={(e) => onDragStartPool(e, student)}>
+                                <div key={student.id} className={`student-card ${useFemaleSeats ? (student.gender === '남' ? 'card-male' : 'card-female') : ''}`} draggable onDragStart={(e) => onDragStartPool(e, student)}>
                                     <span className={`student-no ${student.gender === '남' ? 'male' : 'female'}`}>{student.attendanceNumber}번</span>
                                     <span className="student-name">{student.name}</span>
                                 </div>

@@ -432,6 +432,26 @@ body.student-mode-active .layout {
     background: #f0f7ff;
 }
 
+.seating-chart-container .student-card.card-male {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+}
+
+.seating-chart-container .student-card.card-male:hover {
+    background: #dbeafe;
+    border-color: #93c5fd;
+}
+
+.seating-chart-container .student-card.card-female {
+    background: #fff1f2;
+    border-color: #fecdd3;
+}
+
+.seating-chart-container .student-card.card-female:hover {
+    background: #ffe4e6;
+    border-color: #fda4af;
+}
+
 .seating-chart-container .student-card .student-no {
     display: inline-flex;
     align-items: center;
