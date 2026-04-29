@@ -299,16 +299,22 @@ const BudgetManager = () => {
                                                 {budget.limits.map(limit => {
                                                     const maxAmount = Math.floor(budget.totalAmount * limit.maxPercent / 100);
                                                     const used = calculateLimitUsage(budget.expenses, limit.name);
+                                                    const remaining = maxAmount - used;
                                                     const barPercent = maxAmount > 0 ? Math.min(100, Math.round(used / maxAmount * 100)) : 0;
                                                     const isOver = used > maxAmount;
                                                     return (
                                                         <div key={limit.id} className="limit-item">
                                                             <div className="limit-header">
-                                                                <span className="limit-name">{limit.name}</span>
-                                                                <span className={`limit-amount ${isOver ? 'over' : ''}`}>
-                                                                    {formatCurrency(used)} / {formatCurrency(maxAmount)}
+                                                                <span className="limit-name">
+                                                                    {limit.name}
                                                                     <span className="limit-percent-badge"> ({limit.maxPercent}%)</span>
                                                                 </span>
+                                                                <span className={`limit-remaining ${isOver ? 'over' : ''}`}>
+                                                                    {isOver ? `${formatCurrency(Math.abs(remaining))} 초과` : `잔여 ${formatCurrency(remaining)}`}
+                                                                </span>
+                                                            </div>
+                                                            <div className="limit-detail">
+                                                                사용 {formatCurrency(used)} / 한도 {formatCurrency(maxAmount)}
                                                             </div>
                                                             <div className="limit-bar-bg">
                                                                 <div

@@ -181,21 +181,30 @@
 .limit-name {
     font-weight: 600;
     opacity: 0.95;
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
 }
 
-.limit-amount {
-    opacity: 0.85;
-    font-size: 0.75rem;
+.limit-remaining {
+    font-weight: 700;
+    font-size: 0.85rem;
 }
 
-.limit-amount.over {
+.limit-remaining.over {
     color: #f87171;
-    opacity: 1;
-    font-weight: 600;
+}
+
+.limit-detail {
+    font-size: 0.72rem;
+    opacity: 0.7;
+    margin-bottom: 4px;
 }
 
 .limit-percent-badge {
     opacity: 0.7;
+    font-weight: 400;
+    font-size: 0.75rem;
 }
 
 .limit-bar-bg {
