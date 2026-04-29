@@ -948,6 +948,7 @@ const SeatingChart = () => {
                                     let statusClass = '';
                                     if (seat.genderPreference === '여') statusClass = 'gender-female';
                                     else if (seat.genderPreference === 'blocked') statusClass = 'blocked';
+                                    else if (useFemaleSeats && seat.genderPreference === null) statusClass = 'gender-male';
 
                                     return (
                                         <div 

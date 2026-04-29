@@ -406,6 +406,50 @@ body.student-mode-active .layout {
     margin-right: 1rem;
 }
 
+.seating-chart-container .seat-slot.gender-male {
+    background: #eff6ff;
+    border-color: #93c5fd;
+    border-style: solid;
+}
+
+.seating-chart-container .seat-slot.gender-male::after {
+    content: '남학생';
+    position: absolute;
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #1d4ed8;
+}
+
+.seating-chart-container .seat-slot.gender-female {
+    background: #fff1f2;
+    border-color: #fda4af;
+    border-style: solid;
+}
+
+.seating-chart-container .seat-slot.gender-female::after {
+    content: '여학생';
+    position: absolute;
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #be123c;
+}
+
+.seating-chart-container .seat-slot.occupied.gender-male {
+    border-color: #93c5fd !important;
+    border-style: solid !important;
+    background: transparent !important;
+}
+
+.seating-chart-container .seat-slot.occupied.gender-female {
+    border-color: #fda4af !important;
+    border-style: solid !important;
+    background: transparent !important;
+}
+
+.seating-chart-container .seat-slot.occupied::after {
+    content: none;
+}
+
 .seating-chart-container .student-card {
     width: 140px;
     height: 70px;
@@ -1427,7 +1471,9 @@ body.student-mode-active .layout {
     transform: rotate(180deg);
 }
 
-.seating-chart-container .classroom-area.flipped .seat-slot.blocked::after {
+.seating-chart-container .classroom-area.flipped .seat-slot.blocked::after,
+.seating-chart-container .classroom-area.flipped .seat-slot.gender-male::after,
+.seating-chart-container .classroom-area.flipped .seat-slot.gender-female::after {
     transform: rotate(180deg);
 }
 
@@ -1542,7 +1588,9 @@ body.student-mode-active .layout {
 }
 
 /* Ensure empty slot text also stays upright in teacher view */
-.seating-chart-container.printing.print-teacher .seat-slot.blocked::after {
+.seating-chart-container.printing.print-teacher .seat-slot.blocked::after,
+.seating-chart-container.printing.print-teacher .seat-slot.gender-male::after,
+.seating-chart-container.printing.print-teacher .seat-slot.gender-female::after {
     transform: rotate(180deg);
 }
 
