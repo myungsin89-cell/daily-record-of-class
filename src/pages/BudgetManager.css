@@ -37,7 +37,6 @@
     position: absolute;
     right: 10px;
     bottom: -20px;
-    /* 인풋 아래에 표시 */
     font-size: 0.8rem;
     color: var(--color-primary);
     pointer-events: none;
@@ -85,6 +84,7 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: var(--spacing-md);
+    padding-right: 60px;
 }
 
 .budget-card-header h3 {
@@ -92,16 +92,16 @@
     font-size: 1.25rem;
 }
 
-.delete-btn-small {
+/* 카드 액션 버튼 (편집 / 삭제) */
+.card-action-btn {
     position: absolute;
     top: 12px;
-    right: 12px;
     background: rgba(255, 255, 255, 0.2);
     color: white;
     border: none;
     border-radius: 50%;
-    width: 24px;
-    height: 24px;
+    width: 26px;
+    height: 26px;
     cursor: pointer;
     font-size: 14px;
     display: flex;
@@ -112,9 +112,17 @@
     pointer-events: auto;
 }
 
-.delete-btn-small:hover {
-    background: rgba(255, 255, 255, 0.3);
+.card-action-btn:hover {
+    background: rgba(255, 255, 255, 0.35);
     transform: scale(1.1);
+}
+
+.edit-btn {
+    right: 44px;
+}
+
+.delete-btn-small {
+    right: 12px;
 }
 
 .budget-info {
@@ -147,6 +155,68 @@
     color: #fbbf24;
 }
 
+/* 사용 제한 항목 (카드 내) */
+.budget-limits {
+    margin-top: var(--spacing-md);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.limit-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.limit-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 0.8rem;
+}
+
+.limit-name {
+    font-weight: 600;
+    opacity: 0.95;
+}
+
+.limit-amount {
+    opacity: 0.85;
+    font-size: 0.75rem;
+}
+
+.limit-amount.over {
+    color: #f87171;
+    opacity: 1;
+    font-weight: 600;
+}
+
+.limit-percent-badge {
+    opacity: 0.7;
+}
+
+.limit-bar-bg {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.limit-bar {
+    height: 100%;
+    background: rgba(255, 255, 255, 0.85);
+    border-radius: 3px;
+    transition: width 0.4s ease;
+    min-width: 2px;
+}
+
+.limit-bar.over {
+    background: #f87171;
+}
+
 .budget-footer {
     margin-top: var(--spacing-md);
     padding-top: var(--spacing-sm);
@@ -167,7 +237,7 @@
 .add-expense-form {
     display: flex;
     gap: var(--spacing-md);
-    margin-bottom: var(--spacing-lg);
+    margin-bottom: var(--spacing-sm);
     flex-wrap: nowrap;
     align-items: center;
     overflow-x: auto;
@@ -178,7 +248,6 @@
 .add-expense-form .form-input,
 .add-expense-form .input-wrapper {
     flex: 1;
-    /* min-width 제거 */
 }
 
 .add-expense-form .input-wrapper {
@@ -188,6 +257,39 @@
 
 .add-expense-form .input-wrapper input {
     width: 100%;
+}
+
+/* 한도 경고 */
+.expense-limit-hint {
+    margin-bottom: var(--spacing-md);
+    padding: 8px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.expense-limit-hint.ok {
+    background: rgba(74, 222, 128, 0.12);
+    border: 1px solid rgba(74, 222, 128, 0.3);
+    color: #16a34a;
+}
+
+.expense-limit-hint.over {
+    background: rgba(248, 113, 113, 0.12);
+    border: 1px solid rgba(248, 113, 113, 0.3);
+    color: #dc2626;
+}
+
+.hint-label {
+    font-weight: 600;
+    margin-right: 2px;
+}
+
+.hint-warn {
+    font-weight: 600;
+    margin-left: 4px;
 }
 
 .expense-table {
@@ -243,7 +345,7 @@
     font-size: 0.9rem;
 }
 
-/* 모달 스타일 */
+/* 모달 공통 */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -258,7 +360,7 @@
 }
 
 .modal-content {
-    background: white;
+    background: var(--color-surface, white);
     padding: 2rem;
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-lg);
@@ -281,11 +383,125 @@
     display: flex;
     justify-content: center;
     gap: 1rem;
+    margin-top: 1.5rem;
 }
 
-/* 반응형 디자인 */
-@media (max-width: 768px) {
+/* 편집 모달 */
+.edit-modal-content {
+    max-width: 520px;
+    text-align: left;
+}
 
+.edit-modal-content h3 {
+    margin-bottom: 1.5rem;
+    font-size: 1.2rem;
+}
+
+.edit-modal-section {
+    margin-bottom: 1.25rem;
+}
+
+.edit-label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--color-text-primary);
+    margin-bottom: 6px;
+}
+
+.edit-section-desc {
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+    margin: 0 0 10px 0;
+}
+
+.edit-korean-text {
+    display: block;
+    text-align: right;
+    font-size: 0.8rem;
+    color: var(--color-primary);
+    margin-top: 4px;
+    font-weight: 500;
+}
+
+.edit-limits-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.edit-limit-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--color-background);
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+}
+
+.edit-limit-name {
+    flex: 1;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.edit-limit-percent {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    min-width: 36px;
+    text-align: right;
+}
+
+.remove-limit-btn {
+    background: transparent;
+    border: none;
+    color: var(--color-danger, #ef4444);
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    transition: background-color 0.2s;
+}
+
+.remove-limit-btn:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.add-limit-form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: 8px;
+}
+
+.add-limit-form .form-input {
+    flex: 1;
+}
+
+.limit-percent-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: 90px;
+    flex-shrink: 0;
+}
+
+.limit-percent-input {
+    width: 100%;
+}
+
+.percent-suffix {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
     .budget-form,
     .add-expense-form {
         flex-direction: column;
@@ -302,5 +518,13 @@
     .expense-table th,
     .expense-table td {
         padding: var(--spacing-sm);
+    }
+
+    .add-limit-form {
+        flex-wrap: wrap;
+    }
+
+    .limit-percent-wrapper {
+        width: 80px;
     }
 }
