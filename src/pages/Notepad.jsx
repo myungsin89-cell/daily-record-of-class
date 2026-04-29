@@ -93,55 +93,60 @@ const Notepad = () => {
                 </div>
             </div>
 
-            {/* 검색 */}
-            <div className="note-search-bar">
-                <input
-                    type="text"
-                    placeholder="제목 또는 내용으로 검색..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="form-input"
-                />
-                {searchQuery && (
-                    <span className="search-result-count">{filteredNotes.length}건</span>
+            {/* 구분선 + 목록 섹션 */}
+            <div className="notes-section">
+                <div className="notes-section-header">
+                    <span className="notes-section-title">저장된 메모</span>
+                    {notes.length > 0 && <span className="notes-count">{notes.length}개</span>}
+                    <div className="note-search-bar">
+                        <input
+                            type="text"
+                            placeholder="검색..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="form-input note-search-input"
+                        />
+                        {searchQuery && (
+                            <span className="search-result-count">{filteredNotes.length}건</span>
+                        )}
+                    </div>
+                </div>
+
+                {filteredNotes.length === 0 ? (
+                    <p className="text-muted notepad-empty">
+                        {searchQuery ? '검색 결과가 없습니다.' : '저장된 메모가 없습니다.'}
+                    </p>
+                ) : (
+                    <div className="note-list">
+                        {filteredNotes.map(note => (
+                            <div
+                                key={note.id}
+                                className={`note-item ${expandedId === note.id ? 'expanded' : ''}`}
+                                onClick={() => setExpandedId(expandedId === note.id ? null : note.id)}
+                            >
+                                <div className="note-item-header">
+                                    <div className="note-item-meta">
+                                        {note.title && <span className="note-title">{note.title}</span>}
+                                        <span className="note-date">{formatDate(note.createdAt)}</span>
+                                    </div>
+                                    <button
+                                        className="note-delete-btn"
+                                        onClick={(e) => { e.stopPropagation(); handleDelete(note.id); }}
+                                        title="삭제"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                                {note.content && (
+                                    <div className={`note-content-preview ${expandedId === note.id ? 'expanded' : ''}`}>
+                                        {note.content}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
                 )}
             </div>
-
-            {/* 메모 목록 */}
-            {filteredNotes.length === 0 ? (
-                <p className="text-muted notepad-empty">
-                    {searchQuery ? '검색 결과가 없습니다.' : '저장된 메모가 없습니다.'}
-                </p>
-            ) : (
-                <div className="note-list">
-                    {filteredNotes.map(note => (
-                        <div
-                            key={note.id}
-                            className={`note-item ${expandedId === note.id ? 'expanded' : ''}`}
-                            onClick={() => setExpandedId(expandedId === note.id ? null : note.id)}
-                        >
-                            <div className="note-item-header">
-                                <div className="note-item-meta">
-                                    <span className="note-date">{formatDate(note.createdAt)}</span>
-                                    {note.title && <span className="note-title">{note.title}</span>}
-                                </div>
-                                <button
-                                    className="note-delete-btn"
-                                    onClick={(e) => { e.stopPropagation(); handleDelete(note.id); }}
-                                    title="삭제"
-                                >
-                                    ✕
-                                </button>
-                            </div>
-                            {note.content && (
-                                <div className={`note-content-preview ${expandedId === note.id ? 'expanded' : ''}`}>
-                                    {note.content}
-                                </div>
-                            )}
-                        </div>
-                    ))}
-                </div>
-            )}
         </div>
     );
 };
