@@ -305,6 +305,12 @@ body.student-mode-active .layout {
     transform: none;
 }
 
+.seating-chart-container .base-btn.icon-btn {
+    padding: 0.6rem 0.85rem;
+    font-size: 1.1rem;
+    line-height: 1;
+}
+
 .seating-chart-container .base-btn.print-st, 
 .seating-chart-container .base-btn.print-tc {
     background: #0f172a;

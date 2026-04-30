@@ -795,8 +795,8 @@ const SeatingChart = () => {
                         <div className="btn-group main">
                             <button className="base-btn reset" onClick={resetGrid}>초기화</button>
                             <button className="base-btn randomize" onClick={handleRandomize} disabled={!validation.isValid}>자동 랜덤 배치</button>
-                            <button className="base-btn load" onClick={() => { setPreviewRecord(seatingHistory[0] || null); setShowLoadModal(true); }} disabled={seatingHistory.length === 0}>불러오기</button>
-                            <button className="base-btn save" onClick={handleSaveClick}>저장</button>
+                            <button className="base-btn load icon-btn" title="불러오기" onClick={() => { setPreviewRecord(seatingHistory[0] || null); setShowLoadModal(true); }} disabled={seatingHistory.length === 0}>📂</button>
+                            <button className="base-btn save icon-btn" title="저장" onClick={handleSaveClick}>💾</button>
                         </div>
                         <div className="btn-group print">
                             <button className="base-btn print-st" onClick={() => handlePrint('standard')}>학생용 인쇄</button>
