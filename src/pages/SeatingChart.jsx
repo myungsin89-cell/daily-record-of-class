@@ -768,6 +768,7 @@ const SeatingChart = () => {
                             <select name="pairSize" value={gridConfig.pairSize} onChange={handleConfigChange}>
                                 <option value={1}>1명</option>
                                 <option value={2}>2명</option>
+                                <option value={3}>3명</option>
                                 <option value={4}>4명</option>
                             </select>
                         </div>
@@ -794,13 +795,13 @@ const SeatingChart = () => {
                     <div className="setup-group actions-section">
                         <div className="btn-group main">
                             <button className="base-btn reset" onClick={resetGrid}>초기화</button>
-                            <button className="base-btn randomize" onClick={handleRandomize} disabled={!validation.isValid}>자동 랜덤 배치</button>
+                            <button className="base-btn randomize" onClick={handleRandomize} disabled={!validation.isValid}>랜덤배치</button>
                             <button className="base-btn load icon-btn" title="불러오기" onClick={() => { setPreviewRecord(seatingHistory[0] || null); setShowLoadModal(true); }} disabled={seatingHistory.length === 0}>📂</button>
                             <button className="base-btn save icon-btn" title="저장" onClick={handleSaveClick}>💾</button>
                         </div>
                         <div className="btn-group print">
-                            <button className="base-btn print-st" onClick={() => handlePrint('standard')}>학생용 인쇄</button>
-                            <button className="base-btn print-tc" onClick={() => handlePrint('teacher')}>교사용 인쇄</button>
+                            <button className="base-btn print-st icon-btn" title="학생용 인쇄" onClick={() => handlePrint('standard')}>🖨️</button>
+                            <button className="base-btn print-tc icon-btn" title="교사용 인쇄" onClick={() => handlePrint('teacher')}>🖨️</button>
                         </div>
                     </div>
                 </div>

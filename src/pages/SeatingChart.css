@@ -101,25 +101,26 @@ body.student-mode-active .layout {
 .seating-chart-container .setup-bar {
     display: flex;
     align-items: center;
+    flex-wrap: nowrap;
     background: white;
-    padding: 0.8rem 1.75rem;
+    padding: 0.65rem 1.25rem;
     border-radius: 12px;
     border: 1px solid #e2e8f0;
     box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     margin: 0 auto 2.5rem;
     width: fit-content;
-    min-width: 1000px;
-    gap: 2.5rem;
+    gap: 1.25rem;
 }
 
 .seating-chart-container .setup-group {
     display: flex;
     align-items: center;
-    gap: 1.5rem;
+    gap: 0.75rem;
+    flex-shrink: 0;
 }
 
 .seating-chart-container .config-section {
-    padding-right: 1.5rem;
+    padding-right: 1rem;
     border-right: 1px solid #e2e8f0;
 }
 
@@ -130,11 +131,12 @@ body.student-mode-active .layout {
 }
 
 .seating-chart-container .setup-label {
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     font-weight: 700;
     color: #64748b;
     margin: 0;
     line-height: normal;
+    white-space: nowrap;
 }
 
 .seating-chart-container .input-row {
@@ -264,24 +266,27 @@ body.student-mode-active .layout {
 /* Buttons */
 .seating-chart-container .btn-group {
     display: flex;
-    gap: 1rem;
+    gap: 0.5rem;
     align-items: center;
+    flex-shrink: 0;
 }
 
 .seating-chart-container .btn-group.main {
-    padding-right: 1.75rem;
+    padding-right: 1rem;
     border-right: 2px solid #f1f5f9;
 }
 
 .seating-chart-container .base-btn {
-    padding: 0.6rem 1.25rem;
+    padding: 0.5rem 0.9rem;
     border-radius: 8px;
     font-weight: 700;
-    font-size: 0.9rem;
+    font-size: 0.82rem;
     transition: all 0.2s;
     cursor: pointer;
     border: 1px solid transparent;
     line-height: normal;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .seating-chart-container .base-btn.reset { 
@@ -318,9 +323,13 @@ body.student-mode-active .layout {
     line-height: 1;
 }
 
-.seating-chart-container .base-btn.print-st, 
-.seating-chart-container .base-btn.print-tc {
+.seating-chart-container .base-btn.print-st {
     background: #0f172a;
+    color: white;
+}
+
+.seating-chart-container .base-btn.print-tc {
+    background: #1e40af;
     color: white;
 }
 
