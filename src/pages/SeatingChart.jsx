@@ -703,42 +703,56 @@ const SeatingChart = () => {
     };
 
     const handlePrint = (view) => {
+        // ① 팝업을 클릭 이벤트 직후 동기적으로 열어야 브라우저 팝업 차단을 피할 수 있음
+        const printWindow = window.open('', '_blank');
+
         setPrintMode(view);
+
+        if (!printWindow) {
+            alert('팝업이 차단되었습니다. 브라우저에서 이 사이트의 팝업을 허용해 주세요.');
+            setPrintMode(null);
+            return;
+        }
+
+        // ② React 재렌더링 대기 후 DOM 캡처
         setTimeout(() => {
             const classroomEl = containerRef.current?.querySelector('.classroom-area');
-            if (!classroomEl) { window.print(); setPrintMode(null); return; }
+            if (!classroomEl) { printWindow.close(); setPrintMode(null); return; }
 
-            // 현재 페이지의 모든 CSS 추출
-            let cssText = '';
-            for (const sheet of document.styleSheets) {
-                try {
-                    for (const rule of sheet.cssRules) cssText += rule.cssText + '\n';
-                } catch (_) {}
-            }
-
-            const printWindow = window.open('', '_blank');
-            if (!printWindow) { window.print(); setPrintMode(null); return; }
+            // ③ 현재 페이지에 로드된 CSS 파일 링크 수집
+            const cssLinks = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+                .map(l => `<link rel="stylesheet" href="${l.href}">`)
+                .join('\n');
 
             const isTeacher = view === 'teacher';
+
             printWindow.document.write(`<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><style>
-@page{size:A4 landscape;margin:8mm;}
-${cssText}
+<html><head><meta charset="UTF-8">
+<style>@page{size:A4 landscape;margin:8mm;}</style>
+${cssLinks}
+<style>
 body{margin:0;padding:0;background:white;display:flex;justify-content:center;
 -webkit-print-color-adjust:exact;print-color-adjust:exact;}
-.seating-chart-container{padding:0!important;margin:0 auto!important;width:100%!important;display:flex!important;justify-content:center!important;}
-.seating-main-workspace{display:flex!important;justify-content:center!important;width:100%!important;margin:0!important;padding:0!important;}
-.classroom-area{box-shadow:none!important;border:none!important;margin:0 auto!important;}
+.seating-chart-container{padding:0!important;width:100%!important;
+display:flex!important;justify-content:center!important;}
+.seating-main-workspace{display:flex!important;justify-content:center!important;
+width:100%!important;margin:0!important;padding:0!important;}
+.classroom-area{box-shadow:none!important;border:none!important;
+margin:0 auto!important;padding:6mm!important;}
 .grid-row{justify-content:center!important;align-items:center!important;}
-</style></head><body>
+</style>
+</head><body>
 <div class="seating-chart-container${isTeacher ? ' printing print-teacher' : ''}">
 <div class="seating-main-workspace">${classroomEl.outerHTML}</div>
 </div>
-<script>window.addEventListener('load',function(){setTimeout(function(){window.print();window.close();},300);});<\/script>
+<script>
+window.addEventListener('load',function(){
+  setTimeout(function(){window.print();window.close();},400);
+});<\/script>
 </body></html>`);
             printWindow.document.close();
             setPrintMode(null);
-        }, 300);
+        }, 350);
     };
 
     return (
