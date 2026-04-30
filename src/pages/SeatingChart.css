@@ -409,7 +409,7 @@ body.student-mode-active .layout {
     height: 70px;
     background: #f1f5f9;
     border: 2px dashed #cbd5e1;
-    border-radius: 10px;
+    border-radius: 6px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -488,13 +488,13 @@ body.student-mode-active .layout {
     width: 140px;
     height: 70px;
     background: white;
-    border-radius: 10px;
+    border-radius: 6px;
     display: flex;
     flex-direction: row;
     justify-content: center;
     padding: 0 0.5rem;
     align-items: center;
-    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.06);
     border: 1px solid #e2e8f0;
     cursor: grab;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -505,7 +505,7 @@ body.student-mode-active .layout {
 
 .seating-chart-container .student-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px -5px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3), 0 2px 8px rgba(0, 0, 0, 0.1);
     border-color: #3b82f6;
     background: #f0f7ff;
 }
