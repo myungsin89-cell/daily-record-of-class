@@ -956,7 +956,7 @@ const SeatingChart = () => {
             )}
 
             <main className={`seating-main-workspace ${mode === 'student' ? 'student-view' : ''}`}>
-                <section className={`classroom-area ${!printMode && isFlipped ? 'flipped' : ''}`}>
+                <section className={`classroom-area ${!printMode && isFlipped && mode === 'teacher' ? 'flipped' : ''}`}>
                     <div className="blackboard-indicator"></div>
                     <div className="grid-container">
                         {grid.map((row, r) => (
