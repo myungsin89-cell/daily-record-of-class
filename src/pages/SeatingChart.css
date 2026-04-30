@@ -1746,10 +1746,16 @@ body.student-mode-active .layout {
 /* --- Print Logic --- */
 @media print {
     @page {
-        size: landscape;
-        margin: 5mm;
+        size: A4 landscape;
+        margin: 8mm;
     }
-    
+
+    html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: white !important;
+    }
+
     /* Hide all UI elements except the seating grid */
     .sidebar,
     .main-header,
@@ -1772,12 +1778,10 @@ body.student-mode-active .layout {
     .layout,
     .main-content,
     .page-content {
-        display: flex !important;
-        flex-direction: column !important;
-        justify-content: center !important;
-        align-items: center !important;
+        display: block !important;
         width: 100% !important;
-        min-height: 98vh !important;
+        height: auto !important;
+        min-height: unset !important;
         margin: 0 !important;
         padding: 0 !important;
         background: white !important;
@@ -1788,20 +1792,22 @@ body.student-mode-active .layout {
 
     .seating-chart-container {
         padding: 0 !important;
-        margin: 0 !important;
+        margin: 0 auto !important;
         background: white !important;
         width: 100% !important;
         height: auto !important;
         overflow: visible !important;
         display: flex !important;
         justify-content: center !important;
-        align-items: center !important;
+        align-items: flex-start !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
 
     .seating-chart-container .seating-main-workspace {
         display: flex !important;
         justify-content: center !important;
-        align-items: center !important;
+        align-items: flex-start !important;
         width: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
@@ -1811,7 +1817,7 @@ body.student-mode-active .layout {
         box-shadow: none !important;
         border: none !important;
         margin: 0 auto !important;
-        padding: 5mm !important;
+        padding: 4mm !important;
         width: fit-content !important;
         max-width: 100% !important;
         page-break-inside: avoid;
@@ -1819,7 +1825,23 @@ body.student-mode-active .layout {
         background: white !important;
     }
 
+    .seating-chart-container .grid-container {
+        gap: 0.6rem !important;
+    }
+
+    .seating-chart-container .grid-row {
+        gap: 0.6rem !important;
+        align-items: center !important;
+    }
+
+    .seating-chart-container .seat-slot {
+        width: 130px !important;
+        height: 65px !important;
+    }
+
     .seating-chart-container .student-card {
+        width: 130px !important;
+        height: 65px !important;
         page-break-inside: avoid;
         break-inside: avoid;
         border: 1px solid #e2e8f0 !important;
@@ -1827,7 +1849,7 @@ body.student-mode-active .layout {
     }
 
     .seating-chart-container .blackboard-indicator {
-        margin-bottom: 8mm !important;
+        margin-bottom: 6mm !important;
         background-color: #064e3b !important;
         border-color: #78350f !important;
         -webkit-print-color-adjust: exact !important;
