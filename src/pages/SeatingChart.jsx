@@ -37,6 +37,8 @@ const SeatingChart = () => {
     const [seatingHistory, setSeatingHistory] = useState([]);
     const [showSaveModal, setShowSaveModal] = useState(false);
     const [saveNameInput, setSaveNameInput] = useState('');
+    const [showLoadModal, setShowLoadModal] = useState(false);
+    const [previewRecord, setPreviewRecord] = useState(null);
 
     // New state for female seats
     const [useFemaleSeats, setUseFemaleSeats] = useState(true);
@@ -231,6 +233,24 @@ const SeatingChart = () => {
 
         setShowSaveModal(false);
         alert(`'${name}' 이름으로 자리배치가 기록되었습니다.`);
+    };
+
+    // Load a history record into the current grid
+    const handleLoadRecord = async (record) => {
+        if (!window.confirm(`'${record.name}' 자리배치를 불러올까요?\n현재 배치가 덮어씌워집니다.`)) return;
+        setGrid(record.grid);
+        setGridConfig(record.gridConfig);
+        await saveData(STORES.SEATING_CONFIGS, {
+            classId: currentClass.id,
+            gridConfig: record.gridConfig,
+            constraints,
+            useFemaleSeats,
+            youtubeUrl,
+            grid: record.grid,
+            updatedAt: new Date().toISOString()
+        });
+        setShowLoadModal(false);
+        setPreviewRecord(null);
     };
 
     // Delete a history entry
@@ -775,6 +795,7 @@ const SeatingChart = () => {
                         <div className="btn-group main">
                             <button className="base-btn reset" onClick={resetGrid}>초기화</button>
                             <button className="base-btn randomize" onClick={handleRandomize} disabled={!validation.isValid}>자동 랜덤 배치</button>
+                            <button className="base-btn load" onClick={() => { setPreviewRecord(seatingHistory[0] || null); setShowLoadModal(true); }} disabled={seatingHistory.length === 0}>불러오기</button>
                             <button className="base-btn save" onClick={handleSaveClick}>저장</button>
                         </div>
                         <div className="btn-group print">
@@ -1108,6 +1129,86 @@ const SeatingChart = () => {
                 </div>
             )}
 
+            {/* Load History Modal */}
+            {showLoadModal && (
+                <div className="chart-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setShowLoadModal(false); setPreviewRecord(null); } }}>
+                    <div className="chart-modal load-history-modal">
+                        <div className="modal-header">
+                            <h2>📂 자리배치 불러오기</h2>
+                            <button className="close-btn" onClick={() => { setShowLoadModal(false); setPreviewRecord(null); }}>×</button>
+                        </div>
+                        <div className="modal-body load-modal-body">
+                            <div className="load-list-panel">
+                                <p className="load-list-hint">불러올 기록을 선택하세요.</p>
+                                {seatingHistory.map(record => {
+                                    const d = new Date(record.savedAt);
+                                    const dateStr = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+                                    return (
+                                        <div
+                                            key={record.id}
+                                            className={`load-list-item ${previewRecord?.id === record.id ? 'selected' : ''}`}
+                                            onClick={() => setPreviewRecord(record)}
+                                        >
+                                            <div className="lli-info">
+                                                <span className="lli-name">{record.name}</span>
+                                                <span className="lli-meta">{dateStr} · 짝 {record.pairs?.length || 0}그룹</span>
+                                            </div>
+                                            {previewRecord?.id === record.id && (
+                                                <button className="m-btn confirm lli-apply" onClick={() => handleLoadRecord(record)}>적용</button>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            <div className="load-preview-panel">
+                                {previewRecord ? (
+                                    <>
+                                        <p className="preview-title">{previewRecord.name} 미리보기</p>
+                                        <div className="mini-seating-grid">
+                                            {previewRecord.grid.map((row, r) => (
+                                                <div key={r} className="mini-grid-row">
+                                                    {row.map((seat, c) => {
+                                                        const isGap = (c + 1) % previewRecord.gridConfig.pairSize === 0 && (c + 1) < previewRecord.gridConfig.cols;
+                                                        const student = students?.find(s => s.id === seat.studentId);
+                                                        let cls = 'mini-seat';
+                                                        if (seat.genderPreference === 'blocked') cls += ' ms-blocked';
+                                                        else if (student) cls += student.gender === '남' ? ' ms-male' : ' ms-female';
+                                                        else if (seat.genderPreference === '여') cls += ' ms-female-empty';
+                                                        else cls += ' ms-empty';
+                                                        return (
+                                                            <div key={c} className={`${cls}${isGap ? ' ms-gap' : ''}`} title={student?.name || ''}>
+                                                                {student && <span className="ms-initial">{student.name[0]}</span>}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="preview-legend">
+                                            <span className="legend-item"><span className="legend-dot ms-male"></span>남학생</span>
+                                            <span className="legend-item"><span className="legend-dot ms-female"></span>여학생</span>
+                                            <span className="legend-item"><span className="legend-dot ms-blocked"></span>사용불가</span>
+                                            <span className="legend-item"><span className="legend-dot ms-empty"></span>빈자리</span>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <p className="preview-empty">왼쪽에서 기록을 선택하면 미리보기가 표시됩니다.</p>
+                                )}
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <span />
+                            <div className="modal-btns">
+                                <button className="m-btn cancel" onClick={() => { setShowLoadModal(false); setPreviewRecord(null); }}>닫기</button>
+                                {previewRecord && (
+                                    <button className="m-btn confirm" onClick={() => handleLoadRecord(previewRecord)}>적용하기</button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Seating History Panel */}
             {mode === 'teacher' && (
                 <div className="seating-history-panel">
@@ -1129,7 +1230,10 @@ const SeatingChart = () => {
                                             <span className="history-date">{dateStr}</span>
                                             <span className="history-pairs-count">짝 그룹 {entry.pairs?.length || 0}개</span>
                                         </div>
-                                        <button className="history-del-btn" onClick={() => handleDeleteHistory(entry.id)}>삭제</button>
+                                        <div className="history-actions">
+                                            <button className="history-load-btn" onClick={() => { setPreviewRecord(entry); setShowLoadModal(true); }}>불러오기</button>
+                                            <button className="history-del-btn" onClick={() => handleDeleteHistory(entry.id)}>삭제</button>
+                                        </div>
                                     </div>
                                 );
                             })}
