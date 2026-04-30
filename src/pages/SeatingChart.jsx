@@ -704,9 +704,39 @@ const SeatingChart = () => {
 
     const handlePrint = (view) => {
         setPrintMode(view);
-        // Short delay to ensure state reaches rendering before print dialog
         setTimeout(() => {
-            window.print();
+            const classroomEl = containerRef.current?.querySelector('.classroom-area');
+            if (!classroomEl) { window.print(); setPrintMode(null); return; }
+
+            // 현재 페이지의 모든 CSS 추출
+            let cssText = '';
+            for (const sheet of document.styleSheets) {
+                try {
+                    for (const rule of sheet.cssRules) cssText += rule.cssText + '\n';
+                } catch (_) {}
+            }
+
+            const printWindow = window.open('', '_blank');
+            if (!printWindow) { window.print(); setPrintMode(null); return; }
+
+            const isTeacher = view === 'teacher';
+            printWindow.document.write(`<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><style>
+@page{size:A4 landscape;margin:8mm;}
+${cssText}
+body{margin:0;padding:0;background:white;display:flex;justify-content:center;
+-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.seating-chart-container{padding:0!important;margin:0 auto!important;width:100%!important;display:flex!important;justify-content:center!important;}
+.seating-main-workspace{display:flex!important;justify-content:center!important;width:100%!important;margin:0!important;padding:0!important;}
+.classroom-area{box-shadow:none!important;border:none!important;margin:0 auto!important;}
+.grid-row{justify-content:center!important;align-items:center!important;}
+</style></head><body>
+<div class="seating-chart-container${isTeacher ? ' printing print-teacher' : ''}">
+<div class="seating-main-workspace">${classroomEl.outerHTML}</div>
+</div>
+<script>window.addEventListener('load',function(){setTimeout(function(){window.print();window.close();},300);});<\/script>
+</body></html>`);
+            printWindow.document.close();
             setPrintMode(null);
         }, 300);
     };
