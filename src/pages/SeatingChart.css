@@ -193,6 +193,8 @@ body.student-mode-active .layout {
 .seating-chart-container .status-text {
     font-weight: 800;
     font-size: 0.9rem;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .seating-chart-container .valid .status-text { color: #166534; }
@@ -201,6 +203,8 @@ body.student-mode-active .layout {
 .seating-chart-container .mini-badges {
     display: flex;
     gap: 0.6rem;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
 }
 
 .seating-chart-container .m-badge {
@@ -208,6 +212,7 @@ body.student-mode-active .layout {
     font-weight: 700;
     background: transparent !important;
     border: none !important;
+    white-space: nowrap;
 }
 
 .seating-chart-container .valid .m-badge { color: #15803d; }
@@ -220,12 +225,14 @@ body.student-mode-active .layout {
     gap: 0.4rem;
     cursor: pointer;
     margin-left: 1rem;
+    flex-shrink: 0;
 }
 
 .seating-chart-container .g-text {
     font-size: 0.8rem;
     font-weight: 700;
     color: #475569;
+    white-space: nowrap;
 }
 
 .seating-chart-container .gender-toggle-mini input { display: none; }
