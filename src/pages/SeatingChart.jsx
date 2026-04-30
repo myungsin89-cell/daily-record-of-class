@@ -728,8 +728,8 @@ const SeatingChart = () => {
 
             printWindow.document.write(`<!DOCTYPE html>
 <html><head><meta charset="UTF-8">
-<style>@page{size:A4 landscape;margin:8mm;}</style>
 ${cssLinks}
+<style>@page{size:A4 landscape;margin:8mm;}</style>
 <style>
 body{margin:0;padding:0;background:white;display:flex;justify-content:center;
 -webkit-print-color-adjust:exact;print-color-adjust:exact;}
