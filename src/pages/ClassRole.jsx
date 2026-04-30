@@ -88,6 +88,11 @@ const ClassRole = () => {
         saveRoles(roles.filter((_, i) => i !== index));
     };
 
+    const handleClearAllStudents = () => {
+        if (!window.confirm('모든 역할에서 배정된 학생을 초기화할까요?')) return;
+        saveRoles(roles.map(r => ({ ...r, assignedStudents: [] })));
+    };
+
     // 현재 역할(index 제외)에 이미 배정된 학생 ID 집합
     const getAlreadyAssigned = (excludeIndex) => {
         const ids = new Set();
@@ -157,6 +162,9 @@ const ClassRole = () => {
             <div className="cr-header">
                 <h1 className="cr-title">🎭 일인 일역</h1>
                 <div className="cr-header-actions">
+                    {totalAssigned > 0 && (
+                        <button className="cr-clear-btn" onClick={handleClearAllStudents}>↺ 배정 초기화</button>
+                    )}
                     {roles.length > 0 && (
                         <button className="cr-print-btn" onClick={handlePrint}>🖨️ 인쇄</button>
                     )}

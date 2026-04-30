@@ -40,6 +40,23 @@
     background: #16a34a;
 }
 
+.cr-clear-btn {
+    background: #fff7ed;
+    color: #c2410c;
+    border: 1px solid #fed7aa;
+    border-radius: 10px;
+    padding: 0.55rem 1rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.cr-clear-btn:hover {
+    background: #ffedd5;
+    border-color: #fb923c;
+}
+
 .cr-print-btn {
     background: #f1f5f9;
     color: #475569;
