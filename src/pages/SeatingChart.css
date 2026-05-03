@@ -1811,7 +1811,7 @@ body.student-mode-active .layout {
     .page-content {
         display: block !important;
         width: 100% !important;
-        height: auto !important;
+        height: 100% !important;
         min-height: unset !important;
         margin: 0 !important;
         padding: 0 !important;
@@ -1823,14 +1823,14 @@ body.student-mode-active .layout {
 
     .seating-chart-container {
         padding: 0 !important;
-        margin: 0 auto !important;
+        margin: 0 !important;
         background: white !important;
-        width: 100% !important;
-        height: auto !important;
+        width: 100vw !important;
+        height: 100vh !important;
         overflow: visible !important;
         display: flex !important;
         justify-content: center !important;
-        align-items: flex-start !important;
+        align-items: center !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
     }
@@ -1838,7 +1838,7 @@ body.student-mode-active .layout {
     .seating-chart-container .seating-main-workspace {
         display: flex !important;
         justify-content: center !important;
-        align-items: flex-start !important;
+        align-items: center !important;
         width: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
