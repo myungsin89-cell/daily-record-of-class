@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Login.css';
@@ -7,6 +7,12 @@ const Login = () => {
     const [username, setUsername] = useState('');
     const { login } = useAuth();
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if (window.electronAPI && window.electronAPI.setWindowMode) {
+            window.electronAPI.setWindowMode('login');
+        }
+    }, []);
 
     const handleSubmit = (e) => {
         e.preventDefault();

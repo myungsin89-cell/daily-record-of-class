@@ -68,45 +68,48 @@ function App() {
                     <UpdateProvider>
                       <ModalProvider>
                         <div className={`app-root ${isElectron ? 'is-desktop' : ''}`}>
-                        <Routes>
-                          <Route path="/widget" element={<Widget />} />
-                          <Route path="/*" element={
-                            <>
-                              <DesktopTitlebar />
-                              <Routes>
-                                <Route path="/login" element={<Login />} />
+                          <Routes>
+                            <Route path="/widget" element={<Widget />} />
+                            <Route path="/*" element={
+                              <>
+                                <DesktopTitlebar />
+                                <Routes>
+                                  <Route path="/login" element={<Login />} />
 
-                                <Route element={<ProtectedRoute />}>
-                                  <Route path="/select-class" element={<ClassSelect />} />
-                                  <Route path="/create-class" element={<CreateClass />} />
+                                  <Route element={<ProtectedRoute />}>
+                                    <Route path="/select-class" element={<ClassSelect />} />
+                                    <Route path="/create-class" element={<CreateClass />} />
 
-                                  <Route element={<ClassRequiredRoute />}>
-                                    <Route element={<Layout />}>
-                                      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                                      <Route path="/dashboard" element={<Dashboard />} />
-                                      <Route path="/students" element={<StudentManager />} />
-                                      <Route path="/student-manager" element={<StudentManager />} />
-                                      <Route path="/student" element={<StudentManager />} />
-                                      <Route path="/attendance" element={<AttendanceTracker />} />
-                                      <Route path="/journal" element={<JournalEntry />} />
-                                      <Route path="/journal-entry" element={<JournalEntry />} />
+                                    <Route element={<ClassRequiredRoute />}>
+                                      <Route element={<Layout />}>
+                                        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                                        <Route path="/dashboard" element={<Dashboard />} />
+                                        <Route path="/students" element={<StudentManager />} />
+                                        <Route path="/student-manager" element={<StudentManager />} />
+                                        <Route path="/student" element={<StudentManager />} />
+                                        <Route path="/attendance" element={<AttendanceTracker />} />
+                                        <Route path="/journal" element={<JournalEntry />} />
+                                        <Route path="/journal-entry" element={<JournalEntry />} />
 
-                                      <Route path="/assignments" element={<AssignmentManager />} />
-                                      <Route path="/grades" element={<GradeManager />} />
-                                      <Route path="/grade-input" element={<GradeInput />} />
-                                      <Route path="/budget" element={<BudgetManager />} />
-                                      <Route path="/notepad" element={<Notepad />} />
-                                      <Route path="/seating" element={<SeatingChart />} />
-                                      <Route path="/random-order" element={<RandomOrder />} />
-                                      <Route path="/class-role" element={<ClassRole />} />
-                                      <Route path="/settings" element={<Settings />} />
+                                        <Route path="/assignments" element={<AssignmentManager />} />
+                                        <Route path="/grades" element={<GradeManager />} />
+                                        <Route path="/grade-input" element={<GradeInput />} />
+                                        <Route path="/budget" element={<BudgetManager />} />
+                                        <Route path="/notepad" element={<Notepad />} />
+                                        <Route path="/seating" element={<SeatingChart />} />
+                                        <Route path="/random-order" element={<RandomOrder />} />
+                                        <Route path="/class-role" element={<ClassRole />} />
+                                        <Route path="/settings" element={<Settings />} />
+                                      </Route>
                                     </Route>
                                   </Route>
-                                </Route>
-                              </Routes>
-                            </>
-                          } />
-                        </Routes>
+
+                                  {/* 매칭되지 않는 모든 경로는 루트(/)로 리다이렉트 */}
+                                  <Route path="*" element={<Navigate to="/" replace />} />
+                                </Routes>
+                              </>
+                            } />
+                          </Routes>
                         </div>
                       </ModalProvider>
                     </UpdateProvider>
