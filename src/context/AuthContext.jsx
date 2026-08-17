@@ -16,13 +16,21 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         // 페이지 로드 시 localStorage에서 사용자 정보 확인
-        const savedUser = localStorage.getItem('currentUser');
-        if (savedUser) {
-            setUser(JSON.parse(savedUser));
-            if (window.electronAPI && window.electronAPI.setWindowMode) {
-                window.electronAPI.setWindowMode('app');
+        try {
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                setUser(JSON.parse(savedUser));
+                if (window.electronAPI && window.electronAPI.setWindowMode) {
+                    window.electronAPI.setWindowMode('app');
+                }
+            } else {
+                if (window.electronAPI && window.electronAPI.setWindowMode) {
+                    window.electronAPI.setWindowMode('login');
+                }
             }
-        } else {
+        } catch (e) {
+            console.error('Failed to parse savedUser:', e);
+            localStorage.removeItem('currentUser');
             if (window.electronAPI && window.electronAPI.setWindowMode) {
                 window.electronAPI.setWindowMode('login');
             }

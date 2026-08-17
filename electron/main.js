@@ -73,15 +73,19 @@ function createMainWindow() {
         console.log(`[Renderer Load Fail] ${errorCode}: ${errorDescription} (${validatedURL})`);
     });
 
-    const devUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173';
     const distPath = path.join(__dirname, '../dist/index.html');
 
-    if (!app.isPackaged) {
-        mainWindow.loadURL(devUrl);
+    if (process.env.VITE_DEV_SERVER_URL && !app.isPackaged) {
+        mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
     } else if (fs.existsSync(distPath)) {
         mainWindow.loadFile(distPath);
     } else {
-        mainWindow.loadURL(devUrl);
+        const fallbackPath = path.join(app.getAppPath(), 'dist/index.html');
+        if (fs.existsSync(fallbackPath)) {
+            mainWindow.loadFile(fallbackPath);
+        } else {
+            mainWindow.loadURL('http://localhost:5173');
+        }
     }
 
     mainWindow.once('ready-to-show', () => {
