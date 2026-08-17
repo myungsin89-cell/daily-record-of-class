@@ -6,8 +6,8 @@ const WelcomeModal = ({ isOpen, onClose }) => {
 
     const features = [
         {
-            title: '스마트 학급일지 & 다이어리',
-            desc: '하루 일과와 출결 상황, 학생별 특이사항을 손쉽게 기록하고 캘린더로 한눈에 확인합니다.',
+            title: '1. 스마트 학급일지 다이어리',
+            desc: '하루 일과와 시간표, 학급 메모 및 주요 일정을 직관적인 캘린더와 함께 손쉽게 기록합니다.',
             icon: (
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
@@ -18,30 +18,7 @@ const WelcomeModal = ({ isOpen, onClose }) => {
             )
         },
         {
-            title: '교과 성적 분석 & 맞춤형 리포트',
-            desc: '단원평가 및 과정중심 수행평가를 정밀 분석하며, 잘림 없는 고해상도 A4 PDF 리포트로 다운로드합니다.',
-            icon: (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="18" y1="20" x2="18" y2="10" />
-                    <line x1="12" y1="20" x2="12" y2="4" />
-                    <line x1="6" y1="20" x2="6" y2="14" />
-                </svg>
-            )
-        },
-        {
-            title: '지능형 자리배치 & 학급 역할',
-            desc: '필수 짝꿍, 기피 조건, 성별 비율을 고려한 지능형 배치와 긴장감 넘치는 셔플 연출을 지원합니다.',
-            icon: (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                </svg>
-            )
-        },
-        {
-            title: '결석계 관리 & 서식 자동 인쇄',
+            title: '2. 지능형 출결 및 결석계 관리',
             desc: '질병, 인정, 기타 결석계를 체계적으로 전산화하고 인쇄용 표준 서식을 1클릭으로 출력합니다.',
             icon: (
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -53,11 +30,44 @@ const WelcomeModal = ({ isOpen, onClose }) => {
             )
         },
         {
-            title: '안전한 백업 & 소통 창구',
-            desc: '구글 드라이브 클라우드 백업으로 데이터를 안전하게 보호하며, 개선 의견을 인앱에서 바로 전달할 수 있습니다.',
+            title: '3. 스마트 학생기록 지원 (행발 연동)',
+            desc: '학생 보상 관리 및 일상 누가기록을 체계적으로 누적하여, 추후 행동발달특성(행발) 작성의 풍부한 기초 자료로 활용할 수 있습니다.',
             icon: (
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <polyline points="16 11 18 13 22 9" />
+                </svg>
+            )
+        },
+        {
+            title: '4. 교과 성적 분석 & 맞춤형 리포트',
+            desc: '단원평가 및 과정중심 수행평가를 정밀 분석하며, 잘림 없는 고해상도 A4 스마트 PDF 리포트로 다운로드합니다.',
+            icon: (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="20" x2="18" y2="10" />
+                    <line x1="12" y1="20" x2="12" y2="4" />
+                    <line x1="6" y1="20" x2="6" y2="14" />
+                </svg>
+            )
+        },
+        {
+            title: '5. 다채로운 학급 도구 모음',
+            desc: '지능형 조건 자리배치, 1인 1역 학급역할 분담, 공정한 발표 뽑기 및 랜덤 순서 추첨 기능을 모두 제공합니다.',
+            icon: (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                </svg>
+            )
+        },
+        {
+            title: '6. 안전한 데이터 관리 (학생 개인정보 보호)',
+            desc: '모든 데이터가 외부 서버가 아닌 선생님 컴퓨터에만 안전하게 저장되어 학생 개인정보 유출 걱정이 없으며, 로컬 백업 기능으로 데이터를 안전하게 보호합니다.',
+            icon: (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                 </svg>
             )
         }
