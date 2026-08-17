@@ -1,0 +1,219 @@
+/* ==================== Welcome Modal (Clean Green UI) ==================== */
+.welcome-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(5px);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: welcomeFadeIn 0.25s ease-out;
+}
+
+@keyframes welcomeFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes welcomeSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.welcome-modal-card {
+    background: #ffffff;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 520px;
+    max-height: 88vh;
+    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(22, 163, 74, 0.08);
+    animation: welcomeSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 상단 미니멀 무테 ✕ 닫기 버튼 */
+.welcome-modal-close {
+    position: absolute;
+    top: 16px;
+    right: 18px;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    z-index: 2;
+}
+
+.welcome-modal-close:hover {
+    color: #0f172a;
+    background: #f1f5f9;
+}
+
+/* 상단 헤더 */
+.welcome-modal-header {
+    padding: 28px 28px 16px 28px;
+    border-bottom: 1px solid #f1f5f9;
+    text-align: left;
+}
+
+.welcome-header-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #f0fdf4;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+}
+
+.welcome-title {
+    margin: 0 0 6px 0;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+}
+
+.welcome-subtitle {
+    margin: 0;
+    font-size: 0.88rem;
+    color: #64748b;
+    line-height: 1.45;
+}
+
+/* 기능 소개 리스트 */
+.welcome-features-list {
+    padding: 16px 28px;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.welcome-feature-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 12px 14px;
+    background: #f8fafc;
+    border: 1px solid #f1f5f9;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+}
+
+.welcome-feature-item:hover {
+    background: #ffffff;
+    border-color: #bbf7d0;
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.08);
+}
+
+.welcome-feature-icon-box {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: #f0fdf4;
+    border: 1px solid #dcfce7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.welcome-feature-text {
+    flex: 1;
+}
+
+.welcome-feature-title {
+    margin: 0 0 3px 0;
+    font-size: 0.94rem;
+    font-weight: 700;
+    color: #166534;
+    letter-spacing: -0.01em;
+}
+
+.welcome-feature-desc {
+    margin: 0;
+    font-size: 0.82rem;
+    color: #475569;
+    line-height: 1.45;
+}
+
+/* 하단 액션 버튼 영역 (가운데 정렬 엄수) */
+.welcome-modal-footer {
+    padding: 16px 28px 24px 28px;
+    border-top: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.welcome-start-btn {
+    min-width: 200px;
+    padding: 12px 28px;
+    background: #16a34a;
+    color: #ffffff;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.28);
+    transition: all 0.2s ease;
+}
+
+.welcome-start-btn:hover {
+    background: #15803d;
+    box-shadow: 0 6px 16px rgba(22, 163, 74, 0.36);
+    transform: translateY(-1px);
+}
+
+.welcome-start-btn:active {
+    transform: translateY(0);
+}
+
+@media (max-width: 580px) {
+    .welcome-modal-card {
+        border-radius: 16px;
+    }
+    .welcome-modal-header {
+        padding: 22px 20px 14px 20px;
+    }
+    .welcome-features-list {
+        padding: 12px 20px;
+    }
+    .welcome-modal-footer {
+        padding: 14px 20px 20px 20px;
+    }
+    .welcome-start-btn {
+        width: 100%;
+    }
+}

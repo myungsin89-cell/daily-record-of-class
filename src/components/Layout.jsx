@@ -11,7 +11,7 @@ import '../styles/glassTheme.css';
 import { uploadToDrive, exportJournalsToSheet, exportGradesToSheet } from '../services/googleService';
 import { exportAllData } from '../db/indexedDB';
 import { useUpdate } from '../context/UpdateContext';
-import { CHANGELOG, APP_VERSION } from '../changelog';
+import WelcomeModal from './WelcomeModal';
 
 const Layout = () => {
     const { user, logout } = useAuth();
@@ -37,28 +37,19 @@ const Layout = () => {
 
     const isElectron = window.electronAPI && window.electronAPI.isElectron;
 
-    // Changelog modal
-    const [showChangelog, setShowChangelog] = useState(false);
-    const [changelogEntries, setChangelogEntries] = useState([]);
+    // ── 신규 사용자 웰컴 기능 안내 모달 (최초 1회만 표시) ──
+    const [showWelcomeModal, setShowWelcomeModal] = useState(false);
 
-    // 업데이트 후 첫 접속 시 변경사항 모달 표시
     useEffect(() => {
-        const lastSeenVersion = localStorage.getItem('app_last_seen_version');
-        if (lastSeenVersion !== APP_VERSION) {
-            // 마지막으로 본 버전 이후의 모든 변경사항 수집
-            const newEntries = lastSeenVersion
-                ? CHANGELOG.filter(entry => entry.version > lastSeenVersion)
-                : CHANGELOG.filter(entry => entry.version === APP_VERSION);
-            if (newEntries.length > 0) {
-                setChangelogEntries(newEntries);
-                setShowChangelog(true);
-            }
+        const hasSeenWelcome = localStorage.getItem('welcome_modal_seen_v2');
+        if (!hasSeenWelcome) {
+            setShowWelcomeModal(true);
         }
     }, []);
 
-    const closeChangelog = () => {
-        setShowChangelog(false);
-        localStorage.setItem('app_last_seen_version', APP_VERSION);
+    const handleCloseWelcomeModal = () => {
+        setShowWelcomeModal(false);
+        localStorage.setItem('welcome_modal_seen_v2', 'true');
     };
 
     // beforeunload — 종료 시 백업 안내
@@ -172,37 +163,11 @@ const Layout = () => {
                 </div>{/* glass-unified-panel */}
             </div>{/* glass-layout-container */}
 
-            {/* Changelog Modal */}
-            {showChangelog && (
-                <div className="changelog-overlay" onClick={closeChangelog}>
-                    <div className="changelog-modal" onClick={(e) => e.stopPropagation()}>
-                        <button className="changelog-close" onClick={closeChangelog}>×</button>
-                        <div className="changelog-header">
-                            <span className="changelog-icon">🎉</span>
-                            <h2>업데이트 완료!</h2>
-                            <p className="changelog-version">v{APP_VERSION}</p>
-                        </div>
-                        <div className="changelog-body">
-                            {changelogEntries.map((entry) => (
-                                <div key={entry.version} className="changelog-entry">
-                                    <div className="changelog-entry-header">
-                                        <span className="changelog-entry-title">{entry.title}</span>
-                                        <span className="changelog-entry-date">{entry.date}</span>
-                                    </div>
-                                    <ul className="changelog-list">
-                                        {entry.changes.map((change, i) => (
-                                            <li key={i}>{change}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            ))}
-                        </div>
-                        <button className="changelog-confirm" onClick={closeChangelog}>
-                            확인
-                        </button>
-                    </div>
-                </div>
-            )}
+            {/* 최초 1회 신규 사용자 기능 안내 WelcomeModal */}
+            <WelcomeModal 
+                isOpen={showWelcomeModal} 
+                onClose={handleCloseWelcomeModal} 
+            />
         </div>
     );
 };
