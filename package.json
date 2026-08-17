@@ -11,6 +11,8 @@
     "electron:dev": "concurrently \"vite\" \"wait-on tcp:5173 && electron .\"",
     "electron:build": "vite build && electron-builder"
   },
+  "description": "선생님을 위한 스마트 학급일지",
+  "author": "myungsin89-cell",
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "electron-updater": "^6.8.9",
