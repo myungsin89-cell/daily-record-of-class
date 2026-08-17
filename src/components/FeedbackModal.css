@@ -1,0 +1,209 @@
+/* ──────────────────────────────────────────
+   피드백 전용 커스텀 모달 (초록덕후 클린 그린 디자인)
+   ────────────────────────────────────────── */
+.feedback-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 1.5rem;
+    animation: feedbackFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.feedback-modal-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 680px;
+    height: 85vh;
+    max-height: 780px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15), 0 0 1px 1px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    animation: feedbackSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 모달 헤더 */
+.feedback-modal-header {
+    padding: 1.5rem 1.75rem 1.25rem 1.75rem;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    background: #fafafa;
+}
+
+.feedback-header-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.feedback-badge {
+    align-self: flex-start;
+    background: #f0fdf4;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+    font-size: 0.76rem;
+    font-weight: 700;
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+    letter-spacing: -0.2px;
+}
+
+.feedback-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.4px;
+}
+
+.feedback-subtitle {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #64748b;
+    line-height: 1.45;
+    letter-spacing: -0.2px;
+}
+
+/* 미니멀 무테 ✕ 닫기 버튼 */
+.feedback-close-btn {
+    background: transparent;
+    border: none;
+    padding: 0.4rem;
+    cursor: pointer;
+    color: #94a3b8;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.feedback-close-btn:hover {
+    color: #0f172a;
+    background-color: #f1f5f9;
+}
+
+/* 모달 본문 (iframe) */
+.feedback-modal-body {
+    flex: 1;
+    position: relative;
+    padding: 1rem 1.5rem;
+    background: #ffffff;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.feedback-google-form-iframe {
+    width: 100%;
+    height: 100%;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #ffffff;
+}
+
+.feedback-loading-spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    color: #64748b;
+    font-size: 0.88rem;
+    font-weight: 500;
+}
+
+.clean-spinner {
+    width: 32px;
+    height: 32px;
+    border: 2.5px solid #dcfce7;
+    border-top-color: #16a34a;
+    border-radius: 50%;
+    animation: cleanSpin 0.8s linear infinite;
+}
+
+/* 모달 하단 푸터 */
+.feedback-modal-footer {
+    padding: 0.85rem 1.75rem;
+    border-top: 1px solid #f1f5f9;
+    background: #fafafa;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.feedback-external-btn {
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #64748b;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    padding: 0.4rem 0.65rem;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+}
+
+.feedback-external-btn:hover {
+    color: #15803d;
+    background: #f0fdf4;
+}
+
+.feedback-confirm-btn {
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    color: #334155;
+    padding: 0.45rem 1.1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.feedback-confirm-btn:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+    color: #0f172a;
+}
+
+@keyframes feedbackFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes feedbackSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes cleanSpin {
+    to { transform: rotate(360deg); }
+}

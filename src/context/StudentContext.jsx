@@ -9,9 +9,7 @@ const StudentContext = createContext();
 
 // Define initial values outside component to avoid recreating on each render
 const INITIAL_ARRAY = [];
-const INITIAL_OBJECT = {}
-
-    ;
+const INITIAL_OBJECT = {};
 
 export const useStudentContext = () => useContext(StudentContext); // eslint-disable-line react-refresh/only-export-components
 
@@ -61,15 +59,15 @@ export const StudentProvider = ({ children }) => {
     }, [isLoadingHolidays, holidays, setHolidays]);
 
     const addStudent = (student) => {
-        setStudents([...students, student]);
+        setStudents((prev) => [...(Array.isArray(prev) ? prev : []), student]);
     };
 
     const addStudents = (newStudents) => {
-        setStudents([...students, ...newStudents]);
+        setStudents((prev) => [...(Array.isArray(prev) ? prev : []), ...newStudents]);
     };
 
     const removeStudent = (id) => {
-        setStudents(students.filter((s) => s.id !== id));
+        setStudents((prev) => (Array.isArray(prev) ? prev : []).filter((s) => s.id !== id));
         // Optional: Cleanup attendance and journals for removed student
     };
 
@@ -205,6 +203,7 @@ export const StudentProvider = ({ children }) => {
                 addHoliday,
                 removeHoliday,
                 isLoading,
+                isLoadingStudents,
             }}
         >
             {children}

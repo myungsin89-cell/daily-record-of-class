@@ -47,10 +47,23 @@ export default defineConfig({
           }
         ]
       },
-      injectRegister: 'inline',
+      injectRegister: null,
       devOptions: {
-        enabled: true
+        enabled: false
       }
     })
   ],
+  build: {
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-xlsx': ['xlsx'],
+          'vendor-pdf': ['pdfjs-dist', 'mammoth'],
+          'vendor-ai': ['@google/generative-ai']
+        }
+      }
+    }
+  }
 })

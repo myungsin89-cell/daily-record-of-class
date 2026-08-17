@@ -8,7 +8,17 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.cr-title-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cr-title-icon {
+    flex-shrink: 0;
 }
 
 .cr-header-actions {
@@ -19,72 +29,82 @@
 
 .cr-title {
     font-size: 1.4rem;
-    font-weight: 700;
+    font-weight: 800;
     color: #1e293b;
     margin: 0;
 }
 
 .cr-add-btn {
-    background: #22c55e;
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
     color: white;
     border: none;
-    border-radius: 10px;
-    padding: 0.55rem 1.2rem;
-    font-size: 0.9rem;
-    font-weight: 600;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-size: 0.88rem;
+    font-weight: 700;
     cursor: pointer;
-    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: all 0.2s ease;
 }
 
 .cr-add-btn:hover {
-    background: #16a34a;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25);
 }
 
 .cr-clear-btn {
-    background: #fff7ed;
-    color: #c2410c;
-    border: 1px solid #fed7aa;
-    border-radius: 10px;
-    padding: 0.55rem 1rem;
+    background: #fef2f2;
+    color: #ef4444;
+    border: 1px solid #fee2e2;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
     font-size: 0.88rem;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
-    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: all 0.2s ease;
 }
 
 .cr-clear-btn:hover {
-    background: #ffedd5;
-    border-color: #fb923c;
+    background: #fee2e2;
+    border-color: #fca5a5;
 }
 
 .cr-print-btn {
-    background: #f1f5f9;
-    color: #475569;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    padding: 0.55rem 1rem;
+    background: #f0fdf4;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
     font-size: 0.88rem;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
-    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: all 0.2s ease;
 }
 
 .cr-print-btn:hover {
-    background: #e2e8f0;
+    background: #dcfce7;
+    border-color: #86efac;
 }
 
 /* 통계 요약 바 */
 .cr-summary {
     display: flex;
     align-items: center;
-    gap: 0;
-    background: #f8fafc;
+    background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 12px;
     padding: 0.8rem 1.2rem;
     margin-bottom: 1.2rem;
-    flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: 1.2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 }
 
 .cr-summary.cr-summary-full {
@@ -110,7 +130,7 @@
 }
 
 .cr-summary-done {
-    color: #16a34a;
+    color: #15803d;
 }
 
 .cr-summary-incomplete {
@@ -121,17 +141,19 @@
     width: 1px;
     height: 18px;
     background: #e2e8f0;
-    margin: 0 0.6rem;
 }
 
 .cr-summary-badge {
     margin-left: auto;
     font-size: 0.82rem;
-    font-weight: 600;
-    color: #16a34a;
+    font-weight: 700;
+    color: #15803d;
     background: #dcfce7;
-    padding: 0.2rem 0.7rem;
+    border: 1px solid #bbf7d0;
+    padding: 0.25rem 0.75rem;
     border-radius: 20px;
+    display: flex;
+    align-items: center;
 }
 
 /* Empty states */
@@ -145,10 +167,13 @@
     text-align: center;
     color: #64748b;
     font-size: 1rem;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
 }
 
 .cr-empty-icon {
-    font-size: 3rem;
     margin-bottom: 1rem;
 }
 
@@ -163,7 +188,8 @@
 .cr-table-wrap {
     overflow-x: auto;
     border-radius: 12px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 }
 
 .cr-table {
@@ -174,21 +200,21 @@
 }
 
 .cr-table thead tr {
-    background: #f1f5f9;
+    background: #f0fdf4;
 }
 
 .cr-table th {
-    padding: 0.8rem 1rem;
+    padding: 0.9rem 1rem;
     text-align: left;
-    font-weight: 600;
-    color: #475569;
-    font-size: 0.82rem;
-    border-bottom: 2px solid #e2e8f0;
+    font-weight: 700;
+    color: #15803d;
+    font-size: 0.85rem;
+    border-bottom: 2px solid #bbf7d0;
     white-space: nowrap;
 }
 
 .cr-table td {
-    padding: 0.75rem 1rem;
+    padding: 0.85rem 1rem;
     border-bottom: 1px solid #f1f5f9;
     vertical-align: middle;
 }
@@ -197,7 +223,7 @@
     border-bottom: none;
 }
 
-.cr-row-full {
+.cr-row-full td {
     background: #f0fdf4;
 }
 
@@ -205,13 +231,12 @@
     background: #fff;
 }
 
-.cr-row-incomplete:hover,
-.cr-row-full:hover {
+.cr-row-incomplete:hover {
     background: #f8fafc;
 }
 
 .cr-role-name {
-    font-weight: 600;
+    font-weight: 700;
     color: #1e293b;
     min-width: 100px;
 }
@@ -236,13 +261,15 @@
     border-radius: 20px;
     background: #fee2e2;
     color: #dc2626;
-    font-weight: 600;
+    font-weight: 700;
     font-size: 0.82rem;
+    border: 1px solid #fecaca;
 }
 
 .cr-count-badge.full {
     background: #dcfce7;
     color: #16a34a;
+    border-color: #bbf7d0;
 }
 
 .cr-role-students {
@@ -261,43 +288,47 @@
 }
 
 .cr-chip {
-    display: inline-block;
-    padding: 0.2rem 0.55rem;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.65rem;
     border-radius: 20px;
     font-size: 0.78rem;
-    font-weight: 500;
+    font-weight: 700;
 }
 
 .cr-chip-남 {
-    background: #dbeafe;
+    background: #eff6ff;
     color: #1d4ed8;
+    border: 1px solid #dbeafe;
 }
 
 .cr-chip-여 {
-    background: #fce7f3;
+    background: #fdf2f8;
     color: #be185d;
+    border: 1px solid #fce7f3;
 }
 
 .cr-chip-기타,
 .cr-chip-undefined {
-    background: #f1f5f9;
+    background: #f8fafc;
     color: #475569;
+    border: 1px solid #e2e8f0;
 }
 
 .cr-chip-remove {
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 0.75rem;
+    font-size: 0.85rem;
     line-height: 1;
-    padding: 0 0 0 0.25rem;
-    color: inherit;
-    opacity: 0.6;
+    padding: 0 0 0 0.3rem;
+    color: #94a3b8;
+    transition: color 0.15s;
     vertical-align: middle;
 }
 
 .cr-chip-remove:hover {
-    opacity: 1;
+    color: #dc2626;
 }
 
 /* Action buttons */
@@ -308,47 +339,54 @@
 }
 
 .cr-btn {
-    border: none;
-    border-radius: 7px;
+    border: 1px solid transparent;
+    border-radius: 6px;
     padding: 0.3rem 0.7rem;
     font-size: 0.78rem;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
-    transition: background 0.15s;
+    transition: all 0.15s ease;
 }
 
 .cr-btn-assign {
-    background: #e0f2fe;
-    color: #0369a1;
+    background: #f0f9ff;
+    color: #0284c7;
+    border-color: #e0f2fe;
 }
 
 .cr-btn-assign:hover {
-    background: #bae6fd;
+    background: #e0f2fe;
+    border-color: #bae6fd;
 }
 
 .cr-btn-edit {
-    background: #fef3c7;
-    color: #92400e;
+    background: #fffbeb;
+    color: #b45309;
+    border-color: #fef3c7;
 }
 
 .cr-btn-edit:hover {
-    background: #fde68a;
+    background: #fef3c7;
+    border-color: #fde68a;
 }
 
 .cr-btn-delete {
-    background: #fee2e2;
+    background: #fef2f2;
     color: #dc2626;
+    border-color: #fee2e2;
 }
 
 .cr-btn-delete:hover {
-    background: #fecaca;
+    background: #fee2e2;
+    border-color: #fecaca;
 }
 
 /* Modal */
 .cr-modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.4);
+    background: rgba(15, 23, 42, 0.3);
+    backdrop-filter: blur(4px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -358,11 +396,12 @@
 
 .cr-modal {
     background: white;
-    border-radius: 16px;
+    border-radius: 20px;
     width: 100%;
     max-width: 440px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     overflow: hidden;
+    border: 1px solid #e2e8f0;
 }
 
 .cr-assign-modal {
@@ -373,13 +412,13 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 1.1rem 1.4rem 0.8rem;
+    padding: 1.25rem 1.5rem 0.85rem;
     border-bottom: 1px solid #f1f5f9;
 }
 
 .cr-modal-header h2 {
-    font-size: 1rem;
-    font-weight: 700;
+    font-size: 1.05rem;
+    font-weight: 800;
     color: #1e293b;
     margin: 0;
 }
@@ -387,30 +426,32 @@
 .cr-modal-close {
     background: none;
     border: none;
-    font-size: 1.3rem;
+    font-size: 1.4rem;
     cursor: pointer;
     color: #94a3b8;
     line-height: 1;
     padding: 0;
+    transition: color 0.15s;
 }
 
 .cr-modal-close:hover {
-    color: #1e293b;
+    color: #475569;
 }
 
 .cr-modal-sub {
-    padding: 0.5rem 1.4rem;
-    font-size: 0.82rem;
-    color: #64748b;
-    background: #f8fafc;
-    border-bottom: 1px solid #f1f5f9;
+    padding: 0.6rem 1.5rem;
+    font-size: 0.85rem;
+    color: #15803d;
+    background: #f0fdf4;
+    border-bottom: 1px solid #bbf7d0;
+    font-weight: 700;
 }
 
 .cr-modal-body {
-    padding: 1.1rem 1.4rem;
+    padding: 1.25rem 1.5rem;
     display: flex;
     flex-direction: column;
-    gap: 0.9rem;
+    gap: 1rem;
 }
 
 .cr-form-group {
@@ -421,7 +462,7 @@
 
 .cr-form-group label {
     font-size: 0.82rem;
-    font-weight: 600;
+    font-weight: 700;
     color: #475569;
 }
 
@@ -432,13 +473,14 @@
     font-size: 0.9rem;
     color: #1e293b;
     outline: none;
-    transition: border-color 0.2s;
+    transition: all 0.2s ease;
     width: 100%;
     box-sizing: border-box;
 }
 
 .cr-input:focus {
-    border-color: #22c55e;
+    border-color: #16a34a;
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
 }
 
 .cr-input-number {
@@ -447,21 +489,22 @@
 
 .cr-modal-footer {
     display: flex;
-    justify-content: flex-end;
+    justify-content: center; /* 버튼 가운데 정렬 엄수 */
     gap: 0.6rem;
-    padding: 0.8rem 1.4rem 1.1rem;
+    padding: 0.9rem 1.5rem 1.25rem;
     border-top: 1px solid #f1f5f9;
 }
 
 .cr-modal-cancel {
     background: #f1f5f9;
     color: #475569;
-    border: none;
+    border: 1px solid #e2e8f0;
     border-radius: 8px;
-    padding: 0.5rem 1.1rem;
+    padding: 0.55rem 1.3rem;
     font-size: 0.88rem;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
+    transition: all 0.15s;
 }
 
 .cr-modal-cancel:hover {
@@ -469,32 +512,33 @@
 }
 
 .cr-modal-confirm {
-    background: #22c55e;
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
     color: white;
     border: none;
     border-radius: 8px;
-    padding: 0.5rem 1.2rem;
+    padding: 0.55rem 1.5rem;
     font-size: 0.88rem;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: all 0.2s ease;
 }
 
 .cr-modal-confirm:hover:not(:disabled) {
-    background: #16a34a;
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25);
 }
 
 .cr-modal-confirm:disabled {
     background: #a7f3d0;
     cursor: not-allowed;
+    color: #e6fdf4;
 }
 
 /* Assign modal student grid */
 .cr-assign-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
     gap: 0.5rem;
-    padding: 1rem 1.4rem;
+    padding: 1.25rem 1.5rem;
     max-height: 360px;
     overflow-y: auto;
 }
@@ -505,46 +549,38 @@
     align-items: center;
     padding: 0.6rem 0.4rem;
     border-radius: 10px;
-    border: 2px solid #e2e8f0;
+    border: 1.5px solid #e2e8f0;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all 0.15s ease;
     position: relative;
     user-select: none;
 }
 
 .cr-assign-card:hover:not(.disabled) {
-    border-color: #22c55e;
+    border-color: #16a34a;
     background: #f0fdf4;
 }
 
-.cr-assign-card.selected {
-    border-color: #22c55e;
-    background: #dcfce7;
-}
-
 .cr-assign-card.disabled {
-    opacity: 0.4;
+    opacity: 0.35;
     cursor: not-allowed;
 }
 
 .cr-assign-card.cr-gender-남 {
-    background: #f0f9ff;
-    border-color: #bae6fd;
-}
-
-.cr-assign-card.cr-gender-남.selected {
-    background: #dbeafe;
-    border-color: #3b82f6;
+    background: #eff6ff;
+    border-color: #dbeafe;
 }
 
 .cr-assign-card.cr-gender-여 {
-    background: #fdf4ff;
-    border-color: #f5d0fe;
+    background: #fdf2f8;
+    border-color: #fce7f3;
 }
 
-.cr-assign-card.cr-gender-여.selected {
-    background: #fce7f3;
-    border-color: #ec4899;
+/* Selected state overrides gender styles */
+.cr-assign-card.selected {
+    border-color: #16a34a !important;
+    background: #f0fdf4 !important;
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
 }
 
 .cr-assign-check {
@@ -553,18 +589,19 @@
     right: 6px;
     font-size: 0.75rem;
     color: #16a34a;
-    font-weight: 700;
+    font-weight: 800;
 }
 
 .cr-assign-num {
     font-size: 0.72rem;
     color: #64748b;
     margin-bottom: 0.2rem;
+    font-weight: 500;
 }
 
 .cr-assign-name {
     font-size: 0.85rem;
-    font-weight: 600;
+    font-weight: 700;
     color: #1e293b;
     text-align: center;
 }

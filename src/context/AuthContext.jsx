@@ -19,6 +19,13 @@ export const AuthProvider = ({ children }) => {
         const savedUser = localStorage.getItem('currentUser');
         if (savedUser) {
             setUser(JSON.parse(savedUser));
+            if (window.electronAPI && window.electronAPI.setWindowMode) {
+                window.electronAPI.setWindowMode('app');
+            }
+        } else {
+            if (window.electronAPI && window.electronAPI.setWindowMode) {
+                window.electronAPI.setWindowMode('login');
+            }
         }
         setLoading(false);
     }, []);
@@ -30,6 +37,9 @@ export const AuthProvider = ({ children }) => {
         };
         localStorage.setItem('currentUser', JSON.stringify(userData));
         setUser(userData);
+        if (window.electronAPI && window.electronAPI.setWindowMode) {
+            window.electronAPI.setWindowMode('app');
+        }
     };
 
     const logout = () => {
@@ -40,6 +50,9 @@ export const AuthProvider = ({ children }) => {
         }
         localStorage.removeItem('currentUser');
         setUser(null);
+        if (window.electronAPI && window.electronAPI.setWindowMode) {
+            window.electronAPI.setWindowMode('login');
+        }
     };
 
     const value = {

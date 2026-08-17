@@ -39,9 +39,11 @@ const SeatingChart = () => {
     const [saveNameInput, setSaveNameInput] = useState('');
     const [showLoadModal, setShowLoadModal] = useState(false);
     const [previewRecord, setPreviewRecord] = useState(null);
+    const [hasChanges, setHasChanges] = useState(false); // 자리 변동 감지 state
 
     // New state for female seats
     const [useFemaleSeats, setUseFemaleSeats] = useState(true);
+    const [showInitialSetupModal, setShowInitialSetupModal] = useState(false);
     
     // Drag and Drop State
     const [draggedStudent, setDraggedStudent] = useState(null);
@@ -130,6 +132,7 @@ const SeatingChart = () => {
                 setGrid(generateEmptyGrid(5, 6, 2));
             } finally {
                 setIsConfigLoaded(true);
+                setHasChanges(false);
             }
         };
         loadConfig();
@@ -160,6 +163,40 @@ const SeatingChart = () => {
         }
         return () => document.body.classList.remove('student-mode-active');
     }, [mode]);
+
+    // ── 실시간 자동 저장 (Auto-Save to IndexedDB & LocalStorage) ──
+    useEffect(() => {
+        if (!isConfigLoaded || !currentClass?.id || !grid || grid.length === 0) return;
+
+        setHasChanges(true); // 변동 감지 -> 저장 버튼 주황색 활성화
+
+        // LocalStorage 동기화 (자리표 연동)
+        try {
+            localStorage.setItem(`seating_layout_${currentClass.id}`, JSON.stringify(grid));
+            localStorage.setItem(`seating_layout_default`, JSON.stringify(grid));
+        } catch (e) {
+            console.error('LocalStorage seating sync failed:', e);
+        }
+
+        // IndexedDB 자동 저장 (디바운스 300ms)
+        const timer = setTimeout(async () => {
+            try {
+                await saveData(STORES.SEATING_CONFIGS, {
+                    classId: currentClass.id,
+                    gridConfig,
+                    constraints,
+                    useFemaleSeats,
+                    youtubeUrl,
+                    grid,
+                    updatedAt: new Date().toISOString()
+                });
+            } catch (err) {
+                console.error('Auto save seating config failed:', err);
+            }
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [grid, gridConfig, constraints, useFemaleSeats, youtubeUrl, isConfigLoaded, currentClass]);
 
     const handleSave = async () => {
         if (!currentClass?.id) return;
@@ -199,6 +236,24 @@ const SeatingChart = () => {
         return pairs;
     };
 
+    // LocalStorage sync helper for JournalEntry.jsx integration
+    const syncLocalStorageSeating = useCallback((targetGrid) => {
+        try {
+            if (currentClass?.id) {
+                localStorage.setItem(`seating_layout_${currentClass.id}`, JSON.stringify(targetGrid));
+            }
+            localStorage.setItem(`seating_layout_default`, JSON.stringify(targetGrid));
+        } catch (e) {
+            console.error("Failed to sync seating layout to localStorage:", e);
+        }
+    }, [currentClass]);
+
+    // Grid state update wrapper with auto-sync
+    const updateGridAndSync = useCallback((newGrid) => {
+        setGrid(newGrid);
+        syncLocalStorageSeating(newGrid);
+    }, [syncLocalStorageSeating]);
+
     // Confirm save: persist config + history entry
     const handleHistorySave = async () => {
         const name = saveNameInput.trim();
@@ -216,6 +271,9 @@ const SeatingChart = () => {
             updatedAt: new Date().toISOString()
         });
 
+        // Sync localStorage for JournalEntry integration
+        syncLocalStorageSeating(grid);
+
         // Save history entry
         const pairs = extractSeatPairs(grid);
         await saveData(STORES.SEATING_HISTORY, {
@@ -231,6 +289,7 @@ const SeatingChart = () => {
         const updated = await getAllDataByIndex(STORES.SEATING_HISTORY, 'classId', currentClass.id);
         setSeatingHistory([...updated].sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt)));
 
+        setHasChanges(false); // 저장 완료 -> 주황색 해제
         setShowSaveModal(false);
         alert(`'${name}' 이름으로 자리배치가 기록되었습니다.`);
     };
@@ -240,6 +299,7 @@ const SeatingChart = () => {
         if (!window.confirm(`'${record.name}' 자리배치를 불러올까요?\n현재 배치가 덮어씌워집니다.`)) return;
         setGrid(record.grid);
         setGridConfig(record.gridConfig);
+        syncLocalStorageSeating(record.grid);
         await saveData(STORES.SEATING_CONFIGS, {
             classId: currentClass.id,
             gridConfig: record.gridConfig,
@@ -249,6 +309,7 @@ const SeatingChart = () => {
             grid: record.grid,
             updatedAt: new Date().toISOString()
         });
+        setHasChanges(false);
         setShowLoadModal(false);
         setPreviewRecord(null);
     };
@@ -390,6 +451,15 @@ const SeatingChart = () => {
         }
         const newGrid = assignSeatsRandomly(students, grid, constraints, useFemaleSeats);
         setGrid(newGrid);
+        syncLocalStorageSeating(newGrid);
+    };
+
+    const resetGrid = () => {
+        if (window.confirm('모든 학생 배치를 초기화하시겠습니까? (빈 좌석 설정은 유지됩니다)')) {
+            const newGrid = grid.map(row => row.map(seat => ({ ...seat, studentId: null })));
+            setGrid(newGrid);
+            syncLocalStorageSeating(newGrid);
+        }
     };
 
     const handleConfigChange = (e) => {
@@ -401,21 +471,77 @@ const SeatingChart = () => {
     };
 
     // Drag and Drop Logic
+    const [selectedPoolStudent, setSelectedPoolStudent] = useState(null);
+    const [avoidanceWarningModal, setAvoidanceWarningModal] = useState({
+        isOpen: false,
+        student1: null,
+        student2: null,
+        pendingGrid: null
+    });
+    const [genderWarningModal, setGenderWarningModal] = useState({
+        isOpen: false,
+        student: null,
+        requiredGender: '',
+        pendingGrid: null
+    });
+
+    // Check if placing targetStudentId at (r, c) violates avoidance constraints (left/right, front/behind)
+    const checkAvoidanceViolation = (targetStudentId, r, c, targetGrid) => {
+        if (!constraints.avoidances || constraints.avoidances.length === 0) return null;
+
+        const neighbors = [
+            { r, c: c - 1 }, // left
+            { r, c: c + 1 }, // right
+            { r: r - 1, c }, // front
+            { r: r + 1, c }  // behind
+        ];
+
+        for (const group of constraints.avoidances) {
+            if (!group.studentIds || !group.studentIds.includes(targetStudentId)) continue;
+
+            const partnerIds = group.studentIds.filter(id => id !== targetStudentId);
+
+            for (const pos of neighbors) {
+                if (pos.r >= 0 && pos.r < targetGrid.length && pos.c >= 0 && pos.c < targetGrid[0].length) {
+                    const neighborSeat = targetGrid[pos.r][pos.c];
+                    if (neighborSeat.studentId && partnerIds.includes(neighborSeat.studentId)) {
+                        const st1 = students?.find(s => s.id === targetStudentId);
+                        const st2 = students?.find(s => s.id === neighborSeat.studentId);
+                        return { student1: st1, student2: st2 };
+                    }
+                }
+            }
+        }
+        return null;
+    };
+
     const onDragStartPool = (e, student) => {
         setDragSource('pool');
         setDraggedStudent(student);
-        e.dataTransfer.setData('studentId', student.id);
+        setSelectedPoolStudent(student);
+        if (e.dataTransfer) {
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', String(student.id));
+            e.dataTransfer.setData('studentId', String(student.id));
+        }
     };
 
     const onDragStartGrid = (e, r, c, student) => {
         setDragSource('grid');
         setDragCoords({ r, c });
         setDraggedStudent(student);
-        e.dataTransfer.setData('studentId', student.id);
+        if (e.dataTransfer) {
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', String(student.id));
+            e.dataTransfer.setData('studentId', String(student.id));
+        }
     };
 
     const onDragOver = (e, r, c) => {
         e.preventDefault();
+        if (e.dataTransfer) {
+            e.dataTransfer.dropEffect = 'move';
+        }
         setDropTarget({ r, c });
     };
 
@@ -428,25 +554,11 @@ const SeatingChart = () => {
         const sourceId = draggedStudent.id;
         const targetSeat = newGrid[r][c];
 
-        // Gender & Blocked Check
+        // Blocked Check
         if (targetSeat.genderPreference === 'blocked') {
             alert('이 좌석은 사용할 수 없는 자리입니다.');
             setDropTarget(null);
             return;
-        }
-
-        if (useFemaleSeats && targetSeat.genderPreference && draggedStudent.gender !== targetSeat.genderPreference) {
-            if (!window.confirm(`이 자리는 ${targetSeat.genderPreference}학생 전용석입니다. 그대로 배치할까요?`)) {
-                setDropTarget(null);
-                return;
-            }
-        }
-
-        if (!validation.isValid && dragSource === 'pool') {
-            if (!window.confirm('현재 좌석 설정이 학생 수 또는 성별 비율과 맞지 않습니다. 그래도 배치할까요?')) {
-                setDropTarget(null);
-                return;
-            }
         }
 
         if (dragSource === 'pool') {
@@ -457,21 +569,91 @@ const SeatingChart = () => {
             newGrid[r][c].studentId = sourceId;
         }
 
-        setGrid(newGrid);
+        // Gender Check
+        const expectedGender = targetSeat.genderPreference === '여' ? '여' : (useFemaleSeats && targetSeat.genderPreference === null ? '남' : null);
+        const isGenderMismatch = expectedGender && draggedStudent.gender !== expectedGender;
+
         setDraggedStudent(null);
         setDragSource(null);
         setDragCoords(null);
+        setSelectedPoolStudent(null);
+
+        if (isGenderMismatch) {
+            setGenderWarningModal({
+                isOpen: true,
+                student: draggedStudent,
+                requiredGender: expectedGender,
+                pendingGrid: newGrid
+            });
+            return;
+        }
+
+        const violation = checkAvoidanceViolation(sourceId, r, c, newGrid);
+        if (violation) {
+            setAvoidanceWarningModal({
+                isOpen: true,
+                student1: violation.student1,
+                student2: violation.student2,
+                pendingGrid: newGrid
+            });
+        } else {
+            setGrid(newGrid);
+            syncLocalStorageSeating(newGrid);
+        }
     };
 
     const removeFromSeat = (r, c) => {
         const newGrid = [...grid.map(row => [...row.map(seat => ({...seat}))])];
         newGrid[r][c].studentId = null;
         setGrid(newGrid);
+        syncLocalStorageSeating(newGrid);
     };
 
-    const resetGrid = () => {
-        if (!window.confirm('모든 자리 배치를 초기화하시겠습니까?')) return;
-        setGrid(generateEmptyGrid(gridConfig.rows, gridConfig.cols, gridConfig.pairSize));
+    const handleSeatClick = (r, c) => {
+        if (mode !== 'teacher') return;
+
+        // If a student in pool is selected, click seat to place student immediately
+        if (selectedPoolStudent && !grid[r][c].studentId && grid[r][c].genderPreference !== 'blocked') {
+            const targetSeat = grid[r][c];
+            const newGrid = [...grid.map(row => [...row.map(seat => ({...seat}))])];
+            newGrid[r][c].studentId = selectedPoolStudent.id;
+            const targetStudent = selectedPoolStudent;
+            setSelectedPoolStudent(null);
+
+            const expectedGender = targetSeat.genderPreference === '여' ? '여' : (useFemaleSeats && targetSeat.genderPreference === null ? '남' : null);
+            const isGenderMismatch = expectedGender && targetStudent.gender !== expectedGender;
+
+            if (isGenderMismatch) {
+                setGenderWarningModal({
+                    isOpen: true,
+                    student: targetStudent,
+                    requiredGender: expectedGender,
+                    pendingGrid: newGrid
+                });
+                return;
+            }
+
+            const violation = checkAvoidanceViolation(targetStudent.id, r, c, newGrid);
+            if (violation) {
+                setAvoidanceWarningModal({
+                    isOpen: true,
+                    student1: violation.student1,
+                    student2: violation.student2,
+                    pendingGrid: newGrid
+                });
+            } else {
+                setGrid(newGrid);
+                syncLocalStorageSeating(newGrid);
+            }
+            return;
+        }
+
+        if (grid[r][c].studentId) {
+            setSelectedPoolStudent(null);
+            return;
+        }
+
+        toggleSeatGender(r, c);
     };
 
     const toggleSeatGender = (r, c) => {
@@ -652,11 +834,21 @@ const SeatingChart = () => {
     // Modal Handlers
     const openConstraintModal = (target) => {
         setModalTarget(target);
-        setSelectedInModal([]);
+        setSelectedInModal(target === 'front' ? [...constraints.frontPreference] : []);
         setIsModalOpen(true);
     };
 
     const handleModalConfirm = () => {
+        if (modalTarget === 'front') {
+            if (selectedInModal.length === 0) {
+                setConstraints(prev => ({ ...prev, frontPreference: [] }));
+            } else {
+                setConstraints(prev => ({ ...prev, frontPreference: [...selectedInModal] }));
+            }
+            setIsModalOpen(false);
+            return;
+        }
+
         if (selectedInModal.length < 2) {
             alert("최소 2명 이상의 학생을 선택해야 합니다.");
             return;
@@ -686,6 +878,13 @@ const SeatingChart = () => {
         setSelectedInModal(prev => 
             prev.includes(id) ? prev.filter(sid => sid !== id) : [...prev, id]
         );
+    };
+
+    const removeFrontPreference = (studentId) => {
+        setConstraints(prev => ({
+            ...prev,
+            frontPreference: prev.frontPreference.filter(id => id !== studentId)
+        }));
     };
 
     const removeAvoidance = (id) => {
@@ -755,8 +954,30 @@ window.addEventListener('load',function(){
         }, 350);
     };
 
+    const [isExpandedWorkspace, setIsExpandedWorkspace] = useState(false);
+    const [shouldRerandomOnReveal, setShouldRerandomOnReveal] = useState(false);
+
+    // Automatically detect window maximize/resize to switch workspace mode
+    useEffect(() => {
+        const handleResize = () => {
+            const isScreenMaximized = (window.outerWidth >= ((window.screen?.availWidth || 1920) - 60)) || (window.innerWidth >= 1600);
+            setIsExpandedWorkspace(isScreenMaximized);
+        };
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    const toggleExpandWorkspace = () => {
+        if (window.electronAPI?.maximizeWindow) {
+            try { window.electronAPI.maximizeWindow(); } catch(e) {}
+        } else {
+            setIsExpandedWorkspace(prev => !prev);
+        }
+    };
+
     return (
-        <div ref={containerRef} className={`seating-chart-container ${printMode ? `printing print-${printMode}` : ''} ${mode === 'student' ? 'student-view-container' : ''}`}>
+        <div ref={containerRef} className={`seating-chart-container ${isExpandedWorkspace ? 'expanded-workspace-active' : ''} ${printMode ? `printing print-${printMode}` : ''} ${mode === 'student' ? 'student-view-container' : ''}`}>
             {/* Shuffling Animation Overlay */}
             {isShuffling && (
                 <div className="shuffle-overlay">
@@ -774,152 +995,129 @@ window.addEventListener('load',function(){
             )}
 
             {mode === 'teacher' && (
-                <header className="seating-header">
-                    <h1><span>🪑</span> 자리 배치</h1>
+                <header className="seating-top-header">
+                    <div className="header-title">
+                        <h1>🪑 자리 배치</h1>
+                        <span className="grid-size-badge">{gridConfig.rows}행 {gridConfig.cols}열</span>
+                        {isExpandedWorkspace && <span className="grid-size-badge expanded-badge">🖥️ 전체창 배치 작업 모드</span>}
+                    </div>
                     <div className="mode-toggle">
-                        <button className={`mode-btn ${mode === 'teacher' ? 'active' : ''}`} onClick={() => setMode('teacher')}>선생님 설정</button>
+                        <button className={`expand-view-btn ${isExpandedWorkspace ? 'active' : ''}`} onClick={toggleExpandWorkspace}>
+                            {isExpandedWorkspace ? '🗗 기본창(확인/인쇄 전용)으로 축소' : '🖥️ 자리배치 작업하기(전체창)'}
+                        </button>
+                        <button className={`mode-btn ${mode === 'teacher' ? 'active' : ''}`} onClick={() => setMode('teacher')}>교사용 View</button>
                         <button className={`mode-btn ${mode === 'student' ? 'active' : ''}`} onClick={() => setMode('student')}>학생 공개용</button>
                     </div>
                 </header>
             )}
 
-            {mode === 'student' && (
-                <button className="stealth-back-btn" onClick={() => {
-                    setMode('teacher');
-                    setIsRevealing(false);
-                    setRevealedCount(0);
-                    // Stop music when leaving student mode
-                    if (ytPlayerRef.current && ytPlayerRef.current.stopVideo) {
-                        try { ytPlayerRef.current.stopVideo(); } catch(e) {}
-                    }
-                }} title="설정으로 돌아가기">←</button>
-            )}
-
             {mode === 'teacher' && (
                 <div className="setup-bar">
-                    {/* ...existing setup-bar content... */}
+                    {/* 배치 설정 모달 카드 버튼 */}
                     <div className="setup-group config-section">
-                        <div className="setup-item">
-                            <span className="setup-label">레이아웃</span>
-                            <div className="input-row">
-                                <input name="rows" type="number" value={gridConfig.rows} onChange={handleConfigChange} min="1" max="10" />
-                                <span className="x">×</span>
-                                <input name="cols" type="number" value={gridConfig.cols} onChange={handleConfigChange} min="1" max="20" />
-                            </div>
-                        </div>
-                        <div className="setup-item">
-                            <span className="setup-label">단위</span>
-                            <select name="pairSize" value={gridConfig.pairSize} onChange={handleConfigChange}>
-                                <option value={1}>1명</option>
-                                <option value={2}>2명</option>
-                                <option value={3}>3명</option>
-                                <option value={4}>4명</option>
-                            </select>
-                        </div>
+                        <button className="base-btn text-card-btn initial-setup-card-btn" onClick={() => setShowInitialSetupModal(true)}>
+                            ⚙️ 배치 설정
+                        </button>
                     </div>
 
-                    <div className={`setup-group status-section ${validation.isValid ? 'valid' : 'invalid'}`}>
-                        <div className="status-info">
-                            <span className="status-text">
-                                {unassignedStudents.length === 0 && validation.isValid ? '✨ 배정완료' : validation.isValid ? '✅ 정합성OK' : '⚠️ 배치오류'}
-                            </span>
-                            <div className="mini-badges">
-                                <span className="m-badge">인원 {validation.counts.totalAvailable}/{validation.counts.totalStudents}</span>
-                                <span className="m-badge">남 {validation.counts.neutralSeats}/{validation.counts.totalMale}</span>
-                                <span className="m-badge">여 {validation.counts.femaleOnlySeats}/{validation.counts.totalFemale}</span>
-                            </div>
-                        </div>
-                        <label className="gender-toggle-mini">
-                            <input type="checkbox" checked={useFemaleSeats} onChange={(e) => setUseFemaleSeats(e.target.checked)} />
-                            <span className="g-slider"></span>
-                            <span className="g-text">남여구분</span>
-                        </label>
-                    </div>
-
+                    {/* 액션 버튼 그룹 (시점 반전, 자리 초기화, 저장, 불러오기, 인쇄) */}
                     <div className="setup-group actions-section">
                         <div className="btn-group main">
-                            <button className="base-btn reset" onClick={resetGrid}>초기화</button>
-                            <button className="base-btn randomize" onClick={handleRandomize} disabled={!validation.isValid}>랜덤배치</button>
-                            <button className="base-btn load icon-btn" title="불러오기" onClick={() => { setPreviewRecord(seatingHistory[0] || null); setShowLoadModal(true); }} disabled={seatingHistory.length === 0}>📂</button>
-                            <button className="base-btn save icon-btn" title="저장" onClick={handleSaveClick}>💾</button>
+                            <button 
+                                className={`base-btn text-card-btn ${isFlipped ? 'active' : ''}`}
+                                onClick={() => setIsFlipped(prev => !prev)}
+                                title={isFlipped ? '학생 시점으로 전환 (칠판 위)' : '교사 시점으로 전환 (칠판 아래)'}
+                            >
+                                시점 반전
+                            </button>
+                            <button className="base-btn reset" onClick={resetGrid} title="전체 자리 초기화">
+                                자리 초기화
+                            </button>
+                            <button 
+                                className={`base-btn text-card-btn ${hasChanges ? 'save-btn-dirty' : ''}`} 
+                                onClick={handleSaveClick} 
+                                title={hasChanges ? "자리 변동 사항이 있습니다. 클릭하여 배치 기록 저장" : "배치 저장"}
+                                style={hasChanges ? {
+                                    backgroundColor: '#ea580c',
+                                    background: '#ea580c',
+                                    color: '#ffffff',
+                                    borderColor: '#c2410c',
+                                    fontWeight: '800',
+                                    boxShadow: '0 4px 12px rgba(234, 88, 12, 0.4)'
+                                } : {}}
+                            >
+                                {hasChanges ? '💾 배치 저장 (변동됨)' : '💾 배치 저장'}
+                            </button>
+                            <button className="base-btn text-card-btn" onClick={() => setShowLoadModal(true)} title="기록 불러오기">
+                                📂 기록 불러오기
+                            </button>
                         </div>
+
                         <div className="btn-group print">
-                            <button className="base-btn print-st icon-btn" title="학생용 인쇄" onClick={() => handlePrint('standard')}>🖨️</button>
-                            <button className="base-btn print-tc icon-btn" title="교사용 인쇄" onClick={() => handlePrint('teacher')}>🖨️</button>
+                            <button className="base-btn text-card-btn" onClick={() => handlePrint('standard')}>
+                                🖨️ 학생용 인쇄
+                            </button>
+                            <button className="base-btn text-card-btn" onClick={() => handlePrint('teacher')}>
+                                🖨️ 교사용 인쇄
+                            </button>
                         </div>
                     </div>
                 </div>
             )}
 
             {mode === 'student' && (
-                <div className="disclosure-controls">
-                    <div className="disclosure-header">
-                        <div className="strategy-selector">
-                            <button className={revealStrategy === 'one-by-one' ? 'active' : ''} onClick={() => setRevealStrategy('one-by-one')}>하나씩</button>
-                            <button className={revealStrategy === 'all' ? 'active' : ''} onClick={() => setRevealStrategy('all')}>한번에</button>
-                            <button className={revealStrategy === 'male-first' ? 'active' : ''} onClick={() => setRevealStrategy('male-first')}>남학생 먼저</button>
-                            <button className={revealStrategy === 'female-first' ? 'active' : ''} onClick={() => setRevealStrategy('female-first')}>여학생 먼저</button>
-                        </div>
-                        <button className="base-btn fullscreen-btn" onClick={toggleFullscreen} title="전체화면">전체화면 📺</button>
+                <div className="student-unified-header">
+                    <button className="stealth-back-btn green-back-pill" onClick={() => {
+                        setMode('teacher');
+                        setIsRevealing(false);
+                        setRevealedCount(0);
+                        if (ytPlayerRef.current && ytPlayerRef.current.stopVideo) {
+                            try { ytPlayerRef.current.stopVideo(); } catch(e) {}
+                        }
+                    }} title="교사 설정으로 돌아가기">← 돌아가기</button>
+
+                    <div className="student-main-title">
+                        🌱 우리 반 자리 배치
                     </div>
-                    <div className="reveal-main-action">
-                        {isGridAssigned ? (
-                            <>
-                                <button 
-                                    className="btn-reveal-start" 
-                                    onClick={() => startReveal(false)} 
-                                    disabled={isRevealing || isShuffling || (revealedCount > 0 && revealedCount === revealOrder.length) || (isMusicEnabled && !isPlayerReady)}
-                                >
-                                    {isMusicEnabled && !isPlayerReady ? '🎼 준비 중...' : (isShuffling ? '🎲 배치 중...' : (revealedCount > 0 ? (revealedCount === revealOrder.length ? '전체 공개 완료' : '전체 공개 중...') : '현재 배치로 공개 시작!'))}
-                                </button>
-                                {!isRevealing && !isShuffling && revealedCount === 0 && (
-                                    <button 
-                                        className="btn-reveal-rerandom" 
-                                        onClick={() => startReveal(true)} 
-                                        disabled={isMusicEnabled && !isPlayerReady}
-                                        title="현재 배치를 무시하고 다시 랜덤하게 섞어서 공개합니다"
-                                    >
-                                        다시 랜덤 배치 후 공개
-                                    </button>
-                                )}
-                            </>
-                        ) : (
-                            <button 
-                                className="btn-reveal-start" 
-                                onClick={() => startReveal(true)} 
-                                disabled={isRevealing || isShuffling || (revealedCount > 0 && revealedCount === revealOrder.length) || (isMusicEnabled && !isPlayerReady)}
-                            >
-                                {isMusicEnabled && !isPlayerReady ? '🎼 준비 중...' : (isShuffling ? '🎲 배치 중...' : (revealedCount > 0 ? (revealedCount === revealOrder.length ? '전체 공개 완료' : '전체 공개 중...') : '랜덤배치 시작!'))}
-                            </button>
-                        )}
-                        <button 
-                            className={`music-toggle-btn ${isMusicEnabled ? 'active' : ''}`} 
-                            onClick={() => {
-                                const nextValue = !isMusicEnabled;
-                                setIsMusicEnabled(nextValue);
-                                // If turning off, stop video
-                                if (!nextValue && ytPlayerRef.current && ytPlayerRef.current.stopVideo) {
-                                    try { ytPlayerRef.current.stopVideo(); } catch(e) {}
-                                }
-                            }}
-                            title={isMusicEnabled ? "배경음악 끄기" : "배경음악 켜기"}
-                        >
-                            {isMusicEnabled ? '🔊 음악 켬' : '🔇 음악 끔'}
+
+                    <div className="student-actions-group">
+                        <button className="green-action-pill" onClick={() => setShowMusicSettings(true)}>
+                            ⚙️ 설정
                         </button>
+
+                        <div className="music-switch-wrapper" title="배경음악 토글">
+                            <span className="switch-label">🎵 배경음악</span>
+                            <div 
+                                className={`green-toggle-pill ${isMusicEnabled ? 'active' : ''}`}
+                                onClick={() => {
+                                    const nextValue = !isMusicEnabled;
+                                    setIsMusicEnabled(nextValue);
+                                    if (!nextValue && ytPlayerRef.current && ytPlayerRef.current.stopVideo) {
+                                        try { ytPlayerRef.current.stopVideo(); } catch(e) {}
+                                    }
+                                }}
+                            >
+                                <div className="pill-thumb"></div>
+                            </div>
+                            <span className={`switch-state-badge ${isMusicEnabled ? 'on' : 'off'}`}>
+                                {isMusicEnabled ? 'ON' : 'OFF'}
+                            </span>
+                        </div>
+
+                        <button className="green-action-pill dark" onClick={toggleFullscreen} title="전체화면">
+                            📺 전체화면
+                        </button>
+
                         <button 
-                            className={`base-btn btn-music-setup ${isPlayerReady ? 'ready' : 'loading'}`} 
-                            onClick={() => setShowMusicSettings(true)}
+                            className="green-gradient-main-btn" 
+                            onClick={() => startReveal(shouldRerandomOnReveal || !isGridAssigned)} 
+                            disabled={isRevealing || isShuffling || (revealedCount > 0 && revealedCount === revealOrder.length) || (isMusicEnabled && !isPlayerReady)}
                         >
-                            <span className="music-setup-label">🔗 음악링크</span>
-                            {isMusicEnabled && (
-                                <span className={`music-status-badge ${isPlayerReady ? 'ready' : 'loading'}`}>
-                                    {isPlayerReady ? '✅' : '⏳'}
-                                </span>
-                            )}
+                            {isMusicEnabled && !isPlayerReady ? '음악 준비 중...' : (isShuffling ? '자리 배치 중...' : (revealedCount > 0 ? (revealedCount === revealOrder.length ? '전체 공개 완료' : '공개 진행 중...') : '자리 공개 시작'))}
                         </button>
                     </div>
 
-                    {/* YouTube Player Container - Needs to be slightly visible for some browsers to allow sound */}
+                    {/* YouTube Player Container */}
                     <div id="yt-player-container" style={{ 
                         position: 'fixed', 
                         top: '-20px', 
@@ -934,6 +1132,7 @@ window.addEventListener('load',function(){
                         <div id="yt-player-placeholder"></div>
                     </div>
 
+                    {/* 학생 공개용 설정 및 배경음악 모달 */}
                     {showMusicSettings && (
                         <div 
                             className="music-help-overlay" 
@@ -941,55 +1140,126 @@ window.addEventListener('load',function(){
                                 if (e.target === e.currentTarget) setShowMusicSettings(false);
                             }}
                         >
-                            <div className="music-help-modal">
-                                <h3>📺 유튜브 배경 음악 설정</h3>
-                                <p>자리 공개 시 재생할 유튜브 영상 주소를 입력해주세요.</p>
-                                <div className="yt-input-group">
-                                    <div className="yt-input-wrapper">
-                                        <input 
-                                            type="text" 
-                                            placeholder="https://www.youtube.com/watch?v=..." 
-                                            value={youtubeUrl}
-                                            onChange={(e) => setYoutubeUrl(e.target.value)}
-                                            autoFocus
-                                        />
-                                        {youtubeUrl && (
-                                            <button className="yt-clear-btn" onClick={() => setYoutubeUrl('')} title="주소 지우기">×</button>
-                                        )}
-                                    </div>
-                                    <div className="yt-test-actions">
-                                        <button 
-                                            className={`m-btn test-play-btn ${!isPlayerReady ? 'loading' : ''}`}
-                                            disabled={!isPlayerReady}
-                                            onClick={() => {
-                                                if (ytPlayerRef.current && ytPlayerRef.current.playVideo) {
-                                                    ytPlayerRef.current.playVideo();
-                                                }
-                                            }}
-                                        >
-                                            {isPlayerReady ? '▶️ 테스트 재생' : '⏳ 준비 중...'}
-                                        </button>
-                                        <button 
-                                            className="m-btn test-stop-btn"
-                                            onClick={() => {
-                                                if (ytPlayerRef.current && ytPlayerRef.current.stopVideo) {
-                                                    ytPlayerRef.current.stopVideo();
-                                                }
-                                            }}
-                                        >
-                                            ⏹️ 정지
-                                        </button>
-                                        <button 
-                                            className="m-btn retry-btn"
-                                            title="음악이 나오지 않으면 눌러주세요"
-                                            onClick={initYoutubePlayer}
-                                        >
-                                            🔄 재연결
-                                        </button>
-                                    </div>
-                                    <p className="yt-hint">※ 주소를 넣고 창을 닫으면 자동 저장됩니다.</p>
+                            <div className="music-help-modal student-reveal-config-modal">
+                                <div className="student-modal-header">
+                                    <h3>학생 공개 설정</h3>
+                                    <button className="modal-close-x-btn" onClick={() => setShowMusicSettings(false)}>×</button>
                                 </div>
-                                <button className="m-btn confirm" onClick={() => {
+                                
+                                {/* 1. 공개 방식 선택 (하나씩 vs 한번에) */}
+                                <div className="modal-config-group">
+                                    <label className="config-group-title">1. 공개 방식 선택</label>
+                                    <div className="strategy-selector modal-selector single-line-selector">
+                                        <button 
+                                            className={revealStrategy !== 'all' ? 'active' : ''} 
+                                            onClick={() => setRevealStrategy('one-by-one')}
+                                        >
+                                            하나씩 순차 공개
+                                        </button>
+                                        <button 
+                                            className={revealStrategy === 'all' ? 'active' : ''} 
+                                            onClick={() => setRevealStrategy('all')}
+                                        >
+                                            한번에 전체 공개
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* 2. 공개 순서 선택 (하나씩 순차 공개 선택 시 활성화) */}
+                                {revealStrategy !== 'all' && (
+                                    <div className="modal-config-group sub-config-group">
+                                        <label className="config-group-title">2. 순서 세부 설정</label>
+                                        <div className="strategy-selector modal-selector triple-selector">
+                                            <button 
+                                                className={revealStrategy === 'one-by-one' ? 'active' : ''} 
+                                                onClick={() => setRevealStrategy('one-by-one')}
+                                            >
+                                                전체 무작위
+                                            </button>
+                                            <button 
+                                                className={revealStrategy === 'male-first' ? 'active' : ''} 
+                                                onClick={() => setRevealStrategy('male-first')}
+                                            >
+                                                남학생 먼저
+                                            </button>
+                                            <button 
+                                                className={revealStrategy === 'female-first' ? 'active' : ''} 
+                                                onClick={() => setRevealStrategy('female-first')}
+                                            >
+                                                여학생 먼저
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* 3. 자리 배치 방식 */}
+                                <div className="modal-config-group">
+                                    <label className="config-group-title">3. 자리 배치 선택</label>
+                                    <div className="strategy-selector modal-selector single-line-selector">
+                                        <button 
+                                            className={!shouldRerandomOnReveal ? 'active' : ''} 
+                                            onClick={() => setShouldRerandomOnReveal(false)}
+                                        >
+                                            현재 작성 배치 사용
+                                        </button>
+                                        <button 
+                                            className={shouldRerandomOnReveal ? 'active' : ''} 
+                                            onClick={() => setShouldRerandomOnReveal(true)}
+                                        >
+                                            시작 시 새로 랜덤 배치
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* 4. 배경 음악 연동 */}
+                                <div className="modal-config-group">
+                                    <label className="config-group-title">4. 배경 음악 연동 (유튜브)</label>
+                                    <div className="yt-input-group">
+                                        <div className="yt-input-wrapper">
+                                            <input 
+                                                type="text" 
+                                                placeholder="https://www.youtube.com/watch?v=..." 
+                                                value={youtubeUrl}
+                                                onChange={(e) => setYoutubeUrl(e.target.value)}
+                                            />
+                                            {youtubeUrl && (
+                                                <button className="yt-clear-btn" onClick={() => setYoutubeUrl('')} title="주소 지우기">×</button>
+                                            )}
+                                        </div>
+                                        <div className="yt-test-actions">
+                                            <button 
+                                                className={`m-btn test-play-btn ${!isPlayerReady ? 'loading' : ''}`}
+                                                disabled={!isPlayerReady}
+                                                onClick={() => {
+                                                    if (ytPlayerRef.current && ytPlayerRef.current.playVideo) {
+                                                        ytPlayerRef.current.playVideo();
+                                                    }
+                                                }}
+                                            >
+                                                {isPlayerReady ? '테스트 재생' : '준비 중...'}
+                                            </button>
+                                            <button 
+                                                className="m-btn test-stop-btn"
+                                                onClick={() => {
+                                                    if (ytPlayerRef.current && ytPlayerRef.current.stopVideo) {
+                                                        ytPlayerRef.current.stopVideo();
+                                                    }
+                                                }}
+                                            >
+                                                정지
+                                            </button>
+                                            <button 
+                                                className="m-btn retry-btn"
+                                                title="음악이 나오지 않으면 눌러주세요"
+                                                onClick={initYoutubePlayer}
+                                            >
+                                                재연결
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button className="m-btn confirm-full" onClick={() => {
                                     setShowMusicSettings(false);
                                     saveMusicLink(youtubeUrl);
                                 }}>설정 완료</button>
@@ -1000,70 +1270,97 @@ window.addEventListener('load',function(){
             )}
 
             <main className={`seating-main-workspace ${mode === 'student' ? 'student-view' : ''}`}>
-                <section className={`classroom-area ${!printMode && isFlipped && mode === 'teacher' ? 'flipped' : ''}`}>
-                    <div className="blackboard-indicator"></div>
-                    <div className="grid-container">
-                        {grid.map((row, r) => (
-                            <div key={r} className="grid-row">
-                                {row.map((seat, c) => {
-                                    const student = students?.find(s => s.id === seat.studentId);
-                                    const revealed = isRevealed(r, c);
-                                    const isGap = ((c + 1) % gridConfig.pairSize === 0 && (c + 1) < gridConfig.cols);
-                                    const isTarget = dropTarget?.r === r && dropTarget?.c === c;
-                                    
-                                    let statusClass = '';
-                                    if (seat.genderPreference === '여') statusClass = 'gender-female';
-                                    else if (seat.genderPreference === 'blocked') statusClass = 'blocked';
-                                    else if (useFemaleSeats && seat.genderPreference === null) statusClass = 'gender-male';
+                <div className="seating-chart-and-status-column">
+                    <section className={`classroom-area ${!printMode && isFlipped && mode === 'teacher' ? 'flipped' : ''}`}>
+                        <div className="blackboard-indicator"></div>
+                        <div className="grid-container">
+                            {grid.map((row, r) => (
+                                <div key={r} className="grid-row">
+                                    {row.map((seat, c) => {
+                                        const student = students?.find(s => s.id === seat.studentId);
+                                        const revealed = isRevealed(r, c);
+                                        const isGap = ((c + 1) % gridConfig.pairSize === 0 && (c + 1) < gridConfig.cols);
+                                        const isTarget = dropTarget?.r === r && dropTarget?.c === c;
+                                        
+                                        let statusClass = '';
+                                        if (seat.genderPreference === '여') statusClass = 'gender-female';
+                                        else if (seat.genderPreference === 'blocked') statusClass = 'blocked';
+                                        else if (useFemaleSeats && seat.genderPreference === null) statusClass = 'gender-male';
 
-                                    return (
-                                        <div 
-                                            key={`${r}-${c}`}
-                                            className={`seat-slot ${isGap ? 'gap' : ''} ${isTarget ? 'drop-target' : ''} ${statusClass} ${student ? 'occupied' : ''}`}
-                                            onDragOver={(e) => mode === 'teacher' && onDragOver(e, r, c)}
-                                            onDrop={(e) => mode === 'teacher' && onDrop(e, r, c)}
-                                            onDragLeave={() => setDropTarget(null)}
-                                            onClick={() => toggleSeatGender(r, c)}
-                                            title={mode === 'teacher' && !student ? '클릭: 일반 > 여학생전용 > 사용불가' : ''}
-                                        >
-                                            {student && revealed ? (
-                                                <div
-                                                    className={`student-card ${mode === 'student' ? 'revealed' : ''} ${useFemaleSeats ? (student.gender === '남' ? 'card-male' : 'card-female') : ''}`}
-                                                    draggable={mode === 'teacher'}
-                                                    onDragStart={(e) => onDragStartGrid(e, r, c, student)}
-                                                >
-                                                    {mode === 'teacher' && (
-                                                        <button className="remove-seat-btn" onClick={(e) => { e.stopPropagation(); removeFromSeat(r, c); }}>×</button>
-                                                    )}
-                                                    <span className={`student-no ${student.gender === '남' ? 'male' : 'female'}`}>{student.attendanceNumber}번</span>
-                                                    <span className="student-name">{student.name}</span>
-                                                </div>
-                                            ) : (mode === 'student' && student && !revealed) ? (
-                                                <div className="student-card reveal-hidden"></div>
-                                            ) : null}
-                                        </div>
-                                    );
-                                })}
+                                        return (
+                                            <div 
+                                                key={`${r}-${c}`}
+                                                className={`seat-slot ${isGap ? 'gap' : ''} ${isTarget ? 'drop-target' : ''} ${statusClass} ${student ? 'occupied' : ''}`}
+                                                onDragOver={(e) => mode === 'teacher' && onDragOver(e, r, c)}
+                                                onDrop={(e) => mode === 'teacher' && onDrop(e, r, c)}
+                                                onDragLeave={() => setDropTarget(null)}
+                                                onClick={() => handleSeatClick(r, c)}
+                                                title={mode === 'teacher' && !student ? '클릭/드래그하여 학생 배치 (클릭시: 일반 > 여학생전용 > 사용불가)' : ''}
+                                            >
+                                                {student && revealed ? (
+                                                    <div
+                                                        className={`student-card ${mode === 'student' ? 'revealed' : ''} ${useFemaleSeats ? (student.gender === '남' ? 'card-male' : 'card-female') : ''}`}
+                                                        draggable={mode === 'teacher'}
+                                                        onDragStart={(e) => onDragStartGrid(e, r, c, student)}
+                                                    >
+                                                        {mode === 'teacher' && (
+                                                            <button className="remove-seat-btn" onClick={(e) => { e.stopPropagation(); removeFromSeat(r, c); }}>×</button>
+                                                        )}
+                                                        <span className={`student-no ${student.gender === '남' ? 'male' : 'female'}`}>{student.attendanceNumber}번</span>
+                                                        <span className="student-name">{student.name}</span>
+                                                    </div>
+                                                ) : (mode === 'student' && student && !revealed) ? (
+                                                    <div className="student-card reveal-hidden"></div>
+                                                ) : null}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+
+                    {/* 자리배치표 하단 실시간 배정 상태 알림 바 */}
+                    {mode === 'teacher' && (
+                        <div className="classroom-bottom-status-wrap">
+                            <div className={`validation-status-pill ${validation.isValid ? 'valid' : 'invalid'}`} title={validation.errors.join(' / ') || '모든 학생 배정 준비가 완료되었습니다.'}>
+                                <span className="status-main-badge">
+                                    {validation.isValid ? '🟢 배치 준비 완료' : '⚠️ 좌석 조정 필요'}
+                                </span>
+                                <span className="status-sub-text">
+                                    {validation.isValid 
+                                        ? (useFemaleSeats ? `남 ${validation.counts.totalMale}명 / 여 ${validation.counts.totalFemale}명 좌석 수 일치` : `총 ${validation.counts.totalStudents}명 좌석 수 일치`)
+                                        : (validation.errors[0] || '좌석 수를 확인해 주세요')}
+                                </span>
                             </div>
-                        ))}
-                    </div>
-                </section>
+                            <p className="faded-seat-click-hint">
+                                💡 빈 좌석을 클릭할 때마다 [남학생 ➔ 여학생 ➔ 사용 불가 ➔ 남학생] 순으로 전환됩니다.
+                            </p>
+                        </div>
+                    )}
+                </div>
 
                 {mode === 'teacher' && (
                     <aside className="student-pool-panel">
                         <div className="pool-header">
                             <h3>미배정 학생 ({unassignedStudents.length})</h3>
-                            <button 
-                                className={`flip-toggle-btn ${isFlipped ? 'active' : ''}`}
-                                onClick={() => setIsFlipped(prev => !prev)}
-                                title={isFlipped ? '학생 시점으로 전환 (칠판 위)' : '교사 시점으로 전환 (칠판 아래)'}
-                            >
-                                시점 반전
+                            <button className="green-gradient-main-btn pool-auto-btn" onClick={handleRandomize}>
+                                🎲 자동 배치
                             </button>
                         </div>
                         <div className="pool-list">
                             {unassignedStudents.map(student => (
-                                <div key={student.id} className={`student-card ${useFemaleSeats ? (student.gender === '남' ? 'card-male' : 'card-female') : ''}`} draggable onDragStart={(e) => onDragStartPool(e, student)}>
+                                <div 
+                                    key={student.id} 
+                                    className={`student-card ${useFemaleSeats ? (student.gender === '남' ? 'card-male' : 'card-female') : ''} ${selectedPoolStudent?.id === student.id ? 'selected-pool-student' : ''}`} 
+                                    draggable={true} 
+                                    onDragStart={(e) => onDragStartPool(e, student)}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedPoolStudent(prev => prev?.id === student.id ? null : student);
+                                    }}
+                                    title="드래그하거나 클릭 후 빈 자리를 클릭하세요"
+                                >
                                     <span className={`student-no ${student.gender === '남' ? 'male' : 'female'}`}>{student.attendanceNumber}번</span>
                                     <span className="student-name">{student.name}</span>
                                 </div>
@@ -1074,216 +1371,113 @@ window.addEventListener('load',function(){
             </main>
 
             {mode === 'teacher' && (
-                <div className="constraints-panel">
-                    <div className="constraints-header">
-                        <h2>⚙️ 배치 제약 조건 설정</h2>
-                        <p>자동 랜덤 배치 시 고려할 핵심 규칙을 설정하세요.</p>
-                    </div>
-                    
-                    <div className="constraints-grid">
-                        {/* 1. Front Preference */}
-                        <div className="constraint-card front-card">
-                            <div className="card-title">
-                                <span className="icon">📍</span>
-                                <h3>앞자리 선호 학생</h3>
-                            </div>
-                            <div className="preference-list">
-                                {sortedStudents.map(s => (
-                                    <button 
-                                        key={s.id}
-                                        className={`preference-btn ${constraints.frontPreference.includes(s.id) ? 'active' : ''}`}
-                                        onClick={() => toggleFrontPreference(s.id)}
-                                    >
-                                        {s.name}
-                                    </button>
-                                ))}
-                            </div>
+                <div className="teacher-bottom-settings-grid">
+                    <div className="constraints-panel">
+                        <div className="constraints-header">
+                            <h2>⚙️ 배치 제약 조건 설정</h2>
+                            <p>자동 랜덤 배치 시 고려할 핵심 규칙을 설정하세요.</p>
                         </div>
-
-                        {/* 2. Pair Avoidance */}
-                        <div className="constraint-card avoidance-card">
-                            <div className="card-title">
-                                <span className="icon">🚫</span>
-                                <h3>짝꿍 금지 설정</h3>
-                                <button className="mini-add-btn" onClick={() => openConstraintModal('avoidance')}>+ 추가</button>
-                            </div>
-                            <div className="constraint-active-list">
-                                {constraints.avoidances.map((group) => (
-                                    <div key={group.id} className="active-item avoidance">
-                                        <span className="pair-names">
-                                            {group.studentIds.map(id => students?.find(s => s.id === id)?.name).join(' ↔ ')}
-                                        </span>
-                                        <button className="del-btn" onClick={() => removeAvoidance(group.id)}>×</button>
-                                    </div>
-                                ))}
-                                {constraints.avoidances.length === 0 && <p className="empty-msg">추가된 금지 그룹이 없습니다.</p>}
-                            </div>
-                        </div>
-
-                        {/* 3. Mandatory Pairs */}
-                        <div className="constraint-card pairing-card">
-                            <div className="card-title">
-                                <span className="icon">🤝</span>
-                                <h3>필수 짝꿍 설정</h3>
-                                <button className="mini-add-btn" onClick={() => openConstraintModal('pairing')}>+ 추가</button>
-                            </div>
-                            <div className="constraint-active-list">
-                                {constraints.pairs.map((group) => (
-                                    <div key={group.id} className="active-item pairing">
-                                        <span className="pair-names">
-                                            {group.studentIds.map(id => students?.find(s => s.id === id)?.name).join(' + ')}
-                                        </span>
-                                        <button className="del-btn" onClick={() => removePairing(group.id)}>×</button>
-                                    </div>
-                                ))}
-                                {constraints.pairs.length === 0 && <p className="empty-msg">추가된 필수 그룹이 없습니다.</p>}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Save Name Modal */}
-            {showSaveModal && (
-                <div className="chart-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowSaveModal(false); }}>
-                    <div className="chart-modal save-name-modal">
-                        <div className="modal-header">
-                            <h2>📋 자리배치 기록 저장</h2>
-                            <button className="close-btn" onClick={() => setShowSaveModal(false)}>×</button>
-                        </div>
-                        <div className="modal-body">
-                            <p className="modal-desc">이 자리배치를 어떤 이름으로 기록할까요?</p>
-                            <input
-                                className="save-name-input"
-                                type="text"
-                                value={saveNameInput}
-                                onChange={(e) => setSaveNameInput(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleHistorySave()}
-                                placeholder="예: 2025.03 1학기 자리배치"
-                                autoFocus
-                            />
-                        </div>
-                        <div className="modal-footer">
-                            <span />
-                            <div className="modal-btns">
-                                <button className="m-btn cancel" onClick={() => setShowSaveModal(false)}>취소</button>
-                                <button className="m-btn confirm" onClick={handleHistorySave}>저장하기</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Load History Modal */}
-            {showLoadModal && (
-                <div className="chart-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setShowLoadModal(false); setPreviewRecord(null); } }}>
-                    <div className="chart-modal load-history-modal">
-                        <div className="modal-header">
-                            <h2>📂 자리배치 불러오기</h2>
-                            <button className="close-btn" onClick={() => { setShowLoadModal(false); setPreviewRecord(null); }}>×</button>
-                        </div>
-                        <div className="modal-body load-modal-body">
-                            <div className="load-list-panel">
-                                <p className="load-list-hint">불러올 기록을 선택하세요.</p>
-                                {seatingHistory.map(record => {
-                                    const d = new Date(record.savedAt);
-                                    const dateStr = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
-                                    return (
-                                        <div
-                                            key={record.id}
-                                            className={`load-list-item ${previewRecord?.id === record.id ? 'selected' : ''}`}
-                                            onClick={() => setPreviewRecord(record)}
-                                        >
-                                            <div className="lli-info">
-                                                <span className="lli-name">{record.name}</span>
-                                                <span className="lli-meta">{dateStr} · 짝 {record.pairs?.length || 0}그룹</span>
+                        
+                        <div className="constraints-grid">
+                            {/* 1. Front Preference */}
+                            <div className="constraint-card front-card">
+                                <div className="card-title">
+                                    <span className="icon">📍</span>
+                                    <h3>앞자리 선호 학생</h3>
+                                    <button className="mini-add-btn" onClick={() => openConstraintModal('front')}>+ 추가</button>
+                                </div>
+                                <div className="constraint-active-list">
+                                    {constraints.frontPreference.map((studentId) => {
+                                        const st = students?.find(s => s.id === studentId);
+                                        return st ? (
+                                            <div key={studentId} className="active-item preference-chip">
+                                                <span className="pair-names">
+                                                    {st.attendanceNumber ? `${st.attendanceNumber}번 ${st.name}` : st.name}
+                                                </span>
+                                                <button className="del-btn" onClick={() => removeFrontPreference(studentId)}>×</button>
                                             </div>
-                                            {previewRecord?.id === record.id && (
-                                                <button className="m-btn confirm lli-apply" onClick={() => handleLoadRecord(record)}>적용</button>
-                                            )}
+                                        ) : null;
+                                    })}
+                                    {constraints.frontPreference.length === 0 && <p className="empty-msg">등록된 앞자리 선호 학생이 없습니다.</p>}
+                                </div>
+                            </div>
+
+                            {/* 2. Pair Avoidance */}
+                            <div className="constraint-card avoidance-card">
+                                <div className="card-title">
+                                    <span className="icon">🚫</span>
+                                    <h3>짝꿍 금지 설정</h3>
+                                    <button className="mini-add-btn" onClick={() => openConstraintModal('avoidance')}>+ 추가</button>
+                                </div>
+                                <div className="constraint-active-list">
+                                    {constraints.avoidances.map((group) => (
+                                        <div key={group.id} className="active-item avoidance">
+                                            <span className="pair-names">
+                                                {group.studentIds.map(id => {
+                                                    const st = students?.find(s => s.id === id);
+                                                    return st ? (st.attendanceNumber ? `${st.attendanceNumber}번 ${st.name}` : st.name) : '';
+                                                }).filter(Boolean).join(' ↔ ')}
+                                            </span>
+                                            <button className="del-btn" onClick={() => removeAvoidance(group.id)}>×</button>
+                                        </div>
+                                    ))}
+                                    {constraints.avoidances.length === 0 && <p className="empty-msg">추가된 금지 그룹이 없습니다.</p>}
+                                </div>
+                            </div>
+
+                            {/* 3. Mandatory Pairs */}
+                            <div className="constraint-card pairing-card">
+                                <div className="card-title">
+                                    <span className="icon">🤝</span>
+                                    <h3>필수 짝꿍 설정</h3>
+                                    <button className="mini-add-btn" onClick={() => openConstraintModal('pairing')}>+ 추가</button>
+                                </div>
+                                <div className="constraint-active-list">
+                                    {constraints.pairs.map((group) => (
+                                        <div key={group.id} className="active-item pairing">
+                                            <span className="pair-names">
+                                                {group.studentIds.map(id => {
+                                                    const st = students?.find(s => s.id === id);
+                                                    return st ? (st.attendanceNumber ? `${st.attendanceNumber}번 ${st.name}` : st.name) : '';
+                                                }).filter(Boolean).join(' + ')}
+                                            </span>
+                                            <button className="del-btn" onClick={() => removePairing(group.id)}>×</button>
+                                        </div>
+                                    ))}
+                                    {constraints.pairs.length === 0 && <p className="empty-msg">추가된 필수 그룹이 없습니다.</p>}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="seating-history-panel">
+                        <div className="history-header">
+                            <h2>📁 자리배치 기록</h2>
+                            <p>저장된 자리배치 기록입니다. 향후 짝 배정 시 이전 짝 정보가 활용됩니다.</p>
+                        </div>
+                        {seatingHistory.length === 0 ? (
+                            <p className="history-empty">아직 저장된 기록이 없습니다. 저장 버튼을 눌러 기록을 남겨보세요.</p>
+                        ) : (
+                            <div className="history-list">
+                                {seatingHistory.map(entry => {
+                                    const date = new Date(entry.savedAt);
+                                    const dateStr = `${date.getFullYear()}.${String(date.getMonth()+1).padStart(2,'0')}.${String(date.getDate()).padStart(2,'0')} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+                                    return (
+                                        <div key={entry.id} className="history-item">
+                                            <div className="history-info">
+                                                <span className="history-name">{entry.name}</span>
+                                                <span className="history-date">{dateStr}</span>
+                                            </div>
+                                            <div className="history-actions">
+                                                <button className="history-load-btn" onClick={() => { setPreviewRecord(entry); setShowLoadModal(true); }}>불러오기</button>
+                                                <button className="history-del-btn" onClick={() => handleDeleteHistory(entry.id)}>삭제</button>
+                                            </div>
                                         </div>
                                     );
                                 })}
                             </div>
-                            <div className="load-preview-panel">
-                                {previewRecord ? (
-                                    <>
-                                        <p className="preview-title">{previewRecord.name} 미리보기</p>
-                                        <div className="mini-seating-grid">
-                                            {previewRecord.grid.map((row, r) => (
-                                                <div key={r} className="mini-grid-row">
-                                                    {row.map((seat, c) => {
-                                                        const isGap = (c + 1) % previewRecord.gridConfig.pairSize === 0 && (c + 1) < previewRecord.gridConfig.cols;
-                                                        const student = students?.find(s => s.id === seat.studentId);
-                                                        let cls = 'mini-seat';
-                                                        if (seat.genderPreference === 'blocked') cls += ' ms-blocked';
-                                                        else if (student) cls += student.gender === '남' ? ' ms-male' : ' ms-female';
-                                                        else if (seat.genderPreference === '여') cls += ' ms-female-empty';
-                                                        else cls += ' ms-empty';
-                                                        return (
-                                                            <div key={c} className={`${cls}${isGap ? ' ms-gap' : ''}`} title={student?.name || ''}>
-                                                                {student && <span className="ms-initial">{student.name[0]}</span>}
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            ))}
-                                        </div>
-                                        <div className="preview-legend">
-                                            <span className="legend-item"><span className="legend-dot ms-male"></span>남학생</span>
-                                            <span className="legend-item"><span className="legend-dot ms-female"></span>여학생</span>
-                                            <span className="legend-item"><span className="legend-dot ms-blocked"></span>사용불가</span>
-                                            <span className="legend-item"><span className="legend-dot ms-empty"></span>빈자리</span>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <p className="preview-empty">왼쪽에서 기록을 선택하면 미리보기가 표시됩니다.</p>
-                                )}
-                            </div>
-                        </div>
-                        <div className="modal-footer">
-                            <span />
-                            <div className="modal-btns">
-                                <button className="m-btn cancel" onClick={() => { setShowLoadModal(false); setPreviewRecord(null); }}>닫기</button>
-                                {previewRecord && (
-                                    <button className="m-btn confirm" onClick={() => handleLoadRecord(previewRecord)}>적용하기</button>
-                                )}
-                            </div>
-                        </div>
+                        )}
                     </div>
-                </div>
-            )}
-
-            {/* Seating History Panel */}
-            {mode === 'teacher' && (
-                <div className="seating-history-panel">
-                    <div className="history-header">
-                        <h2>📁 자리배치 기록</h2>
-                        <p>저장된 자리배치 기록입니다. 향후 짝 배정 시 이전 짝 정보가 활용됩니다.</p>
-                    </div>
-                    {seatingHistory.length === 0 ? (
-                        <p className="history-empty">아직 저장된 기록이 없습니다. 저장 버튼을 눌러 기록을 남겨보세요.</p>
-                    ) : (
-                        <div className="history-list">
-                            {seatingHistory.map(entry => {
-                                const date = new Date(entry.savedAt);
-                                const dateStr = `${date.getFullYear()}.${String(date.getMonth()+1).padStart(2,'0')}.${String(date.getDate()).padStart(2,'0')} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
-                                return (
-                                    <div key={entry.id} className="history-item">
-                                        <div className="history-info">
-                                            <span className="history-name">{entry.name}</span>
-                                            <span className="history-date">{dateStr}</span>
-                                            <span className="history-pairs-count">짝 그룹 {entry.pairs?.length || 0}개</span>
-                                        </div>
-                                        <div className="history-actions">
-                                            <button className="history-load-btn" onClick={() => { setPreviewRecord(entry); setShowLoadModal(true); }}>불러오기</button>
-                                            <button className="history-del-btn" onClick={() => handleDeleteHistory(entry.id)}>삭제</button>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
                 </div>
             )}
 
@@ -1292,11 +1486,15 @@ window.addEventListener('load',function(){
                 <div className="chart-modal-overlay">
                     <div className="chart-modal">
                         <div className="modal-header">
-                            <h2>{modalTarget === 'avoidance' ? '짝꿍 금지 그룹 선택' : '필수 짝꿍 그룹 선택'}</h2>
+                            <h2>{modalTarget === 'front' ? '📍 앞자리 선호 학생 선택' : (modalTarget === 'avoidance' ? '🚫 짝꿍 금지 그룹 선택' : '🤝 필수 짝꿍 그룹 선택')}</h2>
                             <button className="close-btn" onClick={() => setIsModalOpen(false)}>×</button>
                         </div>
                         <div className="modal-body">
-                            <p className="modal-desc">함께 앉을 수 없거나(금지), 꼭 여럿이 붙어 앉아야 하는(필수) 학생들을 선택하세요.</p>
+                            <p className="modal-desc">
+                                {modalTarget === 'front' 
+                                    ? '앞자리(1~2분단 앞쪽) 배치를 원하는 학생들을 클릭하여 선택하세요.'
+                                    : '함께 앉을 수 없거나(금지), 꼭 여럿이 붙어 앉아야 하는(필수) 학생들을 선택하세요.'}
+                            </p>
                             <div className="modal-student-grid">
                                 {sortedStudents.map(s => (
                                     <div 
@@ -1316,6 +1514,412 @@ window.addEventListener('load',function(){
                                 <button className="m-btn cancel" onClick={() => setIsModalOpen(false)}>취소</button>
                                 <button className="m-btn confirm" onClick={handleModalConfirm}>적용하기</button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* 학급 자리 배열 & 분류 초기 설정 모달 (이모티콘 제거, 가상 예시 뷰 추가) */}
+            {showInitialSetupModal && (
+                <div className="ro-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowInitialSetupModal(false); }}>
+                    <div className="ro-modal-container initial-setup-modal">
+                        <div className="ro-modal-header">
+                            <div className="modal-header-title">
+                                <h3>학급 자리 배열 & 분류 초기 설정</h3>
+                            </div>
+                            <button className="modal-close-x" onClick={() => setShowInitialSetupModal(false)}>✕</button>
+                        </div>
+
+                        <div className="modal-result-body setup-modal-body">
+                            {/* 1. 학급 자리 배열 */}
+                            <div className="modal-config-group">
+                                <label className="config-group-title">1. 학급 자리 배열 (행 × 열)</label>
+                                <div className="grid-dim-inputs-row">
+                                    <div className="dim-input-box">
+                                        <span>행 (세로):</span>
+                                        <input
+                                            type="number"
+                                            name="rows"
+                                            min="1"
+                                            max="10"
+                                            value={gridConfig.rows}
+                                            onChange={handleConfigChange}
+                                        />
+                                        <span>행</span>
+                                    </div>
+                                    <span className="dim-multiply">×</span>
+                                    <div className="dim-input-box">
+                                        <span>열 (가로):</span>
+                                        <input
+                                            type="number"
+                                            name="cols"
+                                            min="1"
+                                            max="12"
+                                            value={gridConfig.cols}
+                                            onChange={handleConfigChange}
+                                        />
+                                        <span>열</span>
+                                    </div>
+                                    <span className="dim-total-badge">총 {gridConfig.rows * gridConfig.cols}석 생성</span>
+                                </div>
+                            </div>
+
+                            {/* 2. 좌석 배치 분류 */}
+                            <div className="modal-config-group">
+                                <label className="config-group-title">2. 좌석 배치 분류</label>
+                                <div className="strategy-selector modal-selector single-line-selector">
+                                    {[
+                                        { value: 1, label: '1명씩 (단독)' },
+                                        { value: 2, label: '2명씩 (짝지어)' },
+                                        { value: 3, label: '3명씩 (모둠)' },
+                                        { value: 4, label: '4명씩 (모둠)' }
+                                    ].map(opt => (
+                                        <button
+                                            key={opt.value}
+                                            className={gridConfig.pairSize === opt.value ? 'active' : ''}
+                                            onClick={() => {
+                                                const newConfig = { ...gridConfig, pairSize: opt.value };
+                                                setGridConfig(newConfig);
+                                                setGrid(generateEmptyGrid(newConfig.rows, newConfig.cols, opt.value));
+                                            }}
+                                        >
+                                            {opt.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* 3. 남녀 좌석 구분 */}
+                            <div className="modal-config-group">
+                                <label className="config-group-title">3. 남녀 좌석 구분 설정</label>
+                                <div className="strategy-selector modal-selector single-line-selector">
+                                    <button
+                                        className={useFemaleSeats ? 'active' : ''}
+                                        onClick={() => setUseFemaleSeats(true)}
+                                    >
+                                        남녀 구분 좌석 사용
+                                    </button>
+                                    <button
+                                        className={!useFemaleSeats ? 'active' : ''}
+                                        onClick={() => setUseFemaleSeats(false)}
+                                    >
+                                        구분 없이 자유 배치
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* 4. 가상 배치 구조 미리보기 */}
+                            <div className="modal-config-group">
+                                <label className="config-group-title">4. 가상 배치 구조 미리보기 ({gridConfig.rows}행 × {gridConfig.cols}열, {gridConfig.pairSize}명씩)</label>
+                                <div className="preview-layout-box">
+                                    <div className="preview-blackboard-tag">칠 판 (교탁)</div>
+                                    <div className="preview-grid-mini">
+                                        {Array.from({ length: gridConfig.rows }).map((_, r) => (
+                                            <div key={r} className="preview-row-mini">
+                                                {Array.from({ length: gridConfig.cols }).map((_, c) => {
+                                                    const isGap = ((c + 1) % gridConfig.pairSize === 0 && (c + 1) < gridConfig.cols);
+                                                    return (
+                                                        <div key={c} className={`preview-desk-chip ${isGap ? 'has-gap' : ''}`}>
+                                                            {r + 1}-{c + 1}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="ro-modal-footer">
+                            <div className="footer-right">
+                                <button className="green-gradient-main-btn" onClick={() => setShowInitialSetupModal(false)}>
+                                    설정 완료
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 짝꿍 금지 학생 근접 경고 모달 */}
+            {avoidanceWarningModal.isOpen && (
+                <div className="music-help-overlay" onClick={() => setAvoidanceWarningModal({ isOpen: false, student1: null, student2: null, pendingGrid: null })}>
+                    <div className="initial-setup-modal warning-modal-card" onClick={e => e.stopPropagation()}>
+                        <div className="setup-modal-header warning-header">
+                            <h3>⚠️ 짝꿍 금지 학생 근접 경고</h3>
+                        </div>
+                        <div className="warning-modal-body">
+                            <div className="warning-icon-badge">🚫</div>
+                            <p className="warning-main-msg">
+                                <strong>
+                                    {avoidanceWarningModal.student1?.attendanceNumber ? `${avoidanceWarningModal.student1.attendanceNumber}번 ` : ''}{avoidanceWarningModal.student1?.name}
+                                </strong> 학생과 <strong>
+                                    {avoidanceWarningModal.student2?.attendanceNumber ? `${avoidanceWarningModal.student2.attendanceNumber}번 ` : ''}{avoidanceWarningModal.student2?.name}
+                                </strong> 학생은 <strong>'짝꿍 금지'</strong>로 설정되어 있습니다.
+                            </p>
+                            <p className="warning-sub-msg">
+                                수동 배치 시 짝꿍(좌우) 또는 앞뒤로 서로 부딪히는 위치입니다. 그래도 이 자리에 배치하시겠습니까?
+                            </p>
+                        </div>
+                        <div className="ro-modal-footer warning-modal-footer">
+                            <button className="base-btn cancel-btn" onClick={() => setAvoidanceWarningModal({ isOpen: false, student1: null, student2: null, pendingGrid: null })}>
+                                배치 취소
+                            </button>
+                            <button className="green-gradient-main-btn override-btn" onClick={() => {
+                                setGrid(avoidanceWarningModal.pendingGrid);
+                                syncLocalStorageSeating(avoidanceWarningModal.pendingGrid);
+                                setAvoidanceWarningModal({ isOpen: false, student1: null, student2: null, pendingGrid: null });
+                            }}>
+                                그대로 배치하기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 성별 불일치 좌석 배치 경고 모달 */}
+            {genderWarningModal.isOpen && (
+                <div className="music-help-overlay" onClick={() => setGenderWarningModal({ isOpen: false, student: null, requiredGender: '', pendingGrid: null })}>
+                    <div className="initial-setup-modal warning-modal-card gender-warning-card" onClick={e => e.stopPropagation()}>
+                        <div className="setup-modal-header warning-header gender-warning-header">
+                            <h3>⚠️ 좌석 성별 불일치 배치 경고</h3>
+                        </div>
+                        <div className="warning-modal-body">
+                            <div className="warning-icon-badge gender-icon-badge">🚻</div>
+                            <p className="warning-main-msg">
+                                <strong>
+                                    {genderWarningModal.student?.attendanceNumber ? `${genderWarningModal.student.attendanceNumber}번 ` : ''}{genderWarningModal.student?.name}
+                                </strong> ({genderWarningModal.student?.gender}학생) 학생이 <strong>'{genderWarningModal.requiredGender}학생 지정석'</strong>에 배치되려고 합니다.
+                            </p>
+                            <p className="warning-sub-msg">
+                                설정된 성별 구분 규칙과 일치하지 않는 좌석입니다. 그래도 이 자리에 배치하시겠습니까?
+                            </p>
+                        </div>
+                        <div className="ro-modal-footer warning-modal-footer">
+                            <button className="base-btn cancel-btn" onClick={() => setGenderWarningModal({ isOpen: false, student: null, requiredGender: '', pendingGrid: null })}>
+                                배치 취소
+                            </button>
+                            <button className="green-gradient-main-btn override-btn" onClick={() => {
+                                const pendingGrid = genderWarningModal.pendingGrid;
+                                const st = genderWarningModal.student;
+                                setGenderWarningModal({ isOpen: false, student: null, requiredGender: '', pendingGrid: null });
+
+                                if (st && pendingGrid) {
+                                    let placedR = -1, placedC = -1;
+                                    pendingGrid.forEach((row, rIdx) => {
+                                        row.forEach((seat, cIdx) => {
+                                            if (seat.studentId === st.id) { placedR = rIdx; placedC = cIdx; }
+                                        });
+                                    });
+                                    if (placedR !== -1) {
+                                        const violation = checkAvoidanceViolation(st.id, placedR, placedC, pendingGrid);
+                                        if (violation) {
+                                            setAvoidanceWarningModal({
+                                                isOpen: true,
+                                                student1: violation.student1,
+                                                student2: violation.student2,
+                                                pendingGrid
+                                            });
+                                            return;
+                                        }
+                                    }
+                                }
+                                setGrid(pendingGrid);
+                                syncLocalStorageSeating(pendingGrid);
+                            }}>
+                                그대로 배치하기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── 자리배치 기록 저장 모달 ── */}
+            {showSaveModal && (
+                <div className="seating-dialog-overlay" onClick={() => setShowSaveModal(false)}>
+                    <div className="seating-dialog-card" style={{ maxWidth: '440px', width: '92%' }} onClick={e => e.stopPropagation()}>
+                        <div className="seating-dialog-header">
+                            <h3>💾 자리배치 기록 저장</h3>
+                            <button className="seating-dialog-close-btn" onClick={() => setShowSaveModal(false)}>✕</button>
+                        </div>
+                        <div className="seating-dialog-body">
+                            <label style={{ display: 'block', fontSize: '13.5px', fontWeight: '800', color: '#334155', marginBottom: '8px' }}>
+                                자리배치 기록 이름
+                            </label>
+                            <input
+                                type="text"
+                                value={saveNameInput}
+                                onChange={(e) => setSaveNameInput(e.target.value)}
+                                placeholder="예: 2026.03.02 1학기 첫 자리배치"
+                                style={{
+                                    width: '100%',
+                                    padding: '12px 14px',
+                                    borderRadius: '10px',
+                                    border: '1.5px solid #cbd5e1',
+                                    fontSize: '14.5px',
+                                    boxSizing: 'border-box',
+                                    outline: 'none',
+                                    transition: 'border-color 0.2s ease'
+                                }}
+                                onFocus={(e) => e.target.style.borderColor = '#16a34a'}
+                                onBlur={(e) => e.target.style.borderColor = '#cbd5e1'}
+                                autoFocus
+                                onKeyDown={(e) => { if (e.key === 'Enter') handleHistorySave(); }}
+                            />
+                            <p style={{ fontSize: '12.5px', color: '#64748b', marginTop: '10px', lineHeight: '1.45', margin: '10px 0 0 0' }}>
+                                현재 배치 상태가 이 이름으로 기록 보관함에 영구 저장됩니다.
+                            </p>
+                        </div>
+                        <div className="seating-dialog-footer">
+                            <button 
+                                type="button"
+                                style={{
+                                    background: '#ffffff',
+                                    border: '1px solid #cbd5e1',
+                                    color: '#475569',
+                                    padding: '9px 16px',
+                                    borderRadius: '8px',
+                                    fontSize: '13px',
+                                    fontWeight: '700',
+                                    cursor: 'pointer'
+                                }}
+                                onClick={() => setShowSaveModal(false)}
+                            >
+                                취소
+                            </button>
+                            <button 
+                                type="button"
+                                style={{
+                                    background: '#16a34a',
+                                    border: 'none',
+                                    color: '#ffffff',
+                                    padding: '9px 20px',
+                                    borderRadius: '8px',
+                                    fontSize: '13.5px',
+                                    fontWeight: '800',
+                                    cursor: 'pointer',
+                                    boxShadow: '0 2px 6px rgba(22, 163, 74, 0.25)'
+                                }}
+                                onClick={handleHistorySave}
+                            >
+                                저장 완료
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── 자리배치 기록 보관함 및 불러오기 모달 ── */}
+            {showLoadModal && (
+                <div className="seating-dialog-overlay" onClick={() => setShowLoadModal(false)}>
+                    <div className="seating-dialog-card" style={{ maxWidth: '640px', width: '92%' }} onClick={e => e.stopPropagation()}>
+                        <div className="seating-dialog-header">
+                            <h3>📂 자리배치 기록 보관함</h3>
+                            <button className="seating-dialog-close-btn" onClick={() => setShowLoadModal(false)}>✕</button>
+                        </div>
+                        <div className="seating-dialog-body" style={{ maxHeight: '480px', overflowY: 'auto' }}>
+                            {seatingHistory.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8' }}>
+                                    <div style={{ fontSize: '36px', marginBottom: '8px' }}>📂</div>
+                                    <p style={{ margin: 0, fontSize: '15px', fontWeight: '700', color: '#64748b' }}>저장된 자리배치 기록이 없습니다.</p>
+                                    <p style={{ margin: '6px 0 0 0', fontSize: '12.5px' }}>상단의 [배치 저장] 버튼을 눌러 현재 자리를 저장해 보세요.</p>
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    {seatingHistory.map(record => {
+                                        const dateStr = new Date(record.savedAt).toLocaleDateString('ko-KR', {
+                                            year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                                        });
+                                        const assignedCount = record.grid ? record.grid.reduce((acc, row) => acc + row.filter(s => s.studentId).length, 0) : 0;
+
+                                        return (
+                                            <div 
+                                                key={record.id}
+                                                style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'space-between',
+                                                    padding: '14px 18px',
+                                                    background: '#ffffff',
+                                                    border: '1.5px solid #e2e8f0',
+                                                    borderRadius: '12px',
+                                                    boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+                                                    transition: 'all 0.15s ease'
+                                                }}
+                                            >
+                                                <div>
+                                                    <h4 style={{ margin: '0 0 5px 0', fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>
+                                                        {record.name}
+                                                    </h4>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#64748b', flexWrap: 'wrap' }}>
+                                                        <span>📅 {dateStr}</span>
+                                                        <span>•</span>
+                                                        <span style={{ color: '#15803d', fontWeight: '800', background: '#dcfce7', padding: '1px 6px', borderRadius: '4px' }}>
+                                                            {assignedCount}명 배치됨
+                                                        </span>
+                                                        <span>•</span>
+                                                        <span>{record.gridConfig?.rows || 5}행 {record.gridConfig?.cols || 6}열</span>
+                                                    </div>
+                                                </div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleLoadRecord(record)}
+                                                        style={{
+                                                            background: '#16a34a',
+                                                            color: '#ffffff',
+                                                            border: 'none',
+                                                            padding: '7px 14px',
+                                                            borderRadius: '8px',
+                                                            fontSize: '12.5px',
+                                                            fontWeight: '800',
+                                                            cursor: 'pointer',
+                                                            boxShadow: '0 1px 4px rgba(22, 163, 74, 0.2)'
+                                                        }}
+                                                    >
+                                                        불러오기
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDeleteHistory(record.id)}
+                                                        style={{
+                                                            background: '#ffffff',
+                                                            color: '#ef4444',
+                                                            border: '1px solid #fca5a5',
+                                                            padding: '6px 10px',
+                                                            borderRadius: '8px',
+                                                            fontSize: '12px',
+                                                            fontWeight: '700',
+                                                            cursor: 'pointer'
+                                                        }}
+                                                        title="기록 삭제"
+                                                    >
+                                                        삭제
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                        <div className="seating-dialog-footer">
+                            <button 
+                                type="button"
+                                style={{
+                                    background: '#ffffff',
+                                    border: '1px solid #cbd5e1',
+                                    color: '#475569',
+                                    padding: '9px 18px',
+                                    borderRadius: '8px',
+                                    fontSize: '13px',
+                                    fontWeight: '700',
+                                    cursor: 'pointer'
+                                }}
+                                onClick={() => setShowLoadModal(false)}
+                            >
+                                닫기
+                            </button>
                         </div>
                     </div>
                 </div>

@@ -10,9 +10,31 @@ const Login = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (username.trim()) {
-            login(username.trim());
-            navigate('/select-class');
+        const trimmedName = username.trim();
+        if (trimmedName) {
+            login(trimmedName);
+            
+            // 등록된 학급 목록이 있는지 검사
+            const classesKey = `${trimmedName}_classes`;
+            const savedClasses = localStorage.getItem(classesKey);
+            let hasClasses = false;
+            
+            if (savedClasses) {
+                try {
+                    const parsed = JSON.parse(savedClasses);
+                    if (parsed && parsed.length > 0) {
+                        hasClasses = true;
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+
+            if (hasClasses) {
+                navigate('/');
+            } else {
+                navigate('/select-class');
+            }
         }
     };
 
@@ -49,7 +71,7 @@ const Login = () => {
                     <div className="feature-badges">
                         <span className="badge">🤖 AI 평가</span>
                         <span className="badge">📊 자동 저장</span>
-                        <span className="badge">📱 PWA 지원</span>
+                        <span className="badge">💻 데스크톱 앱</span>
                     </div>
                     <p className="welcome-text">간편하게 이름만 입력하고 시작하세요</p>
                 </div>

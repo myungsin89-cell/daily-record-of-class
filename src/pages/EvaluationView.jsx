@@ -11,7 +11,8 @@ const EvaluationView = () => {
     const navigate = useNavigate();
 
     // Sort students by attendance number
-    const sortedStudents = [...students].sort((a, b) => a.attendanceNumber - b.attendanceNumber);
+    const safeStudents = Array.isArray(students) ? students : [];
+    const sortedStudents = [...safeStudents].sort((a, b) => (a.attendanceNumber || 0) - (b.attendanceNumber || 0));
 
     const handleExcelDownload = () => {
         try {
@@ -89,7 +90,7 @@ const EvaluationView = () => {
                         <p>등록된 학생이 없습니다.</p>
                         <Button
                             variant="primary"
-                            onClick={() => navigate('/student-manager')}
+                            onClick={() => navigate('/students')}
                             style={{ marginTop: '1rem' }}
                         >
                             학생 등록하기

@@ -4,7 +4,7 @@
  */
 
 const API_BASE_URL = 'https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService';
-const DEFAULT_API_KEY = 'd4d54ce3a6f7520be7c57ce17e5c009283af2f756c8e2084aae7ebbbd87111fd';
+const DEFAULT_API_KEY = import.meta.env.VITE_HOLIDAY_API_KEY || 'd4d54ce3a6f7520be7c57ce17e5c009283af2f756c8e2084aae7ebbbd87111fd';
 
 /**
  * XML 파싱 헬퍼 함수

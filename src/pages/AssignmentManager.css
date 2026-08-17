@@ -1,67 +1,147 @@
 .assignment-container {
-    height: calc(100vh - 100px);
     display: flex;
     flex-direction: column;
+    width: 100%;
 }
 
-.assignment-layout {
-    display: flex;
-    gap: var(--spacing-lg);
-    flex: 1;
-    overflow: hidden;
-    margin-top: var(--spacing-md);
-}
-
-/* Sidebar */
-.assignment-sidebar {
-    width: 300px;
-    background: var(--color-surface);
+/* 상단 제출물/과제 헤더 바 */
+.assignment-top-header {
+    background: #ffffff;
+    padding: 1.1rem 1.5rem;
     border-radius: var(--radius-md);
-    padding: var(--spacing-md);
-    display: flex;
-    flex-direction: column;
-    box-shadow: var(--shadow-sm);
-}
-
-.add-assignment-box {
-    display: flex;
-    gap: var(--spacing-sm);
-    margin-bottom: var(--spacing-md);
-}
-
-.add-assignment-box input {
-    flex: 1;
-    padding: var(--spacing-sm);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-}
-
-.assignment-list {
-    flex: 1;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm);
-}
-
-.assignment-item {
-    padding: var(--spacing-md);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.assignment-top-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.assignment-top-title h2 {
+    margin: 0;
+    font-size: 1.3rem;
+    color: #0f172a;
+    font-weight: 800;
+}
+
+.assignment-count-badge {
+    background: #f0fdf4;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+    padding: 0.2rem 0.6rem;
+    border-radius: 99px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.add-assignment-top-box {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.top-assignment-input {
+    padding: 0.55rem 0.85rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    min-width: 220px;
+    transition: all 0.15s ease;
+}
+
+.top-assignment-input:focus {
+    outline: none;
+    border-color: #16a34a;
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
+}
+
+.create-assignment-btn {
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    color: #ffffff;
+    border: none;
+    padding: 0.55rem 1.1rem;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.22);
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.create-assignment-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(22, 163, 74, 0.35);
+}
+
+/* 기본 레이아웃 (소창/기본창): 위 과제 카드 목록, 아래 학생 제출 체크 카드들 */
+.assignment-layout {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+    flex: 1;
+    margin-top: var(--spacing-sm);
+}
+
+.assignment-sidebar {
+    width: 100% !important;
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    box-shadow: var(--shadow-sm);
+    box-sizing: border-box;
+}
+
+.section-small-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #64748b;
+}
+
+.assignment-list {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.assignment-item {
+    padding: 0.55rem 0.85rem;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
     transition: all 0.2s;
-    background: var(--color-background);
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    min-width: 180px;
 }
 
 .assignment-item:hover {
-    background: #f3f4f6;
+    background: #f1f5f9;
+    border-color: #cbd5e1;
 }
 
 .assignment-item.active {
-    background: var(--color-primary);
-    color: white;
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
+    color: white !important;
+    border-color: #15803d !important;
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25);
+}
+
+.assignment-item.active .assignment-date {
+    color: #dcfce7;
 }
 
 .assignment-info {
@@ -69,9 +149,14 @@
     flex-direction: column;
 }
 
+.assignment-title {
+    font-weight: 700;
+    font-size: 0.92rem;
+}
+
 .assignment-date {
-    font-size: 0.8rem;
-    opacity: 0.8;
+    font-size: 0.78rem;
+    color: #64748b;
 }
 
 .delete-btn-mini {
@@ -87,66 +172,168 @@
     opacity: 1;
 }
 
+/* 전체 화면 / 큰 화면 (min-width: 1450px): 기존의 사이드바(좌) + 학생카드(우) 2열 레이아웃 유지 */
+@media (min-width: 1450px) {
+    .assignment-layout {
+        flex-direction: row;
+    }
+
+    .assignment-sidebar {
+        width: 300px !important;
+        flex-shrink: 0;
+    }
+
+    .assignment-list {
+        flex-direction: column;
+        flex-wrap: nowrap;
+        max-height: none;
+    }
+}
+
 /* Main Content */
 .assignment-content {
     flex: 1;
     background: var(--color-surface);
     border-radius: var(--radius-md);
     padding: var(--spacing-lg);
-    overflow-y: auto;
     box-shadow: var(--shadow-sm);
 }
 
 .assignment-header {
-    margin-bottom: var(--spacing-lg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.assignment-header-left h2 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.assignment-created-date {
+    font-size: 0.82rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+/* 초록덕후 요약 뱃지 대시보드 */
+.assignment-stats-badges {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
+.stat-badge-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 99px;
+    font-size: 0.83rem;
+    border: 1px solid transparent;
+}
+
+.stat-badge-chip .chip-label {
+    font-weight: 600;
+}
+
+.stat-badge-chip .chip-val {
+    font-weight: 800;
+}
+
+.stat-badge-chip.completed-chip {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+    color: #15803d;
+}
+
+.stat-badge-chip.incomplete-chip {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #dc2626;
+}
+
+.stat-badge-chip.rate-chip {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #334155;
 }
 
 .progress-bar-container {
-    margin-top: var(--spacing-sm);
-}
-
-.progress-text {
-    font-size: 0.9rem;
-    margin-bottom: 4px;
-    color: var(--color-text-secondary);
+    margin-bottom: 1.5rem;
 }
 
 .progress-track {
     height: 10px;
-    background: #e5e7eb;
-    border-radius: 5px;
+    background: #e2e8f0;
+    border-radius: 99px;
     overflow: hidden;
 }
 
-.progress-fill {
+.green-progress-fill {
     height: 100%;
-    background: var(--color-success);
-    transition: width 0.3s ease;
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
+    border-radius: 99px;
+    transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .student-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: var(--spacing-md);
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 0.65rem;
+}
+
+@media (min-width: 1450px) {
+    .student-grid {
+        grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+        gap: 0.85rem;
+    }
 }
 
 .student-card {
-    border-radius: var(--radius-md);
-    padding: var(--spacing-md);
-    transition: all 0.2s;
-    border: 1px solid transparent;
+    border-radius: 10px;
+    padding: 0.55rem 0.65rem;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-sizing: border-box;
 }
 
+@media (min-width: 1450px) {
+    .student-card {
+        border-radius: 12px;
+        padding: 0.85rem 1rem;
+    }
+}
+
+.student-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+/* 제출 완료 상태: 싱그러운 연민트 배경 및 그린 테마 */
 .student-card.completed {
-    background-color: #dbeafe;
-    border-color: #bfdbfe;
-    color: #1e40af;
+    background-color: #f0fdf4 !important;
+    border-color: #bbf7d0 !important;
+    color: #15803d !important;
 }
 
+/* 미제출 상태: 깔끔한 화이트 카드 및 경고 테마 */
 .student-card.incomplete {
-    background-color: #fee2e2;
-    border-color: #fecaca;
-    color: #991b1b;
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    color: #334155 !important;
 }
 
 .student-main {
@@ -154,66 +341,124 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
+    gap: 4px;
+    margin-bottom: 4px;
 }
 
 .student-info {
     display: flex;
     align-items: baseline;
-    gap: 6px;
+    gap: 4px;
 }
 
 .student-number {
-    font-size: 0.9rem;
-    opacity: 0.8;
+    font-size: 0.78rem;
+    font-weight: 600;
+    opacity: 0.85;
 }
 
-
 .student-name {
-    font-weight: bold;
-    font-size: 1.1rem;
+    font-weight: 800;
+    font-size: 0.95rem;
+}
+
+@media (min-width: 1450px) {
+    .student-number {
+        font-size: 0.88rem;
+    }
+    .student-name {
+        font-size: 1.12rem;
+    }
 }
 
 .assignment-status-wrapper {
-    margin-top: 4px;
+    margin-top: 2px;
     width: 100%;
     display: flex;
     justify-content: center;
 }
 
+/* 동그라미 알약 대신 깔끔한 사각형 배지 형태 유지 */
 .status-label {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    font-size: 14px;
-    /* Increased from 12px */
-    font-family: inherit;
-    color: var(--color-text-secondary);
+    justify-content: center;
+    gap: 0.3rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 0.22rem 0.55rem;
+    border-radius: 6px;
+    white-space: nowrap;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+@media (min-width: 1450px) {
+    .status-label {
+        font-size: 0.85rem;
+        padding: 0.28rem 0.7rem;
+    }
+}
+
+.status-label.completed {
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid #86efac;
+}
+
+.status-label.incomplete {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fca5a5;
 }
 
 .status-emoji {
-    font-size: 1.1em;
+    font-size: 0.95rem;
 }
 
 .status-text {
-    font-weight: 500;
-    white-space: nowrap;
+    font-weight: 700;
 }
 
-.note-input-container input {
+/* 카드 높이가 제출/미제출 전환 시 절대 변경되지 않도록 고정 스페이싱 슬롯 지정 */
+.note-input-container {
+    margin-top: 0.35rem;
+    height: 30px;
     width: 100%;
-    padding: 6px;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 4px;
-    font-size: 0.9rem;
-    background: rgba(255, 255, 255, 0.5);
+    display: flex;
+    align-items: center;
+}
+
+.reason-input-field {
+    width: 100%;
+    height: 30px;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    background: #f8fafc;
+    box-sizing: border-box;
+    transition: all 0.15s ease;
+}
+
+.reason-input-field:focus {
+    outline: none;
+    background: #ffffff;
+    border-color: #16a34a;
+    box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.15);
+}
+
+.reason-placeholder-slot {
+    height: 30px;
+    width: 100%;
 }
 
 .empty-state {
     height: 100%;
+    min-height: 250px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--color-text-secondary);
+    color: #64748b;
+    font-weight: 600;
 }

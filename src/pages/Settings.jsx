@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAPIKey } from '../context/APIKeyContext';
 import { useStudentContext } from '../context/StudentContext';
@@ -9,6 +9,14 @@ import { useAuth } from '../context/AuthContext';
 import { exportAllData, importAllData } from '../db/indexedDB';
 import { fetchKoreanHolidays } from '../utils/holidayAPI';
 import {
+    getAutoBackupConfig,
+    setAutoBackupEnabled,
+    selectBackupFolder,
+    performAutoBackup,
+    performManualDatedBackup,
+    isElectronEnv
+} from '../services/autoBackupService';
+import {
     uploadToDrive,
     listDriveBackups,
     downloadFromDrive,
@@ -16,10 +24,15 @@ import {
     exportGradesToSheet,
 } from '../services/googleService';
 import Button from '../components/Button';
-import { APP_VERSION } from '../changelog';
+import { MenuIcon } from '../components/SidebarIcons';
+import { useModal } from '../context/ModalContext';
+import { CHANGELOG, APP_VERSION } from '../changelog';
+import FeedbackModal from '../components/FeedbackModal';
+import { trackEvent } from '../utils/analytics';
 import './Settings.css';
 
 const Settings = () => {
+    const { showAlert, showConfirm } = useModal();
     const { apiKey, isConnected, saveAPIKey, deleteAPIKey, testConnection } = useAPIKey();
     const { students, holidays, addHoliday, removeHoliday, journals } = useStudentContext();
     const { needRefresh, updateServiceWorker } = useUpdate();
@@ -39,6 +52,19 @@ const Settings = () => {
     const [newHolidayDate, setNewHolidayDate] = useState('');
     const [newHolidayName, setNewHolidayName] = useState('');
     const [showAutoFetchModal, setShowAutoFetchModal] = useState(false);
+    const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+
+    // 자동 백업 상태
+    const [autoBackupConfig, setAutoBackupConfigState] = useState(getAutoBackupConfig);
+    const [isBackingUpNow, setIsBackingUpNow] = useState(false);
+
+    useEffect(() => {
+        const updateConfig = () => {
+            setAutoBackupConfigState(getAutoBackupConfig());
+        };
+        window.addEventListener('autoBackupConfigChanged', updateConfig);
+        return () => window.removeEventListener('autoBackupConfigChanged', updateConfig);
+    }, []);
 
     // 게시판(메뉴) 편집 상태
     const [sidebarMenuItems, setSidebarMenuItems] = useState(() => {
@@ -151,20 +177,63 @@ const Settings = () => {
         }
     };
 
-    const handleExportData = async () => {
-        try {
-            const data = await exportAllData();
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `class-diary-backup-${new Date().toISOString().split('T')[0]}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
+    // 자동 백업 토글
+    const handleToggleAutoBackup = async () => {
+        const nextState = !autoBackupConfig.enabled;
+        setAutoBackupEnabled(nextState);
+        if (nextState && !autoBackupConfig.folder) {
+            await showAlert('자동 백업 폴더를 먼저 지정해주세요.\n폴더를 지정하면 주기적으로 최신 데이터가 자동 덮어쓰기됩니다.', '자동 백업 안내', '확인', 'alert');
+        } else if (nextState) {
+            await showAlert('자동 백업이 활성화되었습니다.\n앱 사용 중 10분 주기 및 시작 시 자동으로 최신 데이터가 덮어쓰기 저장됩니다.', '자동 백업 활성', '확인', 'success');
+            performAutoBackup().catch(() => {});
+        }
+    };
 
-            setMessage({ type: 'success', text: '✅ 데이터가 성공적으로 내보내졌습니다!' });
-        } catch (error) {
-            setMessage({ type: 'error', text: `❌ 데이터 내보내기 실패: ${error.message}` });
+    // 폴더 선택
+    const handleSelectFolder = async () => {
+        const res = await selectBackupFolder();
+        if (res.success) {
+            await showAlert(`백업 폴더가 지정되었습니다:\n${res.folder}`, '폴더 지정 완료', '확인', 'success');
+            // 폴더 지정 시 즉시 1회 백업 실행
+            if (autoBackupConfig.enabled) {
+                performAutoBackup().catch(() => {});
+            }
+        } else if (res.error && res.error !== '폴더 선택이 취소되었습니다.') {
+            await showAlert(res.error, '폴더 선택 오류', '확인', 'error');
+        }
+    };
+
+    // 지금 즉시 자동 백업 실행 (덮어쓰기)
+    const handleRunAutoBackupNow = async () => {
+        setIsBackingUpNow(true);
+        const res = await performAutoBackup(true);
+        setIsBackingUpNow(false);
+        if (res.success) {
+            await showAlert(
+                `최신 데이터가 성공적으로 백업(덮어쓰기)되었습니다!\n\n저장 경로: ${res.path || '지정 폴더'}`,
+                '자동 백업 완료',
+                '확인',
+                'success'
+            );
+        } else if (res.error && res.error !== '폴더 선택이 취소되었습니다.') {
+            await showAlert(`백업 실패: ${res.error}`, '백업 오류', '확인', 'error');
+        }
+    };
+
+    // 수동 백업 (날짜별 별도 보관)
+    const handleManualExport = async () => {
+        setIsBackingUpNow(true);
+        const res = await performManualDatedBackup();
+        setIsBackingUpNow(false);
+        if (res.success) {
+            await showAlert(
+                `오늘 날짜 백업 파일(${res.fileName})이 성공적으로 생성되었습니다.\n다운로드 폴더 및 지정 폴더를 확인해주세요.`,
+                '날짜별 수동 백업 완료',
+                '확인',
+                'success'
+            );
+        } else {
+            await showAlert(`백업 실패: ${res.error}`, '백업 오류', '확인', 'error');
         }
     };
 
@@ -177,9 +246,14 @@ const Settings = () => {
             const text = await file.text();
             const data = JSON.parse(text);
 
-            console.log('Import data:', data);
+            const confirmed = await showConfirm(
+                '기존 데이터를 모두 덮어쓰시겠습니까?\n이 작업은 되돌릴 수 없습니다.',
+                '데이터 복원 확인',
+                '복원하기',
+                '취소'
+            );
 
-            if (!confirm('기존 데이터를 모두 덮어쓰시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+            if (!confirmed) {
                 event.target.value = '';
                 return;
             }
@@ -188,14 +262,19 @@ const Settings = () => {
             await importAllData(data);
             console.log('Import completed successfully');
 
-            setMessage({ type: 'success', text: '✅ 데이터가 성공적으로 복원되었습니다!' });
+            await showAlert(
+                '데이터가 성공적으로 복원되었습니다!\n잠시 후 화면이 새로고침됩니다.',
+                '복원 완료',
+                '확인',
+                'success'
+            );
 
             setTimeout(() => {
                 window.location.reload();
             }, 1000);
         } catch (error) {
             console.error('Import error:', error);
-            setMessage({ type: 'error', text: `❌ 데이터 복원 실패: ${error.message}` });
+            await showAlert(`데이터 복원 실패: ${error.message}`, '복원 오류', '확인', 'error');
         }
 
         event.target.value = '';
@@ -203,11 +282,11 @@ const Settings = () => {
 
     const handleAddHoliday = () => {
         if (!newHolidayDate) {
-            setMessage({ type: 'error', text: '날짜를 선택해주세요.' });
+            showAlert('날짜를 선택해주세요.', '공휴일 추가', '확인', 'alert');
             return;
         }
         if (!newHolidayName.trim()) {
-            setMessage({ type: 'error', text: '공휴일 이름을 입력해주세요.' });
+            showAlert('공휴일 이름을 입력해주세요.', '공휴일 추가', '확인', 'alert');
             return;
         }
 
@@ -215,37 +294,41 @@ const Settings = () => {
         setNewHolidayDate('');
         setNewHolidayName('');
         setShowHolidayModal(false);
-        setMessage({ type: 'success', text: '✅ 공휴일이 추가되었습니다.' });
+        showAlert('공휴일이 추가되었습니다.', '공휴일 추가 완료', '확인', 'success');
     };
 
-    const handleRemoveHoliday = (holiday) => {
-        if (confirm(`${holiday.name} (${holiday.date}) 공휴일을 삭제하시겠습니까?`)) {
+    const handleRemoveHoliday = async (holiday) => {
+        const confirmed = await showConfirm(
+            `${holiday.name} (${holiday.date}) 공휴일을 삭제하시겠습니까?`,
+            '공휴일 삭제',
+            '삭제',
+            '취소'
+        );
+        if (confirmed) {
             removeHoliday(holiday.date);
-            setMessage({ type: 'success', text: '✅ 공휴일이 삭제되었습니다.' });
+            showAlert('공휴일이 삭제되었습니다.', '삭제 완료', '확인', 'success');
         }
     };
 
     const handleFetchKoreanHolidays = async () => {
         if (!fetchYear) {
-            setMessage({ type: 'error', text: '연도를 선택해주세요.' });
+            showAlert('연도를 선택해주세요.', '공휴일 가져오기', '확인', 'alert');
             return;
         }
 
         setIsFetchingHolidays(true);
-        setMessage({ type: '', text: '' });
 
         try {
             const fetchedHolidays = await fetchKoreanHolidays(fetchYear);
 
             if (fetchedHolidays.length === 0) {
-                setMessage({ type: 'error', text: '공휴일 정보를 가져오지 못했습니다.' });
+                showAlert('공휴일 정보를 가져오지 못했습니다.', '가져오기 실패', '확인', 'error');
                 setIsFetchingHolidays(false);
                 return;
             }
 
             // "기존 공휴일 먼저 삭제" 옵션 처리
             if (replaceExisting && holidays.length > 0) {
-                // 모든 기존 공휴일 삭제
                 const existingHolidays = [...holidays];
                 for (const holiday of existingHolidays) {
                     const date = typeof holiday === 'string' ? holiday : holiday.date;
@@ -265,15 +348,19 @@ const Settings = () => {
             }
 
             setShowAutoFetchModal(false);
-            setMessage({
-                type: 'success',
-                text: `✅ ${fetchYear}년 공휴일 ${fetchedHolidays.length}개 중 ${addedCount}개가 추가되었습니다.`
-            });
+            await showAlert(
+                `${fetchYear}년 공휴일 ${fetchedHolidays.length}개 중 ${addedCount}개가 추가되었습니다.`,
+                '공휴일 자동 가져오기 완료',
+                '확인',
+                'success'
+            );
         } catch (error) {
-            setMessage({
-                type: 'error',
-                text: `❌ 공휴일 가져오기 실패: ${error.message || '네트워크 오류'}`
-            });
+            await showAlert(
+                `공휴일 가져오기 실패: ${error.message || '네트워크 오류'}`,
+                '가져오기 오류',
+                '확인',
+                'error'
+            );
         } finally {
             setIsFetchingHolidays(false);
         }
@@ -409,10 +496,16 @@ const Settings = () => {
     return (
         <div className="settings-container">
             <div className="settings-header">
-                <h1>⚙️ 설정</h1>
-                <Button variant="secondary" onClick={() => navigate(-1)}>
-                    ← 뒤로가기
-                </Button>
+                <div className="settings-title-group">
+                    <h1 className="settings-main-title">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="settings-header-icon">
+                            <circle cx="12" cy="12" r="3" />
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                        </svg>
+                        설정
+                    </h1>
+                    <p className="settings-subtitle">학급일지 기능 및 앱 환경을 설정할 수 있습니다.</p>
+                </div>
             </div>
 
             {/* Message Banner */}
@@ -422,287 +515,401 @@ const Settings = () => {
                 </div>
             )}
 
-            {/* AI Connection Section */}
-            <div className="settings-section">
-                <h2>🤖 AI 연결 설정</h2>
-
-                {/* Connection Status */}
-                <div className={`connection-status-card ${isConnected ? 'connected' : 'disconnected'}`}>
-                    <div className="status-header">
-                        <div className="status-icon">
-                            {isConnected ? '🟢' : '🟡'}
-                        </div>
-                        <div className="status-info">
-                            <h3>{isConnected ? 'AI 연결됨' : 'AI 연결 필요'}</h3>
-                            <p>
-                                {isConnected
-                                    ? 'Google Gemini AI와 연결되어 있습니다.'
-                                    : 'API 키를 등록하면 AI 기능을 사용할 수 있습니다.'}</p>
+            {/* 1. 게시판(메뉴) 편집 */}
+            <div className="settings-card">
+                <div className="settings-card-header">
+                    <div className="settings-card-title-wrap">
+                        <span className="card-icon-badge">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                <line x1="3" y1="9" x2="21" y2="9" />
+                                <line x1="9" y1="21" x2="9" y2="9" />
+                            </svg>
+                        </span>
+                        <div>
+                            <h2>게시판 편집</h2>
+                            <p className="section-description">
+                                왼쪽 사이드바에 표시할 메뉴를 자유롭게 켜고 끌 수 있습니다.
+                            </p>
                         </div>
                     </div>
-
-                    {isConnected && (
-                        <div className="connection-actions">
-                            <Button
-                                variant="secondary"
-                                onClick={handleTestConnection}
-                                disabled={isTesting}
-                                size="small"
-                            >
-                                {isTesting ? '테스트 중...' : '연결 테스트'}
-                            </Button>
-                            <Button
-                                variant="secondary"
-                                onClick={() => setShowKeyChange(!showKeyChange)}
-                                size="small"
-                            >
-                                {showKeyChange ? '취소' : '변경'}
-                            </Button>
-                            <button
-                                className="delete-api-button"
-                                onClick={handleDeleteAPIKey}
-                                type="button"
-                            >
-                                삭제
-                            </button>
-                        </div>
-                    )}
                 </div>
 
-                {/* API Key Change - inside connected state */}
-                {isConnected && showKeyChange && (
-                    <div className="api-key-input-card" style={{ marginTop: '-0.5rem', marginBottom: 'var(--spacing-lg)', borderTopLeftRadius: 0, borderTopRightRadius: 0, borderTop: 'none' }}>
-                        <label className="input-label">새 API 키 입력</label>
-                        <div className="input-group">
-                            <div className="input-with-toggle">
-                                <input
-                                    type={showKey ? 'text' : 'password'}
-                                    className="api-key-input"
-                                    placeholder="AIza로 시작하는 API 키를 입력하세요"
-                                    value={inputKey}
-                                    onChange={(e) => setInputKey(e.target.value)}
-                                    onKeyPress={(e) => e.key === 'Enter' && handleSaveAPIKey()}
-                                />
-                                <button
-                                    type="button"
-                                    className="toggle-visibility-btn"
-                                    onClick={() => setShowKey(!showKey)}
-                                    title={showKey ? '키 숨기기' : '키 보기'}
-                                >
-                                    {showKey ? '숨기기' : '보기'}
-                                </button>
-                            </div>
-                            <Button
-                                variant="primary"
-                                onClick={() => { handleSaveAPIKey(); setShowKeyChange(false); }}
-                                disabled={isSaving || !inputKey.trim()}
+                <div className="menu-toggle-grid">
+                    {sidebarMenuItems.map(item => {
+                        const isVisible = !item.hidden;
+
+                        return (
+                            <div
+                                key={item.id}
+                                className={`menu-toggle-item ${isVisible ? 'active' : 'inactive'}`}
+                                onClick={() => handleMenuToggle(item.id)}
                             >
-                                {isSaving ? '저장 중...' : '저장'}
-                            </Button>
-                        </div>
-                    </div>
-                )}
-
-                {/* API Key Input - only when not connected */}
-                {!isConnected && (
-                    <div className="api-key-input-card">
-                        <label className="input-label">API 키 입력</label>
-                        <div className="input-group">
-                            <div className="input-with-toggle">
-                                <input
-                                    type={showKey ? 'text' : 'password'}
-                                    className="api-key-input"
-                                    placeholder="AIza로 시작하는 API 키를 입력하세요"
-                                    value={inputKey}
-                                    onChange={(e) => setInputKey(e.target.value)}
-                                    onKeyPress={(e) => e.key === 'Enter' && handleSaveAPIKey()}
-                                />
-                                <button
-                                    type="button"
-                                    className="toggle-visibility-btn"
-                                    onClick={() => setShowKey(!showKey)}
-                                    title={showKey ? '키 숨기기' : '키 보기'}
-                                >
-                                    {showKey ? '숨기기' : '보기'}
-                                </button>
+                                <div className="menu-toggle-left">
+                                    <span className="menu-icon-wrap">
+                                        <MenuIcon id={item.id} size={18} />
+                                    </span>
+                                    <span className="menu-label-text">{item.label}</span>
+                                </div>
+                                <div className={`modern-switch ${isVisible ? 'checked' : ''}`}>
+                                    <div className="switch-handle" />
+                                </div>
                             </div>
-                            <Button
-                                variant="primary"
-                                onClick={handleSaveAPIKey}
-                                disabled={isSaving || !inputKey.trim()}
-                            >
-                                {isSaving ? '저장 중...' : '저장'}
-                            </Button>
-                        </div>
-                    </div>
-                )}
-
-                {/* AI 연결 방법 - collapsible guide, only when not connected */}
-                {!isConnected && (
-                    <div className="api-setup-card">
-                        <div
-                            className="setup-header"
-                            onClick={() => setShowSetupGuide(!showSetupGuide)}
-                            style={{ cursor: 'pointer', marginBottom: showSetupGuide ? '1.5rem' : 0, paddingBottom: showSetupGuide ? '1rem' : 0, borderBottom: showSetupGuide ? '2px solid #f0f9ff' : 'none' }}
-                        >
-                            <h3>💡 AI 연결 방법</h3>
-                            <span style={{ fontSize: '0.85rem', color: '#64748b', transition: 'transform 0.2s' }}>
-                                {showSetupGuide ? '▲ 접기' : '▼ 펼치기'}
-                            </span>
-                        </div>
-
-                        {showSetupGuide && (
-                            <>
-                                <div className="setup-steps">
-                                    <div className="setup-step">
-                                        <div className="step-number">1</div>
-                                        <div className="step-content">
-                                            <strong>API 키 발급</strong>
-                                            <p>아래 버튼을 눌러 Google AI Studio에서 API 키를 무료로 발급받으세요.</p>
-                                            <a
-                                                href="https://aistudio.google.com/apikey"
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="api-link-button"
-                                            >
-                                                API 키 발급받기
-                                            </a>
-                                        </div>
-                                    </div>
-
-                                    <div className="setup-step">
-                                        <div className="step-number">2</div>
-                                        <div className="step-content">
-                                            <strong>API 키 복사</strong>
-                                            <p>🔑 "API 키 만들기" 버튼을 눌러 생성된 키(AIza...로 시작)를 복사하세요.</p>
-                                            <img
-                                                src="/api-copy-guide.png"
-                                                alt="API 키 복사 버튼 위치 안내"
-                                                style={{
-                                                    maxWidth: '100%',
-                                                    width: '320px',
-                                                    borderRadius: '8px',
-                                                    border: '1px solid #e2e8f0',
-                                                    marginTop: '0.25rem',
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="setup-step">
-                                        <div className="step-number">3</div>
-                                        <div className="step-content">
-                                            <strong>위 입력창에 붙여넣기</strong>
-                                            <p>복사한 API 키를 붙여넣고 저장 버튼을 누르세요.</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="help-tip">
-                                    💡 Gmail 계정으로 로그인되어 있어야 하며, 발급받은 키는 안전하게 보관하세요.
-                                </div>
-                            </>
-                        )}
-                    </div>
-                )}
+                        );
+                    })}
+                </div>
             </div>
 
-            {/* Holiday Management Section */}
-            <div className="settings-section">
-                <h2>📅 공휴일 관리</h2>
-                <p className="section-description">
-                    교육과정일수 계산에서 제외할 공휴일을 관리할 수 있습니다. (주말은 자동 제외)
-                </p>
-
-                {/* Auto Fetch Card */}
-                <div className="api-setup-card" style={{ marginBottom: 'var(--spacing-lg)' }}>
-                    <div className="setup-header">
-                        <h3>🇰🇷 한국 공휴일 자동 가져오기</h3>
-                        <span className="free-badge">무료</span>
-                    </div>
-                    <div className="setup-steps">
-                        <div className="setup-step">
-                            <div className="step-number">📡</div>
-                            <div className="step-content">
-                                <strong>공공데이터 포털 연동</strong>
-                                <p>한국천문연구원에서 제공하는 공식 공휴일 정보를 자동으로 가져옵니다.</p>
-                            </div>
+            {/* 2. 공휴일 관리 */}
+            <div className="settings-card">
+                <div className="settings-card-header">
+                    <div className="settings-card-title-wrap">
+                        <span className="card-icon-badge">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                <line x1="16" y1="2" x2="16" y2="6" />
+                                <line x1="8" y1="2" x2="8" y2="6" />
+                                <line x1="3" y1="10" x2="21" y2="10" />
+                            </svg>
+                        </span>
+                        <div>
+                            <h2>공휴일 관리</h2>
+                            <p className="section-description">
+                                교육과정일수 계산에서 제외할 공휴일을 관리할 수 있습니다. (주말은 자동 제외)
+                            </p>
                         </div>
-                    </div>
-                    <div style={{ marginTop: '1rem' }}>
-                        <Button
-                            variant="primary"
-                            onClick={() => setShowAutoFetchModal(true)}
-                        >
-                            공휴일 자동 가져오기
-                        </Button>
                     </div>
                 </div>
 
-                <div className="holiday-list">
+                {/* Auto Fetch Banner */}
+                <div className="holiday-fetch-box">
+                    <div className="holiday-fetch-info">
+                        <div className="fetch-title">
+                            <strong>한국 공휴일 자동 가져오기</strong>
+                            <span className="clean-badge">공공데이터</span>
+                        </div>
+                        <p>한국천문연구원 공식 데이터를 통해 법정 공휴일을 간편하게 불러옵니다.</p>
+                    </div>
+                    <Button
+                        variant="primary"
+                        onClick={() => setShowAutoFetchModal(true)}
+                        className="holiday-fetch-btn"
+                    >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="7 10 12 15 17 10" />
+                            <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                        자동 가져오기
+                    </Button>
+                </div>
+
+                {/* Holiday List Card */}
+                <div className="holiday-list-container">
                     <div className="holiday-list-header">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <div className="holiday-count-title" onClick={() => setIsHolidayListExpanded(!isHolidayListExpanded)}>
                             <button
-                                className="toggle-btn"
-                                onClick={() => setIsHolidayListExpanded(!isHolidayListExpanded)}
+                                className="toggle-arrow-btn"
                                 title={isHolidayListExpanded ? '목록 접기' : '목록 펼치기'}
                             >
-                                {isHolidayListExpanded ? '▼' : '▶'}
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: isHolidayListExpanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
+                                    <polyline points="9 18 15 12 9 6" />
+                                </svg>
                             </button>
-                            <h3>등록된 공휴일 ({holidays ? holidays.length : 0}개)</h3>
+                            <span>등록된 공휴일 <strong>{holidays ? holidays.length : 0}개</strong></span>
                         </div>
                         <Button
-                            variant="primary"
+                            variant="secondary"
                             onClick={() => setShowHolidayModal(true)}
+                            size="small"
                         >
-                            ➕ 공휴일 추가
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px' }}>
+                                <line x1="12" y1="5" x2="12" y2="19" />
+                                <line x1="5" y1="12" x2="19" y2="12" />
+                            </svg>
+                            직접 추가
                         </Button>
                     </div>
+
                     {isHolidayListExpanded && (
-                        <>
+                        <div className="holiday-expanded-area">
                             {!holidays || holidays.length === 0 ? (
                                 <p className="empty-message">등록된 공휴일이 없습니다.</p>
                             ) : (
-                                <div className="holiday-items">
+                                <div className="holiday-chips-grid">
                                     {holidays.map((holiday) => {
-                                        // Handle both old format (string) and new format (object)
                                         const holidayDate = typeof holiday === 'string' ? holiday : holiday.date;
                                         const holidayName = typeof holiday === 'string' ? '' : holiday.name;
                                         const dateObj = new Date(holidayDate);
                                         const formatted = dateObj.toLocaleDateString('ko-KR', {
-                                            year: 'numeric',
                                             month: 'long',
                                             day: 'numeric',
                                             weekday: 'short'
                                         });
                                         return (
-                                            <div key={holidayDate} className="holiday-item">
-                                                <div className="holiday-info">
-                                                    <span className="holiday-name">{holidayName}</span>
-                                                    <span className="holiday-date">{formatted}</span>
+                                            <div key={holidayDate} className="holiday-chip">
+                                                <div className="holiday-chip-info">
+                                                    <span className="holiday-chip-name">{holidayName || '공휴일'}</span>
+                                                    <span className="holiday-chip-date">{formatted}</span>
                                                 </div>
                                                 <button
-                                                    className="delete-holiday-btn"
+                                                    className="delete-holiday-icon-btn"
                                                     onClick={() => handleRemoveHoliday(typeof holiday === 'string' ? { date: holiday, name: '' } : holiday)}
+                                                    title="삭제"
                                                 >
-                                                    ❌
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <line x1="18" y1="6" x2="6" y2="18" />
+                                                        <line x1="6" y1="6" x2="18" y2="18" />
+                                                    </svg>
                                                 </button>
                                             </div>
                                         );
                                     })}
                                 </div>
                             )}
-                        </>
+                        </div>
                     )}
                 </div>
             </div>
 
-            {/* Holiday Modal */}
+            {/* 3. 데이터 백업 및 복구 (로컬) */}
+            <div className="settings-card">
+                <div className="settings-card-header">
+                    <div className="settings-card-title-wrap">
+                        <span className="card-icon-badge">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                                <polyline points="17 21 17 13 7 13 7 21" />
+                                <polyline points="7 3 7 8 15 8" />
+                            </svg>
+                        </span>
+                        <div>
+                            <h2>데이터 백업 및 복구 (로컬)</h2>
+                            <p className="section-description">
+                                지정한 폴더에 최신 데이터를 자동으로 덮어쓰기 백업하고, 필요 시 날짜별로 안전하게 보관하거나 복원할 수 있습니다.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 자동 백업 설정 패널 (항상 최신 유지 덮어쓰기) */}
+                <div className="auto-backup-panel">
+                    <div className="auto-backup-header" onClick={handleToggleAutoBackup}>
+                        <div className="auto-backup-title-info">
+                            <div className="title-row">
+                                <strong>지정 폴더 자동 백업 (항상 최신 덮어쓰기)</strong>
+                                <span className={`status-pill ${autoBackupConfig.enabled ? 'active' : 'inactive'}`}>
+                                    {autoBackupConfig.enabled ? '자동 백업 활성' : '비활성'}
+                                </span>
+                            </div>
+                            <p className="auto-backup-desc">
+                                앱 사용 중 10분 주기 및 시작 시 지정된 폴더의 <code>class-diary-latest-backup.json</code> 파일에 항상 최신 데이터를 덮어씁니다.
+                            </p>
+                        </div>
+                        <div className={`modern-switch ${autoBackupConfig.enabled ? 'checked' : ''}`}>
+                            <div className="switch-handle" />
+                        </div>
+                    </div>
+
+                    <div className="auto-backup-body">
+                        {/* 폴더 선택 바 */}
+                        <div className="folder-selection-row">
+                            <div className="folder-path-display">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="folder-icon">
+                                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                                </svg>
+                                <span className="path-text" title={autoBackupConfig.folder || '폴더 미지정'}>
+                                    {autoBackupConfig.folder ? autoBackupConfig.folder : '지정된 백업 폴더가 없습니다. 폴더를 선택해주세요.'}
+                                </span>
+                            </div>
+                            <Button
+                                variant="secondary"
+                                onClick={handleSelectFolder}
+                                size="small"
+                                className="folder-select-btn"
+                            >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px' }}>
+                                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                                </svg>
+                                {autoBackupConfig.folder ? '폴더 변경' : '폴더 선택'}
+                            </Button>
+                        </div>
+
+                        {/* 백업 상태 및 즉시 백업 버튼 */}
+                        <div className="backup-status-bar">
+                            <div className="last-backup-time">
+                                <span className="time-label">마지막 최신 백업 일시:</span>
+                                <strong className="time-value">
+                                    {autoBackupConfig.lastTime
+                                        ? new Date(autoBackupConfig.lastTime).toLocaleString('ko-KR', {
+                                            year: 'numeric',
+                                            month: 'long',
+                                            day: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                            second: '2-digit'
+                                        })
+                                        : '아직 백업 이력이 없습니다.'}
+                                </strong>
+                            </div>
+                            <Button
+                                variant="primary"
+                                size="small"
+                                onClick={handleRunAutoBackupNow}
+                                disabled={isBackingUpNow}
+                                className="instant-backup-btn"
+                            >
+                                {isBackingUpNow ? (
+                                    '백업 중...'
+                                ) : (
+                                    <>
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px' }}>
+                                            <polyline points="23 4 23 10 17 10" />
+                                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                                        </svg>
+                                        지금 최신 덮어쓰기 백업
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 하단: 날짜별 수동 백업 및 복구 카드 */}
+                <div className="backup-action-grid" style={{ marginTop: '1.25rem' }}>
+                    {/* 날짜별 별도 보관 */}
+                    <div className="backup-box">
+                        <div className="backup-box-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                <line x1="16" y1="2" x2="16" y2="6" />
+                                <line x1="8" y1="2" x2="8" y2="6" />
+                                <line x1="3" y1="10" x2="21" y2="10" />
+                            </svg>
+                        </div>
+                        <div className="backup-box-content">
+                            <strong>날짜별 수동 백업 (별도 보관)</strong>
+                            <p>오늘 날짜가 포함된 별도 백업 파일(JSON)을 생성하여 보관합니다.</p>
+                        </div>
+                        <Button
+                            variant="secondary"
+                            onClick={handleManualExport}
+                            disabled={isBackingUpNow}
+                            className="backup-btn"
+                        >
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="7 10 12 15 17 10" />
+                                <line x1="12" y1="15" x2="12" y2="3" />
+                            </svg>
+                            날짜별 백업 다운로드
+                        </Button>
+                    </div>
+
+                    {/* 데이터 복구 */}
+                    <div className="backup-box">
+                        <div className="backup-box-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="17 8 12 3 7 8" />
+                                <line x1="12" y1="3" x2="12" y2="15" />
+                            </svg>
+                        </div>
+                        <div className="backup-box-content">
+                            <strong>데이터 파일 가져오기 (복구)</strong>
+                            <p>이전에 백업해 둔 JSON 파일을 선택하여 전체 데이터를 원상태로 복원합니다.</p>
+                        </div>
+                        <label className="import-button-wrapper">
+                            <Button variant="secondary" as="span" className="backup-btn">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
+                                파일 선택 및 복원
+                            </Button>
+                            <input
+                                type="file"
+                                accept=".json"
+                                onChange={handleImportData}
+                                style={{ display: 'none' }}
+                            />
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            {/* 4. 앱 정보 */}
+            <div className="settings-card app-info-card">
+                <div className="settings-card-header">
+                    <div className="settings-card-title-wrap">
+                        <span className="card-icon-badge">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="12" cy="12" r="10" />
+                                <line x1="12" y1="16" x2="12" y2="12" />
+                                <line x1="12" y1="8" x2="12.01" y2="8" />
+                            </svg>
+                        </span>
+                        <div>
+                            <h2>앱 정보</h2>
+                            <p className="section-description">
+                                현재 실행 중인 학급일지 애플리케이션의 버전 및 시스템 상태입니다.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="info-cards-row">
+                    <div className="app-info-tile">
+                        <span className="info-tile-label">버전</span>
+                        <span className="info-tile-value highlight">v{APP_VERSION}</span>
+                    </div>
+                    <div className="app-info-tile">
+                        <span className="info-tile-label">데이터 저장소</span>
+                        <span className="info-tile-value">IndexedDB</span>
+                    </div>
+                    <div className="app-info-tile">
+                        <span className="info-tile-label">업데이트 상태</span>
+                        <span className="info-tile-value">
+                            {needRefresh ? (
+                                <span style={{ color: '#ea580c', fontWeight: 600 }}>새 버전 사용 가능</span>
+                            ) : (
+                                <span style={{ color: '#16a34a', fontWeight: 600 }}>최신 버전</span>
+                            )}
+                        </span>
+                    </div>
+                    <div 
+                        className="app-info-tile" 
+                        style={{ cursor: 'pointer', background: '#f0fdf4', borderColor: '#bbf7d0' }}
+                        onClick={() => {
+                            trackEvent('click_feedback_button');
+                            setShowFeedbackModal(true);
+                        }}
+                        title="개선 의견 및 피드백 남기기"
+                    >
+                        <span className="info-tile-label" style={{ color: '#15803d' }}>사용자 피드백</span>
+                        <span className="info-tile-value" style={{ color: '#16a34a', fontWeight: 800, fontSize: '0.88rem' }}>
+                            개선 의견 보내기 ↗
+                        </span>
+                    </div>
+                </div>
+
+                {needRefresh && (
+                    <div className="update-prompt-box">
+                        <p>새로운 기능과 성능이 개선된 새 버전이 준비되었습니다.</p>
+                        <Button variant="primary" onClick={() => updateServiceWorker()} size="small">
+                            지금 업데이트 적용
+                        </Button>
+                    </div>
+                )}
+            </div>
+
+            {/* Holiday Add Modal */}
             {showHolidayModal && (
                 <div className="modal-overlay" onClick={() => setShowHolidayModal(false)}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
-                            <h3>공휴일 추가</h3>
+                            <h3>공휴일 직접 추가</h3>
                             <button className="modal-close" onClick={() => setShowHolidayModal(false)}>✕</button>
                         </div>
                         <div className="modal-body">
@@ -722,7 +929,7 @@ const Settings = () => {
                                     id="holiday-name"
                                     type="text"
                                     className="form-input"
-                                    placeholder="예: 설날, 어린이날 등"
+                                    placeholder="예: 설날, 어린이날, 개교기념일 등"
                                     value={newHolidayName}
                                     onChange={(e) => setNewHolidayName(e.target.value)}
                                     onKeyPress={(e) => e.key === 'Enter' && handleAddHoliday()}
@@ -750,7 +957,7 @@ const Settings = () => {
                 <div className="modal-overlay" onClick={() => !isFetchingHolidays && setShowAutoFetchModal(false)}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
-                            <h3>🇰🇷 한국 공휴일 자동 가져오기</h3>
+                            <h3>한국 공휴일 자동 가져오기</h3>
                             <button
                                 className="modal-close"
                                 onClick={() => setShowAutoFetchModal(false)}
@@ -789,15 +996,15 @@ const Settings = () => {
                                             disabled={isFetchingHolidays}
                                             style={{ width: 'auto', cursor: 'pointer' }}
                                         />
-                                        <span>기존 공휴일 먼저 삭제</span>
+                                        <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>기존 공휴일 먼저 삭제 후 새로 추가</span>
                                     </label>
-                                    <p style={{ fontSize: '0.85rem', color: '#6b7280', margin: '0.5rem 0 0 1.75rem' }}>
-                                        체크 시 등록된 {holidays.length}개의 공휴일을 모두 삭제한 후 새로운 공휴일을 추가합니다.
+                                    <p style={{ fontSize: '0.82rem', color: '#64748b', margin: '0.25rem 0 0 1.5rem' }}>
+                                        체크 시 현재 등록된 {holidays.length}개의 공휴일을 모두 초기화하고 해당 연도 공휴일을 불러옵니다.
                                     </p>
                                 </div>
                             )}
                             <div className="help-tip">
-                                💡 한국천문연구원에서 제공하는 공식 공휴일 정보를 가져옵니다. 설날, 추석, 어린이날 등 법정 공휴일이 자동으로 추가됩니다.
+                                한국천문연구원에서 제공하는 공식 공휴일 정보를 가져옵니다. 설날, 추석, 어린이날 등 법정 공휴일이 자동으로 등록됩니다.
                             </div>
                         </div>
                         <div className="modal-footer">
@@ -820,283 +1027,11 @@ const Settings = () => {
                 </div>
             )}
 
-            {/* Google 계정 연동 Section */}
-            <div className="settings-section">
-                <h2>🔗 Google 계정 연동</h2>
-                <p className="section-description">
-                    Google 계정을 연결하면 Drive 백업과 Sheets 내보내기를 사용할 수 있습니다. (선택사항)
-                </p>
-
-                {/* 연결 상태 카드 */}
-                <div className={`connection-status-card ${isGoogleConnected ? 'connected' : 'disconnected'}`}>
-                    <div className="status-header">
-                        <div className="status-icon">
-                            {isGoogleConnected ? '🟢' : '⚪'}
-                        </div>
-                        <div className="status-info">
-                            <h3>{isGoogleConnected ? 'Google 연결됨' : 'Google 미연결'}</h3>
-                            <p>
-                                {isGoogleConnected
-                                    ? `${googleUser?.email || 'Google 계정'}으로 연결되어 있습니다.`
-                                    : 'Google 계정을 연결하여 클라우드 백업과 시트 내보내기를 사용하세요.'}
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="connection-actions">
-                        {isGoogleConnected ? (
-                            <button
-                                className="delete-api-button"
-                                onClick={handleGoogleDisconnect}
-                                type="button"
-                            >
-                                연결 해제
-                            </button>
-                        ) : (
-                            <Button
-                                variant="primary"
-                                onClick={handleGoogleConnect}
-                                disabled={isGoogleLoading}
-                            >
-                                {isGoogleLoading ? '준비 중...' : 'Google 계정 연결'}
-                            </Button>
-                        )}
-                    </div>
-                </div>
-
-                {googleError && (
-                    <div className="message-banner error" style={{ marginTop: '0.75rem' }}>
-                        ❌ {googleError}
-                    </div>
-                )}
-
-                {/* Google Drive 백업 */}
-                {isGoogleConnected && (
-                    <div className="api-setup-card" style={{ marginTop: 'var(--spacing-lg)' }}>
-                        <div className="setup-header">
-                            <h3>📁 Google Drive 백업</h3>
-                        </div>
-                        <p style={{ fontSize: '0.9rem', color: '#6b7280', margin: '0.5rem 0 1rem' }}>
-                            학급일지 전체 데이터를 Google Drive에 안전하게 백업합니다.
-                        </p>
-                        <div className="backup-actions">
-                            <Button
-                                variant="primary"
-                                onClick={handleDriveBackup}
-                                disabled={isGoogleBusy}
-                            >
-                                {isGoogleBusy ? '처리 중...' : 'Drive에 백업'}
-                            </Button>
-                            <Button
-                                variant="secondary"
-                                onClick={handleListDriveBackups}
-                                disabled={isGoogleBusy}
-                            >
-                                📋 백업 목록 / 복원
-                            </Button>
-                        </div>
-
-                        {/* Drive 백업 목록 */}
-                        {showDriveBackups && (
-                            <div className="holiday-list" style={{ marginTop: '1rem' }}>
-                                <div className="holiday-list-header">
-                                    <h3>Drive 백업 목록</h3>
-                                    <button className="toggle-btn" onClick={() => setShowDriveBackups(false)}>✕</button>
-                                </div>
-                                {driveBackups.length === 0 ? (
-                                    <p className="empty-message">저장된 백업이 없습니다.</p>
-                                ) : (
-                                    <div className="holiday-items">
-                                        {driveBackups.map(backup => (
-                                            <div key={backup.id} className="holiday-item">
-                                                <div className="holiday-info">
-                                                    <span className="holiday-name">{backup.name}</span>
-                                                    <span className="holiday-date">
-                                                        {new Date(backup.createdTime).toLocaleString('ko-KR')}
-                                                    </span>
-                                                </div>
-                                                <Button
-                                                    variant="secondary"
-                                                    size="small"
-                                                    onClick={() => handleDriveRestore(backup.id, backup.name)}
-                                                    disabled={isGoogleBusy}
-                                                >
-                                                    복원
-                                                </Button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* Google Sheets 내보내기 */}
-                {isGoogleConnected && (
-                    <div className="api-setup-card" style={{ marginTop: 'var(--spacing-lg)' }}>
-                        <div className="setup-header">
-                            <h3>📊 Google Sheets 내보내기</h3>
-                        </div>
-                        <p style={{ fontSize: '0.9rem', color: '#6b7280', margin: '0.5rem 0 1rem' }}>
-                            학생 기록과 성적 데이터를 Google Sheets로 내보냅니다.
-                        </p>
-                        <div className="backup-actions">
-                            <Button
-                                variant="primary"
-                                onClick={handleExportJournalsToSheet}
-                                disabled={isGoogleBusy}
-                            >
-                                {isGoogleBusy ? '처리 중...' : '학생 기록 → 시트'}
-                            </Button>
-                            <Button
-                                variant="secondary"
-                                onClick={handleExportGradesToSheet}
-                                disabled={isGoogleBusy}
-                            >
-                                {isGoogleBusy ? '처리 중...' : '성적 → 시트'}
-                            </Button>
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* Data Backup Section */}
-            <div className="settings-section">
-                <h2>💾 데이터 백업 및 복구 (로컬)</h2>
-                <p className="section-description">
-                    모든 학급 데이터를 JSON 파일로 백업하고 복원할 수 있습니다.
-                </p>
-
-                <div className="backup-actions">
-                    <Button
-                        variant="primary"
-                        onClick={handleExportData}
-                    >
-                        데이터 내보내기
-                    </Button>
-                    <label className="import-button-wrapper">
-                        <Button variant="secondary" as="span">
-                            데이터 가져오기
-                        </Button>
-                        <input
-                            type="file"
-                            accept=".json"
-                            onChange={handleImportData}
-                            style={{ display: 'none' }}
-                        />
-                    </label>
-                </div>
-            </div>
-
-            {/* Feedback Section */}
-            <div className="settings-section">
-                <h2>📝 수정 및 요청사항</h2>
-                <p className="section-description">
-                    개선이 필요한 부분이나 새로운 기능을 자유롭게 제안해주세요.
-                </p>
-                <a
-                    href="https://docs.google.com/forms/d/e/1FAIpQLSekXmDyk3mOjrxqRLCnSz8XHHabIUTgE3p1Sy4YJ0Uj-GPawA/viewform?usp=header"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="feedback-link-button"
-                >
-                    피드백 보내기
-                </a>
-            </div>
-
-            {/* 게시판(메뉴) 편집 */}
-            <div className="settings-section">
-                <h2>📋 게시판 편집</h2>
-                <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1rem' }}>
-                    사이드바에 표시할 메뉴를 선택하세요.
-                </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {sidebarMenuItems.map(item => {
-                        const emojiMap = { diary: '📅', notepad: '📝', attendance: '✅', journal: '📒', grades: '📊', budget: '💰', assignments: '📋', seating: '🪑', 'random-order': '🔀', 'class-role': '🎭' };
-                        return (
-                            <label
-                                key={item.id}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    padding: '0.75rem 1rem',
-                                    borderRadius: '10px',
-                                    backgroundColor: item.hidden ? '#f8fafc' : '#f0fdf4',
-                                    border: `1px solid ${item.hidden ? '#e2e8f0' : '#bbf7d0'}`,
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s',
-                                }}
-                            >
-                                <span style={{ fontWeight: 500, color: item.hidden ? '#94a3b8' : '#1e293b' }}>
-                                    {emojiMap[item.id] || '📄'} {item.label}
-                                </span>
-                                <div
-                                    onClick={(e) => { e.preventDefault(); handleMenuToggle(item.id); }}
-                                    style={{
-                                        width: '44px', height: '24px',
-                                        borderRadius: '12px',
-                                        backgroundColor: item.hidden ? '#cbd5e1' : '#22c55e',
-                                        position: 'relative',
-                                        cursor: 'pointer',
-                                        transition: 'background-color 0.2s',
-                                    }}
-                                >
-                                    <div style={{
-                                        width: '20px', height: '20px',
-                                        borderRadius: '50%',
-                                        backgroundColor: 'white',
-                                        position: 'absolute',
-                                        top: '2px',
-                                        left: item.hidden ? '2px' : '22px',
-                                        transition: 'left 0.2s',
-                                        boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                                    }} />
-                                </div>
-                            </label>
-                        );
-                    })}
-                </div>
-            </div>
-
-            {/* App Info Section with Update Control */}
-            <div className="settings-section app-info-section">
-                <h2>ℹ️ 앱 정보</h2>
-                <div className="info-grid">
-                    <div className="info-item">
-                        <span className="info-label">버전</span>
-                        <span className="info-value">v{APP_VERSION}</span>
-                    </div>
-                    <div className="info-item">
-                        <span className="info-label">저장 방식</span>
-                        <span className="info-value">IndexedDB (로컬)</span>
-                    </div>
-                    <div className="info-item">
-                        <span className="info-label">AI 모델</span>
-                        <span className="info-value">제미나이</span>
-                    </div>
-                </div>
-
-                {/* Update Action Area */}
-                <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-                    <h3 style={{ fontSize: '1rem', margin: '0 0 0.5rem 0', color: '#374151' }}>업데이트 상태</h3>
-                    {needRefresh ? (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <p style={{ margin: 0, fontSize: '0.9rem', color: '#4b5563' }}>
-                                새로운 버전이 출시되었습니다.
-                            </p>
-                            <Button variant="primary" onClick={() => updateServiceWorker()}>
-                                최신 버전으로 업데이트
-                            </Button>
-                        </div>
-                    ) : (
-                        <p style={{ margin: 0, fontSize: '0.9rem', color: '#6b7280' }}>
-                            현재 최신 버전을 사용 중입니다.
-                        </p>
-                    )}
-                </div>
-            </div>
+            {/* 개선 의견 보내기 전용 세련된 그린 모달 */}
+            <FeedbackModal 
+                isOpen={showFeedbackModal} 
+                onClose={() => setShowFeedbackModal(false)} 
+            />
         </div>
     );
 };

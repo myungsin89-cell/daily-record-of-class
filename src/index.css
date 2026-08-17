@@ -54,18 +54,26 @@
   --transition-base: all 0.2s ease-in-out;
 }
 
-* {
+html, body, #root {
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
-}
-
-body {
+  height: 100%;
+  background: transparent !important;
+  overflow: hidden;
   font-family: var(--font-family);
-  background-color: var(--color-background);
   color: var(--color-text-main);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+}
+
+@media print {
+  html, body, #root {
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+  }
 }
 
 a {

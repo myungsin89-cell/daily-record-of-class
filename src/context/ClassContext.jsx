@@ -23,15 +23,30 @@ export const ClassProvider = ({ children }) => {
             // 사용자별 학급 목록 로드
             const classesKey = `${user.username}_classes`;
             const savedClasses = localStorage.getItem(classesKey);
+            let loadedClasses = [];
             if (savedClasses) {
-                setClasses(JSON.parse(savedClasses));
+                try {
+                    loadedClasses = JSON.parse(savedClasses);
+                    setClasses(loadedClasses);
+                } catch (e) {
+                    console.error(e);
+                }
             }
 
             // 현재 선택된 학급 로드 (사용자별)
             const currentClassKey = `${user.username}_currentClass`;
             const savedCurrentClass = localStorage.getItem(currentClassKey);
             if (savedCurrentClass) {
-                setCurrentClass(JSON.parse(savedCurrentClass));
+                try {
+                    setCurrentClass(JSON.parse(savedCurrentClass));
+                } catch (e) {
+                    console.error(e);
+                }
+            } else if (loadedClasses && loadedClasses.length > 0) {
+                // 로그인 기록이 있고 등록된 학급이 있으면 첫 번째 학급 자동 선택
+                const firstClass = loadedClasses[0];
+                setCurrentClass(firstClass);
+                localStorage.setItem(currentClassKey, JSON.stringify(firstClass));
             }
         } else {
             setClasses([]);

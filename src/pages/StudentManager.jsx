@@ -8,8 +8,8 @@ import './StudentManager.css';
 // localStorage key for draft data
 const DRAFT_KEY = 'student_manager_draft';
 
-const StudentManager = () => {
-    const { students, addStudent, addStudents, removeStudent, isLoading } = useStudentContext();
+const StudentManager = ({ showTitle = true }) => {
+    const { students, addStudent, addStudents, removeStudent } = useStudentContext();
     const [name, setName] = useState('');
     const [attendanceNumber, setAttendanceNumber] = useState('');
     const [gender, setGender] = useState('남');
@@ -42,9 +42,7 @@ const StudentManager = () => {
         }
     }, [name, attendanceNumber, gender]);
 
-    if (isLoading) {
-        return <div style={{ padding: '2rem', textAlign: 'center' }}>데이터를 불러오는 중...</div>;
-    }
+
 
     const handleAddStudent = (e) => {
         e.preventDefault();
@@ -271,13 +269,27 @@ const StudentManager = () => {
     };
 
     // Sort students by attendance number
-    const sortedStudents = [...students].sort((a, b) => a.attendanceNumber - b.attendanceNumber);
+    const safeStudents = Array.isArray(students) ? students : [];
+    const sortedStudents = [...safeStudents].sort((a, b) => (a.attendanceNumber || 0) - (b.attendanceNumber || 0));
 
     return (
         <>
-            <div className="flex justify-between items-center mb-lg">
-                <h1>학생 관리</h1>
-            </div>
+            {showTitle && (
+                <div className="student-top-header">
+                    <div className="header-left">
+                        <h2>📋 학생 명단 관리</h2>
+                        <span className="student-count-badge">총 {safeStudents.length}명 학생</span>
+                    </div>
+                    <div className="header-right">
+                        <button className="green-gradient-btn" onClick={() => {
+                            const form = document.querySelector('.student-form-grid');
+                            if (form) form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }}>
+                            ➕ 학생 추가
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Bulk Registration Section */}
             <Card style={{ marginBottom: '1.5rem', backgroundColor: '#f0f9ff', borderColor: '#bae6fd' }}>
@@ -399,7 +411,13 @@ const StudentManager = () => {
 
             {/* Manual Add Form */}
             <Card style={{ marginBottom: '1.5rem' }}>
-                <h3 style={{ marginBottom: '1rem', color: 'var(--color-text)' }}>✏️ 학생 직접 등록</h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginBottom: '1rem' }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#15803d" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 20h9"/>
+                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                    </svg>
+                    <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#1e293b' }}>학생 직접 등록</h3>
+                </div>
                 <form className="student-form-grid" onSubmit={handleAddStudent}>
                     <div className="sm-form-group">
                         <label className="sm-form-label">이름</label>

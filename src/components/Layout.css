@@ -39,7 +39,7 @@
     gap: 0.75rem;
 }
 
-.change-class-btn,
+.settings-btn-header,
 .logout-btn-header {
     padding: 0.625rem 1.25rem;
     border: none;
@@ -50,12 +50,12 @@
     transition: all 0.3s ease;
 }
 
-.change-class-btn {
+.settings-btn-header {
     background: #f3f4f6;
     color: #374151;
 }
 
-.change-class-btn:hover {
+.settings-btn-header:hover {
     background: #e5e7eb;
     transform: translateY(-2px);
 }
@@ -149,7 +149,7 @@
         font-size: 0.85rem;
     }
 
-    .change-class-btn,
+    .settings-btn-header,
     .logout-btn-header,
     .backup-btn-header {
         padding: 0.5rem 0.75rem;

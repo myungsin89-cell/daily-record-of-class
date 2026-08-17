@@ -1,85 +1,90 @@
 .student-form-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr;
-    gap: var(--spacing-md);
+    grid-template-columns: 1.2fr 1fr 1fr 1fr; /* 이름에 조금 더 너비 부여 */
+    gap: 0.75rem;
     align-items: end;
 }
 
 .sm-form-group {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.4rem;
+    box-sizing: border-box;
 }
 
 .sm-form-label {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--color-text-muted);
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #475569;
 }
 
 .sm-form-input {
     width: 100%;
     height: 42px;
-    /* Fixed height for consistency */
-    padding: 0 1rem;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    font-size: 1rem;
-    transition: all 0.2s;
-    background-color: var(--color-surface);
+    padding: 0 0.85rem;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    background-color: #ffffff;
+    box-sizing: border-box; /* 겹침 현상 해결 핵심 */
+    outline: none;
+    color: #1e293b;
 }
 
 .sm-form-input:focus {
-    outline: none;
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px var(--color-primary-light);
+    border-color: #16a34a;
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
 }
 
 .gender-toggle-group {
     display: flex;
-    background: var(--color-background);
+    background: #f8fafc;
     padding: 4px;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    border: 1.5px solid #e2e8f0;
     height: 42px;
-    /* Match input height */
+    box-sizing: border-box; /* 겹침 현상 해결 핵심 */
 }
 
 .gender-toggle-btn {
     flex: 1;
     border: none;
     background: transparent;
-    border-radius: var(--radius-sm);
-    font-weight: 600;
-    color: var(--color-text-muted);
+    border-radius: 6px;
+    font-weight: 700;
+    color: #64748b;
     cursor: pointer;
-    transition: all 0.2s;
-    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    font-size: 0.88rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .gender-toggle-btn:hover {
-    color: var(--color-text);
+    color: #1e293b;
 }
 
 .gender-toggle-btn.active {
     background: white;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    color: var(--color-text);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .gender-toggle-btn.active.male {
-    color: #3b82f6;
-    /* Blue for male */
+    color: #1d4ed8;
+    background-color: #eff6ff;
 }
 
 .gender-toggle-btn.active.female {
-    color: #ec4899;
-    /* Pink for female */
+    color: #be185d;
+    background-color: #fdf2f8;
 }
 
 .form-actions {
     display: flex;
     align-items: flex-end;
+    box-sizing: border-box;
 }
 
 @media (max-width: 768px) {
@@ -106,35 +111,106 @@
     border: 0;
 }
 
+.student-top-header {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    border: 1px solid #e2e8f0;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.header-left h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: #0f172a;
+    font-weight: 700;
+}
+
+.student-count-badge {
+    background-color: #f0fdf4;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.green-gradient-btn {
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(22, 163, 74, 0.2);
+    transition: all 0.2s;
+}
+
+.green-gradient-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(22, 163, 74, 0.3);
+}
+
 .student-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: var(--spacing-md);
+    grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+    gap: 0.75rem;
+}
+
+@media (min-width: 1450px) {
+    .student-list {
+        grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+        gap: 1rem;
+    }
 }
 
 /* 학생 카드 컨테이너 */
 .student-card-container {
     position: relative;
-    padding: 1rem 0.75rem;
+    padding: 0.65rem 1.25rem 0.65rem 0.6rem; /* 우측에 X 버튼 공간을 확보하면서 좌우 패딩 최적화 */
     transition: all 0.3s ease;
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+}
+
+@media (min-width: 1450px) {
+    .student-card-container {
+        padding: 0.85rem 1.5rem 0.85rem 0.8rem;
+        border-radius: 16px;
+    }
 }
 
 .student-card-container:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.1);
+    border-color: #bbf7d0;
 }
 
 /* 삭제 버튼 - 우상단 X */
 .student-card-delete-btn {
     position: absolute;
-    top: 6px;
-    right: 6px;
-    width: 20px;
-    height: 20px;
+    top: 4px;
+    right: 4px;
+    width: 16px;
+    height: 16px;
     border: none;
     background: transparent;
-    color: var(--color-text-muted);
-    font-size: 1.2rem;
+    color: #94a3b8;
+    font-size: 0.85rem;
     line-height: 1;
     cursor: pointer;
     border-radius: 50%;
@@ -143,12 +219,15 @@
     justify-content: center;
     transition: all 0.2s ease;
     padding: 0;
+    opacity: 0.6;
+    z-index: 10;
 }
 
 .student-card-delete-btn:hover {
-    background: rgba(239, 68, 68, 0.1);
-    color: var(--color-error);
-    transform: scale(1.1);
+    background: #fee2e2;
+    color: #dc2626;
+    opacity: 1;
+    transform: scale(1.05);
 }
 
 /* 학생 카드 컨텐츠 */
@@ -157,29 +236,30 @@
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 0.4rem;
+    gap: 0.3rem;
     text-align: center;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    white-space: nowrap;
 }
 
 /* 출석번호 */
 .student-card-number {
-    font-size: 1rem;
+    font-size: 0.92rem;
     font-weight: 700;
-    color: var(--color-primary);
+    color: #15803d;
 }
 
 /* 이름 */
 .student-card-name {
-    font-size: 1rem;
+    font-size: 0.92rem;
     font-weight: 600;
-    color: var(--color-text);
+    color: #0f172a;
 }
 
 /* 성별 */
 .student-card-gender {
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
+    font-size: 0.8rem;
+    color: #16a34a;
     font-weight: 500;
 }
 

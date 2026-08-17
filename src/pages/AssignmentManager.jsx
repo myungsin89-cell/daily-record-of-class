@@ -136,38 +136,51 @@ const AssignmentManager = () => {
         }));
     };
 
-    const selectedAssignment = assignments.find(a => a.id === selectedAssignmentId);
-
     // Calculate stats
     const getStats = (assignment) => {
-        const total = students ? students.length : 0;
-        if (total === 0) return { completed: 0, rate: 0 };
+        const total = sortedStudents ? sortedStudents.length : 0;
+        if (total === 0) return { completed: 0, incomplete: 0, rate: 0 };
 
-        const completed = Object.values(assignment.submissions).filter(s => s.status === 'completed').length;
+        const completed = Object.values(assignment.submissions || {}).filter(s => s.status === 'completed').length;
+        const incomplete = total - completed;
         return {
             completed,
+            incomplete,
             rate: Math.round((completed / total) * 100)
         };
     };
 
+    const selectedAssignment = assignments.find(a => a.id === selectedAssignmentId);
+
     return (
         <div className="assignment-container">
-            <h1>📝 제출 체크</h1>
+            {/* 상단 타이틀 바 */}
+            <div className="assignment-top-header mb-md">
+                <div className="assignment-top-title">
+                    <h2>📋 제출물 및 과제 관리</h2>
+                    <span className="assignment-count-badge">총 {assignments.length}개 과제</span>
+                </div>
+                <div className="add-assignment-top-box">
+                    <input
+                        type="text"
+                        placeholder="새 제출물/과제명 입력..."
+                        value={newAssignmentTitle}
+                        onChange={(e) => setNewAssignmentTitle(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleAddAssignment()}
+                        className="top-assignment-input"
+                    />
+                    <button className="create-assignment-btn" onClick={handleAddAssignment}>
+                        ➕ 제출물 추가
+                    </button>
+                </div>
+            </div>
 
             <div className="assignment-layout">
-                {/* Left Sidebar: Assignment List */}
+                {/* Assignment List Section (Top in small window, Left in full screen) */}
                 <div className="assignment-sidebar">
-                    <div className="add-assignment-box">
-                        <input
-                            type="text"
-                            placeholder="새 과제명 입력"
-                            value={newAssignmentTitle}
-                            onChange={(e) => setNewAssignmentTitle(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && handleAddAssignment()}
-                        />
-                        <Button onClick={handleAddAssignment}>추가</Button>
+                    <div className="assignment-list-header mb-xs">
+                        <span className="section-small-title">과제 목록 ({assignments.length})</span>
                     </div>
-
                     <div className="assignment-list">
                         {assignments.map(assignment => (
                             <div
@@ -199,70 +212,100 @@ const AssignmentManager = () => {
                 <div className="assignment-content">
                     {selectedAssignment ? (
                         <>
-                            <div className="assignment-header">
-                                <h2>{selectedAssignment.title}</h2>
-                                <div className="progress-bar-container">
-                                    <div className="progress-text">
-                                    제출 현황: {getStats(selectedAssignment).completed} / {sortedStudents.length}
-                                        ({getStats(selectedAssignment).rate}%)
-                                    </div>
-                                    <div className="progress-track">
-                                        <div
-                                            className="progress-fill"
-                                            style={{ width: `${getStats(selectedAssignment).rate}%` }}
-                                        ></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="student-grid">
-                                {sortedStudents.map(student => {
-                                    const submission = selectedAssignment.submissions[student.id] || { status: 'incomplete', note: '' };
-                                    const isCompleted = submission.status === 'completed';
-
-                                    return (
-                                        <div
-                                            key={student.id}
-                                            className={`student-card ${isCompleted ? 'completed' : 'incomplete'}`}
-                                        >
-                                            <div
-                                                className="student-main"
-                                                onClick={() => toggleSubmission(selectedAssignment.id, student.id)}
-                                            >
-                                                <div className="student-info">
-                                                    <span className="student-number">{student.attendanceNumber}번</span>
-                                                    <span className="student-name">{student.name}</span>
-                                                </div>
-                                                <span className="assignment-status-wrapper">
-                                                    {isCompleted ? (
-                                                        <span className="status-label completed">
-                                                            <span className="status-emoji">✅</span>
-                                                            <span className="status-text">제출완료</span>
-                                                        </span>
-                                                    ) : (
-                                                        <span className="status-label incomplete">
-                                                            <span className="status-emoji">❌</span>
-                                                            <span className="status-text">미제출</span>
-                                                        </span>
-                                                    )}
+                            {(() => {
+                                const stats = getStats(selectedAssignment);
+                                return (
+                                    <>
+                                        <div className="assignment-header">
+                                            <div className="assignment-header-left">
+                                                <h2>{selectedAssignment.title}</h2>
+                                                <span className="assignment-created-date">
+                                                    생성일: {new Date(selectedAssignment.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
                                                 </span>
                                             </div>
 
-                                            {!isCompleted && (
-                                                <div className="note-input-container">
-                                                    <input
-                                                        type="text"
-                                                        placeholder="미제출 사유 입력"
-                                                        value={submission.note || ''}
-                                                        onChange={(e) => updateNote(selectedAssignment.id, student.id, e.target.value)}
-                                                        onClick={(e) => e.stopPropagation()}
-                                                    />
+                                            {/* 초록덕후 요약 뱃지 대시보드 */}
+                                            <div className="assignment-stats-badges">
+                                                <div className="stat-badge-chip completed-chip">
+                                                    <span className="chip-icon">✅</span>
+                                                    <span className="chip-label">제출 완료</span>
+                                                    <strong className="chip-val">{stats.completed}명</strong>
                                                 </div>
-                                            )}
+                                                <div className="stat-badge-chip incomplete-chip">
+                                                    <span className="chip-icon">❌</span>
+                                                    <span className="chip-label">미제출</span>
+                                                    <strong className="chip-val">{stats.incomplete}명</strong>
+                                                </div>
+                                                <div className="stat-badge-chip rate-chip">
+                                                    <span className="chip-label">제출률</span>
+                                                    <strong className="chip-val">{stats.rate}%</strong>
+                                                </div>
+                                            </div>
                                         </div>
-                                    );
-                                })}
-                            </div>
+
+                                        <div className="progress-bar-container">
+                                            <div className="progress-track">
+                                                <div
+                                                    className="progress-fill green-progress-fill"
+                                                    style={{ width: `${stats.rate}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+
+                                        <div className="student-grid">
+                                            {sortedStudents.map(student => {
+                                                const submission = selectedAssignment.submissions[student.id] || { status: 'incomplete', note: '' };
+                                                const isCompleted = submission.status === 'completed';
+
+                                                return (
+                                                    <div
+                                                        key={student.id}
+                                                        className={`student-card ${isCompleted ? 'completed' : 'incomplete'}`}
+                                                    >
+                                                        <div
+                                                            className="student-main"
+                                                            onClick={() => toggleSubmission(selectedAssignment.id, student.id)}
+                                                        >
+                                                            <div className="student-info">
+                                                                <span className="student-number">{student.attendanceNumber}번</span>
+                                                                <span className="student-name">{student.name}</span>
+                                                            </div>
+                                                            <span className="assignment-status-wrapper">
+                                                                {isCompleted ? (
+                                                                    <span className="status-label completed">
+                                                                        <span className="status-emoji">✅</span>
+                                                                        <span className="status-text">제출완료</span>
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="status-label incomplete">
+                                                                        <span className="status-emoji">❌</span>
+                                                                        <span className="status-text">미제출</span>
+                                                                    </span>
+                                                                )}
+                                                            </span>
+                                                        </div>
+
+                                                        <div className="note-input-container">
+                                                            {!isCompleted ? (
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="미제출 사유 입력"
+                                                                    value={submission.note || ''}
+                                                                    onChange={(e) => updateNote(selectedAssignment.id, student.id, e.target.value)}
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                    className="reason-input-field"
+                                                                />
+                                                            ) : (
+                                                                <div className="reason-placeholder-slot" />
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </>
+                                );
+                            })()}
                         </>
                     ) : (
                         <div className="empty-state">

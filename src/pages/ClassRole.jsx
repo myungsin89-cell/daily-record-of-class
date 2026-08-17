@@ -150,9 +150,16 @@ const ClassRole = () => {
     if (!students || students.length === 0) {
         return (
             <div className="cr-empty">
-                <div className="cr-empty-icon">👥</div>
+                <div className="cr-empty-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                </div>
                 <p>학생 명단이 없습니다.</p>
-                <p className="cr-empty-sub">학생 관리에서 학생을 먼저 추가해주세요.</p>
+                <p className="cr-empty-sub">학생 등록에서 학생을 먼저 추가해주세요.</p>
             </div>
         );
     }
@@ -160,15 +167,41 @@ const ClassRole = () => {
     return (
         <div className="cr-page">
             <div className="cr-header">
-                <h1 className="cr-title">🎭 일인 일역</h1>
+                <div className="cr-title-group">
+                    <svg className="cr-title-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#15803d" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                    <h1 className="cr-title">일인일역</h1>
+                </div>
                 <div className="cr-header-actions">
                     {totalAssigned > 0 && (
-                        <button className="cr-clear-btn" onClick={handleClearAllStudents}>↺ 배정 초기화</button>
+                        <button className="cr-clear-btn" onClick={handleClearAllStudents}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                            </svg>
+                            <span>배정 초기화</span>
+                        </button>
                     )}
                     {roles.length > 0 && (
-                        <button className="cr-print-btn" onClick={handlePrint}>🖨️ 인쇄</button>
+                        <button className="cr-print-btn" onClick={handlePrint}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="6 9 6 2 18 2 18 9"/>
+                                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                                <rect x="6" y="14" width="12" height="8"/>
+                            </svg>
+                            <span>인쇄</span>
+                        </button>
                     )}
-                    <button className="cr-add-btn" onClick={openAddModal}>+ 역할 추가</button>
+                    <button className="cr-add-btn" onClick={openAddModal}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"/>
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        <span>역할 추가</span>
+                    </button>
                 </div>
             </div>
 
@@ -190,7 +223,14 @@ const ClassRole = () => {
                             {totalAssigned}/{totalCapacity}명
                         </span>
                     </div>
-                    {allFull && <span className="cr-summary-badge">✅ 배정 완료</span>}
+                    {allFull && (
+                        <span className="cr-summary-badge">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px' }}>
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                            배정 완료
+                        </span>
+                    )}
                 </div>
             )}
 

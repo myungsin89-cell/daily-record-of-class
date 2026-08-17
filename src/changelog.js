@@ -3,6 +3,18 @@
 
 export const CHANGELOG = [
     {
+        version: '2.0.0',
+        date: '2026-03-20',
+        title: '🌱 2.0.0 대규모 업데이트',
+        changes: [
+            '🌿 UI/UX 전면 개편: 초록덕후 감성의 클린 그린 테마 및 미니멀 선형 아이콘 시스템 도입',
+            '📊 성적 분석 리포트: 교과별 성취도 분석, 2열 수행평가 카드 및 고해상도 A4 스마트 PDF 다운로드 지원',
+            '🏥 결석계 관리 고도화: 서식 생성 및 맞춤형 인쇄 최적화',
+            '💬 소통 창구: 인앱 개선 의견 보내기(Google Forms) 모달 지원',
+            '⚡ 안정성 및 성능: 레이아웃 렌더링 속도 향상 및 자동 백업 안전성 강화',
+        ]
+    },
+    {
         version: '1.4.0',
         date: '2026-03-16',
         title: '🪑 자리 배치 시스템 정식 도입',
@@ -39,4 +51,4 @@ export const CHANGELOG = [
 ];
 
 // 현재 버전
-export const APP_VERSION = '1.4.0';
+export const APP_VERSION = '2.0.0';

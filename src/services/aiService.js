@@ -428,3 +428,57 @@ function expandEvaluation(evaluation, analysis, content) {
 
     return evaluation;
 }
+
+/**
+ * Generate AI Behavior Summary for Student (Life Record format or Parent Counseling format)
+ */
+export const generateStudentBehaviorSummary = async (studentName, records = [], styleType = 'report') => {
+    try {
+        const genAI = await getGenAI();
+
+        let recordText = '';
+        if (records && records.length > 0) {
+            records.forEach(r => {
+                const dateStr = new Date(r.date).toLocaleDateString('ko-KR');
+                const tagStr = r.tag ? `[${r.tag}] ` : '';
+                recordText += `- ${dateStr}: ${tagStr}${r.content}\n`;
+            });
+        } else {
+            recordText = '작성된 행동 관찰 기록이 없음.';
+        }
+
+        let prompt = '';
+        if (styleType === 'report') {
+            prompt = `
+다음은 초등학교 학생 '${studentName}'의 행동 관찰 누가기록입니다.
+이 기록들을 바탕으로 초등학교 생활기록부 '행동특성 및 종합의견' 란에 기재할 수 있는 완성도 높은 종합 의견 문장을 작성해 주세요.
+
+[관찰 누가기록]
+${recordText}
+
+[작성 수칙]
+1. 문체는 개조식 종결어('~함', '~임', '~보임', '~나타남')를 사용하세요.
+2. 학생의 긍정적인 행동 특성, 수업 태도, 교우 관계, 발전 가능성을 중심으로 250자~350자 분량으로 작성하세요.
+3. 사족(예: '네, 작성해 드립니다' 등)을 전면 배제하고 오직 생활기록부 기재 문장만 출력하세요.
+`;
+        } else {
+            prompt = `
+다음은 학생 '${studentName}'의 행동 관찰 기록입니다.
+학부모 상담 진행 시 교사가 유용하게 참고할 수 있도록 주요 관찰 포인트, 학생의 강점, 가정 연계 지도 팁을 정리해 주세요.
+
+[관찰 누가기록]
+${recordText}
+
+[작성 수칙]
+1. '1. 학생의 주요 강점 및 장점', '2. 학교생활 및 교우관계 특성', '3. 가정 연계 지도 및 당부 팁' 3가지 항목으로 명확히 구분하여 친절하고 따뜻한 어조로 정리해 주세요.
+2. 사족 없이 바로 위 3개 항목 내용만 출력해 주세요.
+`;
+        }
+
+        const summary = await tryGenerateWithFallback(genAI, prompt);
+        return summary.trim();
+    } catch (error) {
+        console.error('Behavior summary AI generation failed:', error);
+        throw error;
+    }
+};

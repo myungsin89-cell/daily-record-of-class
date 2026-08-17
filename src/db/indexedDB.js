@@ -343,6 +343,8 @@ export const exportAllData = async () => {
                 settings: await getAllData(STORES.SETTINGS),
                 fieldTrips: await getAllData(STORES.FIELD_TRIPS),
                 holidays: await getAllData(STORES.HOLIDAYS),
+                seatingConfigs: await getAllData(STORES.SEATING_CONFIGS),
+                seatingHistory: await getAllData(STORES.SEATING_HISTORY),
             },
             // Export ALL localStorage data
             localStorage: {}
@@ -453,6 +455,22 @@ export const importAllData = async (importData) => {
                 await saveData(STORES.HOLIDAYS, item);
             }
             console.log(`✓ Imported ${dbData.holidays.length} holiday records`);
+        }
+
+        // Import seating configs
+        if (dbData.seatingConfigs && Array.isArray(dbData.seatingConfigs)) {
+            for (const item of dbData.seatingConfigs) {
+                await saveData(STORES.SEATING_CONFIGS, item);
+            }
+            console.log(`✓ Imported ${dbData.seatingConfigs.length} seating config records`);
+        }
+
+        // Import seating history
+        if (dbData.seatingHistory && Array.isArray(dbData.seatingHistory)) {
+            for (const item of dbData.seatingHistory) {
+                await saveData(STORES.SEATING_HISTORY, item);
+            }
+            console.log(`✓ Imported ${dbData.seatingHistory.length} seating history records`);
         }
 
         // Import localStorage data (if present in new format)

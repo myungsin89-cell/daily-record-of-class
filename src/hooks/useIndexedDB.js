@@ -32,15 +32,81 @@ function useIndexedDB(storeName, key, initialValue) {
         const loadData = async () => {
             try {
                 setIsLoading(true);
-                const result = await getData(storeName, key);
+                let result = await getData(storeName, key);
 
                 if (!isMounted) return;
+
+                const isEmptyData = (res) => {
+                    if (!res || res.data === undefined || res.data === null) return true;
+                    if (Array.isArray(res.data) && res.data.length === 0) return true;
+                    if (typeof res.data === 'object' && !Array.isArray(res.data) && Object.keys(res.data).length === 0) return true;
+                    return false;
+                };
+
+                // Fallback 1: If key is user_classId (e.g., "송명신_1784941132951"), try without username ("1784941132951")
+                if (isEmptyData(result) && key.includes('_')) {
+                    const rawClassId = key.substring(key.indexOf('_') + 1);
+                    if (rawClassId) {
+                        const fallbackResult = await getData(storeName, rawClassId);
+                        if (!isEmptyData(fallbackResult)) {
+                            result = fallbackResult;
+                            const keyName = storeName === STORES.HOLIDAYS ? 'year' : 'classId';
+                            await saveData(storeName, {
+                                [keyName]: key,
+                                data: fallbackResult.data
+                            });
+                        }
+                    }
+                }
+
+                // Fallback 2: Check 'default' key if current key isn't 'default'
+                if (isEmptyData(result) && key !== 'default') {
+                    const defaultResult = await getData(storeName, 'default');
+                    if (!isEmptyData(defaultResult)) {
+                        result = defaultResult;
+                        const keyName = storeName === STORES.HOLIDAYS ? 'year' : 'classId';
+                        await saveData(storeName, {
+                            [keyName]: key,
+                            data: defaultResult.data
+                        });
+                    }
+                }
+
+                // Fallback 3: Check legacy LocalStorage keys
+                if (isEmptyData(result)) {
+                    const cleanClassId = key.includes('_') ? key.substring(key.indexOf('_') + 1) : key;
+                    const legacyKeys = [
+                        `class_${cleanClassId}_${storeName}`,
+                        `class_default_${storeName}`,
+                        `${storeName}`,
+                        `class_${key}_${storeName}`
+                    ];
+                    for (const lsKey of legacyKeys) {
+                        const lsData = localStorage.getItem(lsKey);
+                        if (lsData) {
+                            try {
+                                const parsed = JSON.parse(lsData);
+                                if (parsed && ((Array.isArray(parsed) && parsed.length > 0) || (typeof parsed === 'object' && Object.keys(parsed).length > 0))) {
+                                    result = { data: parsed };
+                                    const keyName = storeName === STORES.HOLIDAYS ? 'year' : 'classId';
+                                    await saveData(storeName, {
+                                        [keyName]: key,
+                                        data: parsed
+                                    });
+                                    break;
+                                }
+                            } catch (e) {
+                                console.error('Failed to parse legacy localStorage key:', lsKey, e);
+                            }
+                        }
+                    }
+                }
 
                 if (result && result.data !== undefined) {
                     setStoredValue(result.data);
                     valueRef.current = result.data;
                 } else {
-                    // If no data exists, save the initial value
+                    // If no data exists anywhere, save the initial value
                     const keyName = storeName === STORES.HOLIDAYS ? 'year' : 'classId';
                     await saveData(storeName, {
                         [keyName]: key,

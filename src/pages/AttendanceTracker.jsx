@@ -17,7 +17,8 @@ const AttendanceTracker = () => {
     const [showAbsenceModal, setShowAbsenceModal] = useState(false);
 
     // Sort students by attendance number
-    const sortedStudents = [...students].sort((a, b) => a.attendanceNumber - b.attendanceNumber);
+    const safeStudents = Array.isArray(students) ? students : [];
+    const sortedStudents = [...safeStudents].sort((a, b) => (a.attendanceNumber || 0) - (b.attendanceNumber || 0));
 
     // Calendar navigation
     const goToPreviousMonth = () => {
@@ -193,56 +194,104 @@ const AttendanceTracker = () => {
         return specialStudents;
     };
 
-    // Get monthly summary
-    const getMonthlySummary = () => {
+    // Get monthly summary sorted by student attendance number with consecutive date grouping (NEIS / 나이스 input friendly!)
+    const getStudentMonthlySummary = () => {
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth();
 
-        const summary = [];
+        const summaryByStudent = [];
 
-        // Get all dates in current month
-        const lastDay = new Date(year, month + 1, 0).getDate();
+        sortedStudents.forEach(student => {
+            const studentRecords = [];
 
-        for (let day = 1; day <= lastDay; day++) {
-            const date = new Date(year, month, day);
-            const dateKey = formatDateToString(date);
-            const dayAttendance = attendance[dateKey] || {};
+            const lastDay = new Date(year, month + 1, 0).getDate();
+            for (let day = 1; day <= lastDay; day++) {
+                const date = new Date(year, month, day);
+                const dateKey = formatDateToString(date);
+                const data = attendance[dateKey]?.[student.id];
 
-            const specialRecords = [];
+                if (data) {
+                    const status = typeof data === 'string' ? data : data.status;
+                    const reason = typeof data === 'object' ? data.reason : '';
 
-            Object.keys(dayAttendance).forEach(studentId => {
-                const data = dayAttendance[studentId];
-                const status = typeof data === 'string' ? data : data.status;
-                const reason = typeof data === 'object' ? data.reason : '';
-
-                // Only include special statuses
-                if (status && status !== 'present') {
-                    const student = students.find(s => s.id === parseInt(studentId));
-                    if (student) {
-                        specialRecords.push({
-                            studentName: student.name,
-                            attendanceNumber: student.attendanceNumber,
-                            status: status,
-                            reason: reason
+                    if (status && status !== 'present') {
+                        studentRecords.push({
+                            date,
+                            dateKey,
+                            status,
+                            reason: reason || ''
                         });
                     }
                 }
-            });
+            }
 
-            if (specialRecords.length > 0) {
-                summary.push({
-                    date: date,
-                    dateString: date.toLocaleDateString('ko-KR', {
-                        month: 'long',
-                        day: 'numeric',
-                        weekday: 'short'
-                    }),
-                    records: specialRecords.sort((a, b) => a.attendanceNumber - b.attendanceNumber)
+            if (studentRecords.length > 0) {
+                const groupedRanges = [];
+                let currentRange = null;
+
+                studentRecords.forEach(rec => {
+                    if (!currentRange) {
+                        currentRange = {
+                            startDate: rec.date,
+                            endDate: rec.date,
+                            dates: [rec.date],
+                            status: rec.status,
+                            reason: rec.reason
+                        };
+                    } else {
+                        const prevDate = currentRange.endDate;
+                        const diffDays = Math.round((rec.date - prevDate) / (1000 * 60 * 60 * 24));
+                        const isConsecutive = diffDays === 1 || (diffDays <= 3 && prevDate.getDay() === 5 && rec.date.getDay() === 1);
+
+                        if (isConsecutive && rec.status === currentRange.status && rec.reason === currentRange.reason) {
+                            currentRange.endDate = rec.date;
+                            currentRange.dates.push(rec.date);
+                        } else {
+                            groupedRanges.push(currentRange);
+                            currentRange = {
+                                startDate: rec.date,
+                                endDate: rec.date,
+                                dates: [rec.date],
+                                status: rec.status,
+                                reason: rec.reason
+                            };
+                        }
+                    }
+                });
+
+                if (currentRange) {
+                    groupedRanges.push(currentRange);
+                }
+
+                const formattedRanges = groupedRanges.map(range => {
+                    const startStr = range.startDate.toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric', weekday: 'short' });
+                    const count = range.dates.length;
+                    let dateText = '';
+
+                    if (count === 1) {
+                        dateText = startStr;
+                    } else {
+                        const endStr = range.endDate.toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric', weekday: 'short' });
+                        dateText = `${startStr} ~ ${endStr} [${count}일간]`;
+                    }
+
+                    return {
+                        dateText,
+                        count,
+                        status: range.status,
+                        reason: range.reason
+                    };
+                });
+
+                summaryByStudent.push({
+                    student,
+                    totalDays: studentRecords.length,
+                    ranges: formattedRanges
                 });
             }
-        }
+        });
 
-        return summary;
+        return summaryByStudent;
     };
 
     const calendarDays = getCalendarDays();
@@ -302,27 +351,45 @@ const AttendanceTracker = () => {
         return option ? option.label : status;
     };
 
+    const goToTodayMonth = () => {
+        const now = new Date();
+        setCurrentDate(new Date(now.getFullYear(), now.getMonth(), 1));
+    };
+
     return (
         <>
-            <div className="flex justify-between items-center mb-lg">
-                <h1>출석 관리</h1>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                    <Button variant="secondary" onClick={() => setShowFieldtripModal(true)}>
-                        🚌 체험학습 대장
-                    </Button>
-                    <Button variant="secondary" onClick={() => setShowAbsenceModal(true)}>
-                        🏥 결석계 관리
-                    </Button>
-                </div>
-            </div>
+            {/* 상단 창 (Top Month & Action Control Box) */}
+            <div className="attendance-top-card mb-md">
+                <div className="attendance-month-nav">
+                    <span className="green-date-range-badge">
+                        {currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월
+                    </span>
 
-            {/* Month Navigation */}
-            <div className="month-navigation">
-                <button className="month-nav-btn" onClick={goToPreviousMonth}>◀</button>
-                <h2 className="current-month">
-                    {currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월
-                </h2>
-                <button className="month-nav-btn" onClick={goToNextMonth}>▶</button>
+                    <div className="date-nav-buttons">
+                        <button className="green-pill-btn" onClick={goToPreviousMonth} title="지난달">
+                            ◀ 지난달
+                        </button>
+                        <button 
+                            className={`green-pill-btn ${currentDate.getMonth() === new Date().getMonth() && currentDate.getFullYear() === new Date().getFullYear() ? 'active' : ''}`}
+                            onClick={goToTodayMonth} 
+                            title="이번달"
+                        >
+                            이번달
+                        </button>
+                        <button className="green-pill-btn" onClick={goToNextMonth} title="다음달">
+                            다음달 ▶
+                        </button>
+                    </div>
+                </div>
+
+                <div className="attendance-action-buttons">
+                    <button className="action-btn-fieldtrip" onClick={() => setShowFieldtripModal(true)}>
+                        🚌 체험학습 대장
+                    </button>
+                    <button className="action-btn-absence" onClick={() => setShowAbsenceModal(true)}>
+                        🏥 결석계 관리
+                    </button>
+                </div>
             </div>
 
             {/* Main Content */}
@@ -383,7 +450,7 @@ const AttendanceTracker = () => {
                             onClick={() => setShowMonthlySummary(true)}
                             style={{ width: '100%' }}
                         >
-                            📊 {currentDate.getMonth() + 1}월 출결 특이사항 종합
+                            📊 {currentDate.getMonth() + 1}월 출결 특이사항 종합 (나이스 입력용)
                         </Button>
                     </div>
                 </div>
@@ -449,38 +516,48 @@ const AttendanceTracker = () => {
             {/* Monthly Summary Modal */}
             {showMonthlySummary && (
                 <div className="modal-overlay" onClick={() => setShowMonthlySummary(false)}>
-                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                    <div className="modal-content monthly-summary-modal" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
-                            <h2>{currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월 출결 특이사항</h2>
+                            <h2>📊 {currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월 출결 특이사항 (나이스 입력용 번호순)</h2>
                             <button className="modal-close" onClick={() => setShowMonthlySummary(false)}>×</button>
                         </div>
                         <div className="modal-body">
-                            {getMonthlySummary().length === 0 ? (
-                                <p className="text-muted text-center">이번 달 특이사항이 없습니다.</p>
+                            {getStudentMonthlySummary().length === 0 ? (
+                                <p className="text-muted text-center" style={{ padding: '2rem' }}>이번 달 특이사항 기록이 없습니다.</p>
                             ) : (
-                                getMonthlySummary().map((daySummary, idx) => (
-                                    <div key={idx} className="summary-date-group">
-                                        <h3 className="summary-date-header">{daySummary.dateString}</h3>
-                                        <div className="summary-records">
-                                            {daySummary.records.map((record, ridx) => (
-                                                <div key={ridx} className="summary-record-item">
-                                                    <span className="summary-student">
-                                                        {record.attendanceNumber}. {record.studentName}
-                                                    </span>
-                                                    <span
-                                                        className="summary-status"
-                                                        style={{ color: getStatusColor(record.status) }}
-                                                    >
-                                                        {getStatusLabel(record.status)}
-                                                    </span>
-                                                    {record.reason && (
-                                                        <span className="summary-reason">({record.reason})</span>
-                                                    )}
+                                <div className="student-summary-grid">
+                                    {getStudentMonthlySummary().map((item) => (
+                                        <div key={item.student.id} className="student-summary-card">
+                                            <div className="student-summary-header">
+                                                <div className="student-badge-title">
+                                                    <span className="summary-student-num">{item.student.attendanceNumber}번</span>
+                                                    <span className="summary-student-name">{item.student.name}</span>
                                                 </div>
-                                            ))}
+                                                <span className="summary-total-badge">총 {item.totalDays}일</span>
+                                            </div>
+                                            <div className="student-summary-body">
+                                                {item.ranges.map((range, ridx) => (
+                                                    <div key={ridx} className="summary-range-row">
+                                                        <span className="summary-range-date">{range.dateText}</span>
+                                                        <span
+                                                            className="summary-status-pill"
+                                                            style={{
+                                                                backgroundColor: getStatusColor(range.status) + '15',
+                                                                color: getStatusColor(range.status),
+                                                                borderColor: getStatusColor(range.status) + '40'
+                                                            }}
+                                                        >
+                                                            {getStatusLabel(range.status)}
+                                                        </span>
+                                                        {range.reason && (
+                                                            <span className="summary-range-reason">: {range.reason}</span>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
-                                ))
+                                    ))}
+                                </div>
                             )}
                         </div>
                     </div>

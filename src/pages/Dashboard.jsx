@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import MiniCalendar from '../components/MiniCalendar';
@@ -6,8 +7,6 @@ import { useSaveStatus } from '../context/SaveStatusContext';
 import { useClass } from '../context/ClassContext';
 import { useAuth } from '../context/AuthContext';
 import { useStudentContext } from '../context/StudentContext';
-import { useAPIKey } from '../context/APIKeyContext';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // TodoItem Component with Style Editor
 const TodoItem = ({ todo, index, dateStr, toggleTodo, deleteTodo, updateTodoStyle, updateTodoText, onDragStart, onDragOver, onDrop }) => {
@@ -180,30 +179,26 @@ const TodoItem = ({ todo, index, dateStr, toggleTodo, deleteTodo, updateTodoStyl
 };
 
 const Dashboard = () => {
+    const navigate = useNavigate();
     const { currentClass } = useClass();
     const { user } = useAuth();
-    const { holidays } = useStudentContext();
+    const { holidays, students = [], attendance = {} } = useStudentContext();
     const rawClassId = currentClass?.id || 'default';
     const classId = user ? `${user.username}_${rawClassId}` : rawClassId;
     const [currentDate, setCurrentDate] = useState(new Date());
     const [todos, setTodos] = useState({});
+    const [timetable, setTimetable] = useState({});
+    const [timetableDate, setTimetableDate] = useState(new Date());
     const [weeklyNotes, setWeeklyNotes] = useState({});
     const { updateSaveStatus } = useSaveStatus();
     const [isLoaded, setIsLoaded] = useState(false);
     const [showMiniCalendar, setShowMiniCalendar] = useState(false);
-    const { apiKey, hasAPIKey } = useAPIKey();
-
-    // Schedule extraction states
-    const [showExtractModal, setShowExtractModal] = useState(false);
-    const [extractStep, setExtractStep] = useState(1); // 1: input, 2: loading, 3: results
-    const [extractText, setExtractText] = useState('');
-    const [extractedItems, setExtractedItems] = useState([]);
-    const [extractError, setExtractError] = useState('');
-    const [editingField, setEditingField] = useState(null); // { index, field: 'date'|'text' }
+    const [perfCards, setPerfCards] = useState([]);
 
     // Notes collection view states
     const [showNotesCollection, setShowNotesCollection] = useState(false);
     const [notesSearchQuery, setNotesSearchQuery] = useState('');
+    const [showWeeklyNotes, setShowWeeklyNotes] = useState(false);
 
     // Helper to format date as YYYY-MM-DD in local timezone
     const formatDateLocal = (date) => {
@@ -213,25 +208,50 @@ const Dashboard = () => {
         return `${year}-${month}-${day}`;
     };
 
+    // Load performance evaluation cards for week alarm
+    useEffect(() => {
+        try {
+            const rawKey = currentClass?.id || 'default';
+            const possibleKeys = [
+                user ? `grade_v4_${user.username}_${rawKey}` : null,
+                `grade_v4_${rawKey}`,
+                'grade_v4_default'
+            ].filter(Boolean);
+
+            for (const key of possibleKeys) {
+                const saved = localStorage.getItem(key);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    const cards = (parsed.evalCards || []).filter(c => c.isPerformance || c.evalType === 'performance');
+                    if (cards.length > 0) {
+                        setPerfCards(cards);
+                        break;
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('Failed to load performance cards in Dashboard:', e);
+        }
+    }, [currentClass, user, isLoaded]);
+
     // Load data from localStorage on mount or when class changes
     useEffect(() => {
         const todosKey = `teacher_diary_todos_${classId}`;
+        const timetableKey = `teacher_diary_timetable_${classId}`;
         const notesKey = `teacher_diary_notes_${classId}`;
 
         const savedTodos = localStorage.getItem(todosKey);
+        const savedTimetable = localStorage.getItem(timetableKey);
         const savedNotes = localStorage.getItem(notesKey);
 
-        if (savedTodos) {
-            setTodos(JSON.parse(savedTodos));
-        } else {
-            setTodos({});
-        }
+        if (savedTodos) setTodos(JSON.parse(savedTodos));
+        else setTodos({});
 
-        if (savedNotes) {
-            setWeeklyNotes(JSON.parse(savedNotes));
-        } else {
-            setWeeklyNotes({});
-        }
+        if (savedTimetable) setTimetable(JSON.parse(savedTimetable));
+        else setTimetable({});
+
+        if (savedNotes) setWeeklyNotes(JSON.parse(savedNotes));
+        else setWeeklyNotes({});
 
         setIsLoaded(true);
     }, [classId]);
@@ -248,8 +268,12 @@ const Dashboard = () => {
         if (!isLoaded) return;
         const notesKey = `teacher_diary_notes_${classId}`;
         localStorage.setItem(notesKey, JSON.stringify(weeklyNotes));
+        
+        const timetableKey = `teacher_diary_timetable_${classId}`;
+        localStorage.setItem(timetableKey, JSON.stringify(timetable));
+        
         updateSaveStatus();
-    }, [weeklyNotes, updateSaveStatus, isLoaded, classId]);
+    }, [weeklyNotes, timetable, updateSaveStatus, isLoaded, classId]);
 
     // Helper to get the start of the week (Monday)
     const getStartOfWeek = (date) => {
@@ -260,7 +284,22 @@ const Dashboard = () => {
     };
 
     const startOfWeek = getStartOfWeek(currentDate);
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 4); // Friday
     const weekKey = formatDateLocal(startOfWeek);
+
+    const getWeekRangeTitle = () => {
+        const year = startOfWeek.getFullYear();
+        const startM = startOfWeek.getMonth() + 1;
+        const startD = startOfWeek.getDate();
+        const endM = endOfWeek.getMonth() + 1;
+        const endD = endOfWeek.getDate();
+
+        if (startM === endM) {
+            return `${year}년 ${startM}월 ${startD}일 ~ ${endD}일`;
+        }
+        return `${year}년 ${startM}월 ${startD}일 ~ ${endM}월 ${endD}일`;
+    };
 
     // Generate 7 days of the week
     const weekDays = Array.from({ length: 7 }, (_, i) => {
@@ -269,24 +308,68 @@ const Dashboard = () => {
         return d;
     });
 
+    // 이번 주차 수행평가 일정 스마트 필터링
+    const currentWeekPerfCards = useMemo(() => {
+        if (!perfCards || perfCards.length === 0) return [];
+        const startStr = formatDateLocal(weekDays[0]);
+        const endStr = formatDateLocal(weekDays[6]);
+
+        const startM = startOfWeek.getMonth() + 1;
+        // 주차 번호 계산 (해당 월의 첫날 기준 주차)
+        const firstDayOfMonth = new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), 1);
+        const firstDayOfWeek = firstDayOfMonth.getDay();
+        const adjustedOffset = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
+        const weekNum = Math.ceil((startOfWeek.getDate() + adjustedOffset) / 7);
+
+        return perfCards.filter(card => {
+            // 1. 날짜 범위 매칭 (scheduleDate 또는 columns[0].date)
+            const cDate = card.scheduleDate || card.columns?.[0]?.date;
+            if (cDate && cDate >= startStr && cDate <= endStr) return true;
+
+            // 2. 텍스트 주차 매칭 (예: "8월 3주", "8월 3주차")
+            if (card.scheduleText) {
+                const match = card.scheduleText.match(/(\d{1,2})월\s*(\d{1,2})주/);
+                if (match) {
+                    const m = parseInt(match[1], 10);
+                    const w = parseInt(match[2], 10);
+                    if (m === startM && w === weekNum) return true;
+                }
+                // 3. 텍스트 날짜 매칭 (예: "8월 19일")
+                const mdMatch = card.scheduleText.match(/(\d{1,2})[월/.]\s*(\d{1,2})/);
+                if (mdMatch) {
+                    const m = String(parseInt(mdMatch[1], 10)).padStart(2, '0');
+                    const d = String(parseInt(mdMatch[2], 10)).padStart(2, '0');
+                    const formatted = `${startOfWeek.getFullYear()}-${m}-${d}`;
+                    if (formatted >= startStr && formatted <= endStr) return true;
+                }
+            }
+            return false;
+        });
+    }, [perfCards, weekDays, startOfWeek]);
+
     const handlePrevWeek = () => {
         const newDate = new Date(currentDate);
         newDate.setDate(currentDate.getDate() - 7);
         setCurrentDate(newDate);
+        setTimetableDate(newDate);
     };
 
     const handleNextWeek = () => {
         const newDate = new Date(currentDate);
         newDate.setDate(currentDate.getDate() + 7);
         setCurrentDate(newDate);
+        setTimetableDate(newDate);
     };
 
     const handleToday = () => {
-        setCurrentDate(new Date());
+        const today = new Date();
+        setCurrentDate(today);
+        setTimetableDate(today);
     };
 
     const handleDateClick = (date) => {
         setCurrentDate(date);
+        setTimetableDate(date);
         setShowMiniCalendar(false); // 날짜 선택 후 달력 닫기
     };
 
@@ -406,7 +489,7 @@ const Dashboard = () => {
         }
     };
 
-    // Notes Handler
+    // Notes & Timetable Handler
     const handleNoteChange = (text) => {
         setWeeklyNotes(prev => ({
             ...prev,
@@ -414,121 +497,101 @@ const Dashboard = () => {
         }));
     };
 
-    // ===== Schedule Extraction =====
-    const openExtractModal = () => {
-        setShowExtractModal(true);
-        setExtractStep(1);
-        setExtractText('');
-        setExtractedItems([]);
-        setExtractError('');
-        setEditingField(null);
-    };
-
-    const closeExtractModal = () => {
-        setShowExtractModal(false);
-        setExtractStep(1);
-        setExtractText('');
-        setExtractedItems([]);
-        setExtractError('');
-        setEditingField(null);
-    };
-
-    const handleExtractSchedules = async () => {
-        if (!extractText.trim()) return;
-        if (!hasAPIKey) {
-            setExtractError('API 키가 설정되지 않았습니다. 설정 페이지에서 Gemini API 키를 등록해주세요.');
-            return;
-        }
-
-        setExtractStep(2);
-        setExtractError('');
-
-        try {
-            const genAI = new GoogleGenerativeAI(apiKey);
-            const lastModel = localStorage.getItem('last_working_gemini_model') || 'gemini-2.0-flash-exp';
-            const model = genAI.getGenerativeModel({ model: lastModel });
-
-            const today = formatDateLocal(new Date());
-            const prompt = `당신은 텍스트에서 일정을 추출하는 전문가입니다.
-
-다음 텍스트에서 날짜와 할 일(일정)을 추출하세요.
-- 날짜 형식: YYYY-MM-DD
-- 날짜가 명확하지 않으면 오늘(${today}) 기준으로 추정하세요.
-- 연도가 없으면 현재 연도(${new Date().getFullYear()})를 사용하세요.
-- "이번 주 금요일", "다음 주 월요일" 등의 상대적 표현도 오늘 기준으로 변환하세요.
-- 일정이 없으면 빈 배열을 반환하세요.
-- 반드시 JSON 배열만 반환하세요. 다른 텍스트는 포함하지 마세요.
-
-형식:
-[{"date": "2026-02-25", "text": "일정 내용"}]
-
-텍스트:
-${extractText}`;
-
-            const result = await model.generateContent(prompt);
-            const response = await result.response;
-            const responseText = response.text();
-
-            // Parse JSON from response (handle markdown code blocks)
-            let jsonStr = responseText.trim();
-            const codeBlockMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-            if (codeBlockMatch) {
-                jsonStr = codeBlockMatch[1].trim();
-            }
-
-            const items = JSON.parse(jsonStr);
-
-            if (!Array.isArray(items) || items.length === 0) {
-                setExtractError('추출된 일정이 없습니다. 다른 텍스트를 시도해보세요.');
-                setExtractStep(1);
-                return;
-            }
-
-            // Add checked state to each item
-            setExtractedItems(items.map(item => ({ ...item, checked: true })));
-            setExtractStep(3);
-        } catch (error) {
-            console.error('Schedule extraction failed:', error);
-            setExtractError(`일정 추출 실패: ${error.message}`);
-            setExtractStep(1);
-        }
-    };
-
-    const toggleExtractedItem = (index) => {
-        setExtractedItems(prev => prev.map((item, i) =>
-            i === index ? { ...item, checked: !item.checked } : item
-        ));
-    };
-
-    const updateExtractedItem = (index, field, value) => {
-        setExtractedItems(prev => prev.map((item, i) =>
-            i === index ? { ...item, [field]: value } : item
-        ));
-    };
-
-    const handleAddExtractedTodos = () => {
-        const selectedItems = extractedItems.filter(item => item.checked);
-        selectedItems.forEach(item => {
-            addTodo(item.date, item.text);
+    const handleTimetableChange = (dateStr, period, field, value) => {
+        setTimetable(prev => {
+            const current = prev[dateStr]?.[period];
+            const currentObj = typeof current === 'object' && current !== null
+                ? current
+                : { subject: '', content: typeof current === 'string' ? current : '' };
+            return {
+                ...prev,
+                [dateStr]: {
+                    ...(prev[dateStr] || {}),
+                    [period]: {
+                        ...currentObj,
+                        [field]: value
+                    }
+                }
+            };
         });
-        closeExtractModal();
     };
 
-    const handleFieldDoubleClick = (index, field) => {
-        setEditingField({ index, field });
+    const getPeriodSubject = (dateStr, period) => {
+        const data = timetable[dateStr]?.[period];
+        if (typeof data === 'object' && data !== null) return data.subject || '';
+        return '';
     };
 
-    const handleFieldSave = () => {
-        setEditingField(null);
+    const getPeriodContent = (dateStr, period) => {
+        const data = timetable[dateStr]?.[period];
+        if (typeof data === 'object' && data !== null) return data.content || '';
+        if (typeof data === 'string') return data;
+        return '';
     };
 
-    const handleFieldKeyDown = (e) => {
+    // Keyboard navigation helper for timetable inputs
+    const handleTimetableKeyDown = (e, period, field, isHorizontal = false) => {
         if (e.key === 'Enter') {
-            setEditingField(null);
-        } else if (e.key === 'Escape') {
-            setEditingField(null);
+            e.preventDefault();
+            const prefix = isHorizontal ? 'horiz-tt' : 'vert-tt';
+            if (field === 'subject') {
+                const nextEl = document.getElementById(`${prefix}-content-${period}`);
+                if (nextEl) nextEl.focus();
+            } else if (field === 'content') {
+                if (period < 6) {
+                    const nextEl = document.getElementById(`${prefix}-subject-${period + 1}`);
+                    if (nextEl) nextEl.focus();
+                }
+            }
         }
     };
+
+    // Timetable Date Navigation Handlers
+    const handlePrevTimetableDay = () => {
+        const d = new Date(timetableDate);
+        d.setDate(timetableDate.getDate() - 1);
+        setTimetableDate(d);
+    };
+
+    const handleNextTimetableDay = () => {
+        const d = new Date(timetableDate);
+        d.setDate(timetableDate.getDate() + 1);
+        setTimetableDate(d);
+    };
+
+    const handleTodayTimetableDay = () => {
+        const today = new Date();
+        setTimetableDate(today);
+        setCurrentDate(today);
+    };
+
+    // Attendance Summary Helper for Day Column
+    const getAttendanceSummaryForDay = (dateStr) => {
+        const dayAttendance = attendance[dateStr] || {};
+        const result = {
+            absent: [],
+            fieldtrip: []
+        };
+
+        Object.keys(dayAttendance).forEach(studentIdStr => {
+            const data = dayAttendance[studentIdStr];
+            const status = typeof data === 'string' ? data : data?.status;
+            if (!status || status === 'present') return;
+
+            const student = students.find(s => String(s.id) === String(studentIdStr) || String(s.attendanceNumber) === String(studentIdStr));
+            const studentName = student ? student.name : `학생${studentIdStr}`;
+
+            if (status === 'sick' || status === 'absent' || status === 'other') {
+                result.absent.push(studentName);
+            } else if (status === 'fieldtrip') {
+                result.fieldtrip.push(studentName);
+            }
+        });
+
+        return result;
+    };
+
+
 
     // Auto-refresh time display every minute
     const [, setTick] = useState(0);
@@ -553,30 +616,41 @@ ${extractText}`;
     return (
         <div className="dashboard-container">
             {/* Header & Navigation */}
-            <div className="flex justify-between items-center mb-lg">
-                <div className="flex items-center gap-md">
-                    <h1>📅 다이어리</h1>
-                    <span className="text-muted" style={{ fontSize: '1.1rem' }}>
-                        {startOfWeek.toLocaleDateString('ko-KR', { month: 'long', year: 'numeric' })}
+            <div className="dashboard-header-bar flex justify-between items-center">
+                <div className="flex items-center gap-md" style={{ flexWrap: 'wrap', gap: '10px' }}>
+                    <span className="green-date-range-badge">
+                        {startOfWeek.getFullYear()}년 {startOfWeek.getMonth() + 1}월
                     </span>
+                    {currentWeekPerfCards.length > 0 && (
+                        <div
+                            className="dashboard-perf-week-pill"
+                            onClick={() => navigate('/grades')}
+                            title="클릭 시 성적 입력 / 수행평가 화면으로 바로 이동합니다."
+                        >
+                            <span className="perf-pill-bell">🔔</span>
+                            <span className="perf-pill-label">이번 주 수행평가 ({currentWeekPerfCards.length}건):</span>
+                            <div className="perf-pill-tags">
+                                {currentWeekPerfCards.map((c, i) => (
+                                    <span key={c.id || i} className="perf-pill-tag">
+                                        {c.domain ? `[${c.domain}] ` : ''}{c.unit || c.name}
+                                    </span>
+                                ))}
+                            </div>
+                            <span className="perf-pill-arrow">➔</span>
+                        </div>
+                    )}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <Button
-                        variant="accent"
-                        onClick={openExtractModal}
-                    >
-                        📨 일정 추출
-                    </Button>
-                    <Button
-                        variant={showMiniCalendar ? "primary" : "secondary"}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                    <button
+                        className={`green-calendar-btn ${showMiniCalendar ? 'active' : ''}`}
                         onClick={() => setShowMiniCalendar(!showMiniCalendar)}
                     >
                         📆 {showMiniCalendar ? '달력 닫기' : '달력 보기'}
-                    </Button>
-                    <div className="flex gap-sm">
-                        <Button variant="secondary" onClick={handlePrevWeek}>&lt; 이전 주</Button>
-                        <Button variant="secondary" onClick={handleToday}>오늘</Button>
-                        <Button variant="secondary" onClick={handleNextWeek}>다음 주 &gt;</Button>
+                    </button>
+                    <div className="green-btn-group">
+                        <button className="green-pill-btn" onClick={handlePrevWeek}>&lt; 이전 주</button>
+                        <button className="green-pill-btn active" onClick={handleToday}>오늘</button>
+                        <button className="green-pill-btn" onClick={handleNextWeek}>다음 주 &gt;</button>
                     </div>
                 </div>
             </div>
@@ -596,146 +670,6 @@ ${extractText}`;
                     </div>
                 </div>
             )}
-
-            {/* Schedule Extraction Modal */}
-            {showExtractModal && (
-                <div className="calendar-modal-overlay" onClick={closeExtractModal}>
-                    <div className="extract-modal-content" onClick={(e) => e.stopPropagation()}>
-                        <button
-                            className="calendar-modal-close"
-                            onClick={closeExtractModal}
-                            title="닫기"
-                        >
-                            ×
-                        </button>
-
-                        {/* Step 1: Text Input */}
-                        {extractStep === 1 && (
-                            <div className="extract-step">
-                                <h2 className="extract-title">📨 일정 추출</h2>
-                                <p className="extract-desc">메시지나 공문 텍스트를 붙여넣으면 AI가 일정을 자동으로 추출합니다.</p>
-                                {extractError && (
-                                    <div className="extract-error">
-                                        ⚠️ {extractError}
-                                    </div>
-                                )}
-                                <textarea
-                                    className="extract-textarea"
-                                    placeholder={`여기에 메시지나 공문 텍스트를 붙여넣으세요...\n\n예시:\n- 2월 25일 수학 경시대회\n- 3월 1일 삼일절 휴무\n- 다음 주 금요일까지 성적 입력 완료`}
-                                    value={extractText}
-                                    onChange={(e) => setExtractText(e.target.value)}
-                                    autoFocus
-                                />
-                                <div className="extract-actions">
-                                    <Button variant="secondary" onClick={closeExtractModal}>취소</Button>
-                                    <Button
-                                        variant="primary"
-                                        onClick={handleExtractSchedules}
-                                        disabled={!extractText.trim()}
-                                    >
-                                        🔍 일정 추출하기
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Step 2: Loading */}
-                        {extractStep === 2 && (
-                            <div className="extract-step extract-loading">
-                                <div className="extract-spinner" />
-                                <h3>AI가 일정을 분석하고 있습니다...</h3>
-                                <p className="text-muted">잠시만 기다려주세요</p>
-                            </div>
-                        )}
-
-                        {/* Step 3: Results */}
-                        {extractStep === 3 && (
-                            <div className="extract-step">
-                                <h2 className="extract-title">📋 추출 결과</h2>
-                                <p className="extract-desc">
-                                    {extractedItems.length}개의 일정이 발견되었습니다. 추가할 항목을 선택하세요.
-                                    <span className="extract-hint">💡 날짜나 내용을 더블클릭하면 수정할 수 있습니다.</span>
-                                </p>
-                                <div className="extract-table-wrap">
-                                    <table className="extract-table">
-                                        <thead>
-                                            <tr>
-                                                <th style={{ width: '40px' }}>선택</th>
-                                                <th style={{ width: '140px' }}>📅 날짜</th>
-                                                <th>📝 내용</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {extractedItems.map((item, index) => (
-                                                <tr key={index} className={!item.checked ? 'extract-row-unchecked' : ''}>
-                                                    <td>
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={item.checked}
-                                                            onChange={() => toggleExtractedItem(index)}
-                                                            className="extract-checkbox"
-                                                        />
-                                                    </td>
-                                                    <td
-                                                        onDoubleClick={() => handleFieldDoubleClick(index, 'date')}
-                                                        className="extract-editable-cell"
-                                                    >
-                                                        {editingField?.index === index && editingField?.field === 'date' ? (
-                                                            <input
-                                                                type="date"
-                                                                value={item.date}
-                                                                onChange={(e) => updateExtractedItem(index, 'date', e.target.value)}
-                                                                onBlur={handleFieldSave}
-                                                                onKeyDown={handleFieldKeyDown}
-                                                                className="extract-inline-input"
-                                                                autoFocus
-                                                            />
-                                                        ) : (
-                                                            <span className="extract-date-display">{item.date}</span>
-                                                        )}
-                                                    </td>
-                                                    <td
-                                                        onDoubleClick={() => handleFieldDoubleClick(index, 'text')}
-                                                        className="extract-editable-cell"
-                                                    >
-                                                        {editingField?.index === index && editingField?.field === 'text' ? (
-                                                            <input
-                                                                type="text"
-                                                                value={item.text}
-                                                                onChange={(e) => updateExtractedItem(index, 'text', e.target.value)}
-                                                                onBlur={handleFieldSave}
-                                                                onKeyDown={handleFieldKeyDown}
-                                                                className="extract-inline-input extract-text-input"
-                                                                autoFocus
-                                                            />
-                                                        ) : (
-                                                            <span>{item.text}</span>
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <div className="extract-actions">
-                                    <Button variant="secondary" onClick={() => { setExtractStep(1); setExtractError(''); }}>
-                                        ← 다시 입력
-                                    </Button>
-                                    <Button
-                                        variant="primary"
-                                        onClick={handleAddExtractedTodos}
-                                        disabled={!extractedItems.some(item => item.checked)}
-                                    >
-                                        ✅ 선택한 일정 추가 ({extractedItems.filter(i => i.checked).length}개)
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {/* Weekly Grid */}
             <div className="weekly-grid">
                 {/* Weekdays (Mon-Fri) */}
                 {weekDays.slice(0, 5).map((day) => {
@@ -776,6 +710,41 @@ ${extractText}`;
                                 ))}
                             </div>
 
+                            {/* Fixed Attendance Summary at Bottom of Column */}
+                            {(() => {
+                                const att = getAttendanceSummaryForDay(dateStr);
+                                const hasAbsent = att.absent.length > 0;
+                                const hasFieldtrip = att.fieldtrip.length > 0;
+
+                                if (!hasAbsent && !hasFieldtrip) return null;
+
+                                return (
+                                    <div className="day-attendance-summary" style={{
+                                        padding: '0.4rem 0.6rem',
+                                        background: '#f8fafc',
+                                        borderTop: '1px solid #e2e8f0',
+                                        fontSize: '0.78rem',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '0.2rem',
+                                        flexShrink: 0
+                                    }}>
+                                        {hasAbsent && (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexWrap: 'wrap' }}>
+                                                <span style={{ fontSize: '0.7rem', fontWeight: 800, background: '#fee2e2', color: '#dc2626', padding: '0.05rem 0.35rem', borderRadius: '4px' }}>결석</span>
+                                                <span style={{ color: '#334155', fontWeight: 600 }}>{att.absent.join(', ')}</span>
+                                            </div>
+                                        )}
+                                        {hasFieldtrip && (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexWrap: 'wrap' }}>
+                                                <span style={{ fontSize: '0.7rem', fontWeight: 800, background: '#f3e8ff', color: '#7c3aed', padding: '0.05rem 0.35rem', borderRadius: '4px' }}>체험</span>
+                                                <span style={{ color: '#334155', fontWeight: 600 }}>{att.fieldtrip.join(', ')}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
+
                             <div className="add-todo-form">
                                 <input
                                     type="text"
@@ -792,124 +761,238 @@ ${extractText}`;
                     );
                 })}
 
-                {/* Weekend (Sat + Sun combined) */}
-                <div className="day-column weekend-column">
-                    <div className="day-header weekend-header">
-                        <span className="day-name">주말</span>
-                        <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.85rem' }}>
-                            <span>{weekDays[5].getDate()}</span>
-                            <span>·</span>
-                            <span>{weekDays[6].getDate()}</span>
-                        </div>
+                {/* Today's Timetable (Replaces Weekend in Maximize Mode) */}
+                <div className="day-column weekend-column desktop-sidebar-timetable">
+                    <div className="day-header weekend-header" style={{ justifyContent: 'center' }}>
+                        <span className="day-name" style={{ color: '#15803d' }}>🌿 오늘의 시간표</span>
                     </div>
 
-                    <div className="weekend-content">
-                        {/* Saturday */}
-                        <div className="weekend-day">
-                            <div className="weekend-day-label" style={{ color: '#3b82f6' }}>
-                                <span>토</span>
-                                <span className="weekend-date-num">{weekDays[5].getDate()}일</span>
-                            </div>
-                            {getHolidayInfo(weekDays[5]) && (
-                                <div className="holiday-badge weekend-holiday-badge">
-                                    🎉 {getHolidayInfo(weekDays[5]).name}
-                                </div>
-                            )}
-                            <div className="todo-list weekend-todo-list">
-                                {Array.isArray(todos[formatDateLocal(weekDays[5])]) && todos[formatDateLocal(weekDays[5])].map((todo, index) => (
-                                    <TodoItem
-                                        key={todo.id}
-                                        index={index}
-                                        todo={todo}
-                                        dateStr={formatDateLocal(weekDays[5])}
-                                        toggleTodo={toggleTodo}
-                                        deleteTodo={deleteTodo}
-                                        updateTodoStyle={updateTodoStyle}
-                                        updateTodoText={updateTodoText}
-                                        onDragStart={handleDragStart}
-                                        onDragOver={handleDragOver}
-                                        onDrop={handleDrop}
-                                    />
-                                ))}
-                            </div>
-                            <div className="add-todo-form">
-                                <input
-                                    type="text"
-                                    placeholder="+ 할 일 추가"
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            addTodo(formatDateLocal(weekDays[5]), e.target.value);
-                                            e.target.value = '';
-                                        }
-                                    }}
-                                />
-                            </div>
+                    <div className="weekend-content" style={{ padding: '0.6rem 0.4rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', boxSizing: 'border-box' }}>
+                        {/* Date Navigation Bar */}
+                        <div style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'space-between', 
+                            marginBottom: '0.2rem', 
+                            background: '#ffffff',
+                            padding: '0.3rem 0.5rem',
+                            borderRadius: '6px',
+                            border: '1px solid var(--color-border)'
+                        }}>
+                            <button
+                                onClick={handlePrevTimetableDay}
+                                style={{
+                                    border: '1px solid var(--color-border)',
+                                    background: '#f8fafc',
+                                    borderRadius: '4px',
+                                    padding: '0.15rem 0.45rem',
+                                    cursor: 'pointer',
+                                    fontWeight: 'bold',
+                                    color: '#475569',
+                                    fontSize: '0.75rem'
+                                }}
+                                title="어제 시간표"
+                            >
+                                ◀
+                            </button>
+                            <span 
+                                onClick={handleTodayTimetableDay}
+                                style={{ 
+                                    cursor: 'pointer', 
+                                    userSelect: 'none', 
+                                    color: '#1e293b', 
+                                    fontSize: '0.85rem', 
+                                    fontWeight: 700 
+                                }}
+                                title="클릭하여 오늘 날짜로 이동"
+                            >
+                                {timetableDate.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' })}
+                            </span>
+                            <button
+                                onClick={handleNextTimetableDay}
+                                style={{
+                                    border: '1px solid var(--color-border)',
+                                    background: '#f8fafc',
+                                    borderRadius: '4px',
+                                    padding: '0.15rem 0.45rem',
+                                    cursor: 'pointer',
+                                    fontWeight: 'bold',
+                                    color: '#475569',
+                                    fontSize: '0.75rem'
+                                }}
+                                title="내일 시간표"
+                            >
+                                ▶
+                            </button>
                         </div>
 
-                        {/* Divider */}
-                        <div style={{ height: '1px', backgroundColor: '#e5e7eb', margin: '0.5rem 0' }} />
-
-                        {/* Sunday */}
-                        <div className="weekend-day">
-                            <div className="weekend-day-label" style={{ color: '#ef4444' }}>
-                                <span>일</span>
-                                <span className="weekend-date-num">{weekDays[6].getDate()}일</span>
-                            </div>
-                            {getHolidayInfo(weekDays[6]) && (
-                                <div className="holiday-badge weekend-holiday-badge">
-                                    🎉 {getHolidayInfo(weekDays[6]).name}
-                                </div>
-                            )}
-                            <div className="todo-list weekend-todo-list">
-                                {Array.isArray(todos[formatDateLocal(weekDays[6])]) && todos[formatDateLocal(weekDays[6])].map((todo, index) => (
-                                    <TodoItem
-                                        key={todo.id}
-                                        index={index}
-                                        todo={todo}
-                                        dateStr={formatDateLocal(weekDays[6])}
-                                        toggleTodo={toggleTodo}
-                                        deleteTodo={deleteTodo}
-                                        updateTodoStyle={updateTodoStyle}
-                                        updateTodoText={updateTodoText}
-                                        onDragStart={handleDragStart}
-                                        onDragOver={handleDragOver}
-                                        onDrop={handleDrop}
+                        {[1, 2, 3, 4, 5, 6].map(period => (
+                            <div key={period} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', width: '100%', background: '#ffffff', padding: '0.4rem', borderRadius: '8px', border: '1px solid var(--color-border)', boxSizing: 'border-box' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                    <span style={{ 
+                                        padding: '0.15rem 0.4rem', 
+                                        fontWeight: '800', 
+                                        color: '#15803d', 
+                                        fontSize: '0.8rem',
+                                        background: '#f0fdf4',
+                                        border: '1px solid #bbf7d0',
+                                        borderRadius: '4px',
+                                        whiteSpace: 'nowrap'
+                                    }}>
+                                        {period}교시
+                                    </span>
+                                    <input
+                                        id={`vert-tt-subject-${period}`}
+                                        type="text"
+                                        placeholder="과목명"
+                                        value={getPeriodSubject(formatDateLocal(timetableDate), period)}
+                                        onChange={(e) => handleTimetableChange(formatDateLocal(timetableDate), period, 'subject', e.target.value)}
+                                        onKeyDown={(e) => handleTimetableKeyDown(e, period, 'subject', false)}
+                                        style={{
+                                            flex: 1,
+                                            width: 0,
+                                            minWidth: 0,
+                                            padding: '0.2rem 0.4rem',
+                                            border: '1px solid var(--color-border)',
+                                            borderRadius: '4px',
+                                            fontSize: '0.88rem',
+                                            fontWeight: '700',
+                                            color: '#0f172a',
+                                            textAlign: 'center',
+                                            outline: 'none',
+                                            background: '#f8fafc',
+                                            boxSizing: 'border-box'
+                                        }}
+                                        onFocus={(e) => e.target.style.borderColor = '#16a34a'}
+                                        onBlur={(e) => e.target.style.borderColor = 'var(--color-border)'}
                                     />
-                                ))}
-                            </div>
-                            <div className="add-todo-form">
+                                </div>
                                 <input
+                                    id={`vert-tt-content-${period}`}
                                     type="text"
-                                    placeholder="+ 할 일 추가"
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            addTodo(formatDateLocal(weekDays[6]), e.target.value);
-                                            e.target.value = '';
-                                        }
+                                    placeholder="수업내용메모"
+                                    value={getPeriodContent(formatDateLocal(timetableDate), period)}
+                                    onChange={(e) => handleTimetableChange(formatDateLocal(timetableDate), period, 'content', e.target.value)}
+                                    onKeyDown={(e) => handleTimetableKeyDown(e, period, 'content', false)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '0.28rem 0.45rem',
+                                        border: '1px solid var(--color-border)',
+                                        borderRadius: '4px',
+                                        fontSize: '0.88rem',
+                                        lineHeight: 1.45,
+                                        outline: 'none',
+                                        transition: 'border-color 0.2s',
+                                        background: '#ffffff',
+                                        boxSizing: 'border-box',
+                                        fontFamily: 'inherit',
+                                        color: '#334155',
+                                        textAlign: 'center'
                                     }}
+                                    onFocus={(e) => e.target.style.borderColor = '#16a34a'}
+                                    onBlur={(e) => e.target.style.borderColor = 'var(--color-border)'}
                                 />
                             </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* Horizontal Today's Timetable for Unmaximized Default Mode */}
+            <div className="horizontal-bottom-timetable">
+                <div className="horizontal-timetable-card">
+                    <div className="horizontal-timetable-header">
+                        <span className="timetable-title-badge">🌿 오늘의 시간표</span>
+                        <div className="timetable-header-nav">
+                            <button onClick={handlePrevTimetableDay} title="어제 시간표">◀</button>
+                            <span onClick={handleTodayTimetableDay} title="클릭하여 오늘 날짜로 이동" style={{ cursor: 'pointer' }}>
+                                {timetableDate.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' })}
+                            </span>
+                            <button onClick={handleNextTimetableDay} title="내일 시간표">▶</button>
                         </div>
+                    </div>
+                    <div className="horizontal-timetable-grid">
+                        {[1, 2, 3, 4, 5, 6].map(period => (
+                            <div key={period} className="horizontal-period-box">
+                                <div className="horizontal-period-top">
+                                    <span className="period-badge">{period}교시</span>
+                                    <input
+                                        id={`horiz-tt-subject-${period}`}
+                                        type="text"
+                                        placeholder="과목명"
+                                        value={getPeriodSubject(formatDateLocal(timetableDate), period)}
+                                        onChange={(e) => handleTimetableChange(formatDateLocal(timetableDate), period, 'subject', e.target.value)}
+                                        onKeyDown={(e) => handleTimetableKeyDown(e, period, 'subject', true)}
+                                        className="period-subject-input"
+                                    />
+                                </div>
+                                <input
+                                    id={`horiz-tt-content-${period}`}
+                                    type="text"
+                                    placeholder="수업내용메모"
+                                    value={getPeriodContent(formatDateLocal(timetableDate), period)}
+                                    onChange={(e) => handleTimetableChange(formatDateLocal(timetableDate), period, 'content', e.target.value)}
+                                    onKeyDown={(e) => handleTimetableKeyDown(e, period, 'content', true)}
+                                    className="period-content-input"
+                                />
+                            </div>
+                        ))}
                     </div>
                 </div>
             </div>
 
             {/* Weekly Notes Section */}
-            <div className="weekly-notes mt-lg">
-                <Card>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="mb-sm">
-                        <h3 style={{ margin: 0 }}>📝 이번 주 메모 / 목표</h3>
-                        <Button variant="secondary" onClick={() => { setShowNotesCollection(true); setNotesSearchQuery(''); }}>
-                            📋 모아보기
-                        </Button>
+            <div className="weekly-notes-section mt-md">
+                {/* Unmaximized mode toggleable bar */}
+                <div className="weekly-notes-unmaximized-toggle">
+                    <div 
+                        className="weekly-notes-toggle-bar"
+                        onClick={() => setShowWeeklyNotes(!showWeeklyNotes)}
+                    >
+                        <span className="toggle-label">🌱 이번 주 메모 / 목표</span>
+                        <span className="toggle-btn-text">
+                            {showWeeklyNotes ? '접기 ▲' : '펼쳐보기 ▼'}
+                        </span>
                     </div>
-                    <textarea
-                        className="notes-textarea"
-                        placeholder="이번 주에 기억해야 할 내용이나 목표를 자유롭게 작성하세요..."
-                        value={weeklyNotes[weekKey] || ''}
-                        onChange={(e) => handleNoteChange(e.target.value)}
-                    />
-                </Card>
+
+                    {showWeeklyNotes && (
+                        <div className="weekly-notes-expanded-content mt-xs">
+                            <Card style={{ padding: '0.75rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.4rem' }}>
+                                    <Button variant="secondary" onClick={() => { setShowNotesCollection(true); setNotesSearchQuery(''); }}>
+                                        📋 모아보기
+                                    </Button>
+                                </div>
+                                <textarea
+                                    className="notes-textarea"
+                                    placeholder="이번 주에 기억해야 할 내용이나 목표를 자유롭게 작성하세요..."
+                                    value={weeklyNotes[weekKey] || ''}
+                                    onChange={(e) => handleNoteChange(e.target.value)}
+                                    style={{ width: '100%', minHeight: '80px', boxSizing: 'border-box' }}
+                                />
+                            </Card>
+                        </div>
+                    )}
+                </div>
+
+                {/* Maximized / Full Screen mode always visible card */}
+                <div className="weekly-notes-maximized-card">
+                    <Card style={{ padding: '0.85rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <h3 style={{ margin: 0, fontSize: '0.95rem', color: '#15803d', fontWeight: 800 }}>🌱 이번 주 메모 / 목표</h3>
+                            <Button variant="secondary" onClick={() => { setShowNotesCollection(true); setNotesSearchQuery(''); }}>
+                                📋 모아보기
+                            </Button>
+                        </div>
+                        <textarea
+                            className="notes-textarea"
+                            placeholder="이번 주에 기억해야 할 내용이나 목표를 자유롭게 작성하세요..."
+                            value={weeklyNotes[weekKey] || ''}
+                            onChange={(e) => handleNoteChange(e.target.value)}
+                            style={{ width: '100%', minHeight: '80px', boxSizing: 'border-box' }}
+                        />
+                    </Card>
+                </div>
             </div>
 
             {/* Notes Collection Modal */}
@@ -981,11 +1064,282 @@ ${extractText}`;
             )}
 
             <style>{`
-                .weekly-grid {
+                .dashboard-header-bar {
+                    margin-bottom: 1.4rem !important;
+                }
+
+                .current-week-range-text {
+                    font-size: 1.25rem;
+                    font-weight: 800;
+                    color: #0f172a;
+                    letter-spacing: -0.3px;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.4rem;
+                }
+
+                .green-calendar-btn {
+                    padding: 0.48rem 1rem;
+                    font-size: 0.88rem;
+                    font-weight: 700;
+                    color: #15803d;
+                    background: #ffffff;
+                    border: 1.5px solid #86efac;
+                    border-radius: 10px;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+                }
+
+                .green-calendar-btn:hover,
+                .green-calendar-btn.active {
+                    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+                    color: #ffffff;
+                    border-color: #15803d;
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 14px rgba(22, 163, 74, 0.25);
+                }
+
+                .green-btn-group {
+                    display: flex;
+                    gap: 0.3rem;
+                    background: rgba(240, 253, 244, 0.6);
+                    padding: 0.2rem;
+                    border-radius: 12px;
+                    border: 1px solid #bbf7d0;
+                }
+
+                .green-pill-btn {
+                    padding: 0.42rem 0.85rem;
+                    font-size: 0.85rem;
+                    font-weight: 700;
+                    color: #15803d;
+                    background: transparent;
+                    border: none;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    transition: all 0.18s ease;
+                }
+
+                .green-pill-btn:hover {
+                    background: #ffffff;
+                    color: #16a34a;
+                    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+                }
+
+                .green-pill-btn.active {
+                    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+                    color: #ffffff;
+                    box-shadow: 0 3px 10px rgba(22, 163, 74, 0.25);
+                }
+
+                .horizontal-bottom-timetable {
+                    margin-top: 0.75rem;
+                    display: none;
+                }
+
+                .horizontal-timetable-card {
+                    background: #ffffff;
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-md);
+                    padding: 0.75rem;
+                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+                }
+
+                .horizontal-timetable-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 0.6rem;
+                    padding-bottom: 0.4rem;
+                    border-bottom: 1px solid #f1f5f9;
+                }
+
+                .timetable-title-badge {
+                    font-weight: 800;
+                    font-size: 0.95rem;
+                    color: #15803d;
+                }
+
+                .timetable-header-nav {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    font-size: 0.85rem;
+                    font-weight: 700;
+                    color: #1e293b;
+                }
+
+                .timetable-header-nav button {
+                    border: 1px solid var(--color-border);
+                    background: #f8fafc;
+                    border-radius: 4px;
+                    padding: 0.15rem 0.45rem;
+                    cursor: pointer;
+                    font-weight: bold;
+                    color: #475569;
+                }
+
+                .horizontal-timetable-grid {
                     display: grid;
                     grid-template-columns: repeat(6, 1fr);
                     gap: 0.5rem;
-                    min-height: 500px;
+                }
+
+                .horizontal-period-box {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.35rem;
+                    background: #f8fafc;
+                    padding: 0.45rem;
+                    border-radius: 8px;
+                    border: 1px solid #e2e8f0;
+                }
+
+                .horizontal-period-top {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.35rem;
+                }
+
+                .period-badge {
+                    padding: 0.15rem 0.35rem;
+                    font-weight: 800;
+                    color: #15803d;
+                    font-size: 0.78rem;
+                    background: #f0fdf4;
+                    border: 1px solid #bbf7d0;
+                    border-radius: 4px;
+                    white-space: nowrap;
+                }
+
+                .period-subject-input {
+                    flex: 1;
+                    width: 0;
+                    min-width: 0;
+                    padding: 0.2rem 0.35rem;
+                    border: 1px solid var(--color-border);
+                    border-radius: 4px;
+                    font-size: 0.85rem;
+                    font-weight: 700;
+                    color: #0f172a;
+                    text-align: center;
+                    outline: none;
+                    background: #ffffff;
+                }
+
+                .period-content-input {
+                    width: 100%;
+                    padding: 0.28rem 0.4rem;
+                    border: 1px solid var(--color-border);
+                    border-radius: 4px;
+                    font-size: 0.85rem;
+                    line-height: 1.4;
+                    outline: none;
+                    background: #ffffff;
+                    color: #334155;
+                    box-sizing: border-box;
+                    text-align: center;
+                }
+
+                .weekly-notes-toggle-bar {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 0.45rem 0.85rem;
+                    background: #f8fafc;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 10px;
+                    cursor: pointer;
+                    user-select: none;
+                    transition: all 0.15s ease;
+                }
+
+                .weekly-notes-toggle-bar:hover {
+                    background: #f1f5f9;
+                    border-color: #cbd5e1;
+                }
+
+                .toggle-label {
+                    font-size: 0.88rem;
+                    font-weight: 700;
+                    color: #475569;
+                }
+
+                .toggle-btn-text {
+                    font-size: 0.8rem;
+                    font-weight: 700;
+                    color: #15803d;
+                }
+
+                /* 기본 창 모드 vs 전체 화면 반응형 전환 */
+                @media (max-width: 1450px) {
+                    .weekly-grid {
+                        grid-template-columns: repeat(5, 1fr) !important;
+                        min-height: 480px !important;
+                    }
+                    .desktop-sidebar-timetable {
+                        display: none !important;
+                    }
+                    .horizontal-bottom-timetable {
+                        display: block !important;
+                    }
+                    .weekly-notes-unmaximized-toggle {
+                        display: block !important;
+                    }
+                    .weekly-notes-maximized-card {
+                        display: none !important;
+                    }
+                }
+
+                @media (min-width: 1451px) {
+                    .weekly-grid {
+                        grid-template-columns: repeat(6, 1fr) !important;
+                        min-height: 520px !important;
+                    }
+                    .desktop-sidebar-timetable {
+                        display: flex !important;
+                    }
+                    .horizontal-bottom-timetable {
+                        display: none !important;
+                    }
+                    .weekly-notes-unmaximized-toggle {
+                        display: none !important;
+                    }
+                    .weekly-notes-maximized-card {
+                        display: block !important;
+                    }
+                }
+
+                /* 사이드바가 접혔을 때: 기본 창에서도 6컬럼 (월~금 + 우측 오늘의 시간표) 시원하게 확장 */
+                .sidebar-collapsed .weekly-grid {
+                    grid-template-columns: repeat(6, 1fr) !important;
+                    min-height: 520px !important;
+                }
+                .sidebar-collapsed .desktop-sidebar-timetable {
+                    display: flex !important;
+                }
+                .sidebar-collapsed .horizontal-bottom-timetable {
+                    display: none !important;
+                }
+                .sidebar-collapsed .weekly-notes-unmaximized-toggle {
+                    display: none !important;
+                }
+                .sidebar-collapsed .weekly-notes-maximized-card {
+                    display: block !important;
+                }
+
+                .weekly-grid-wrapper {
+                    width: 100%;
+                    overflow-x: auto;
+                    padding-bottom: 0.25rem;
+                }
+
+                .weekly-grid {
+                    display: grid;
+                    gap: 0.6rem;
+                    width: 100%;
+                    box-sizing: border-box;
                 }
                 
                 .day-column {
@@ -995,11 +1349,14 @@ ${extractText}`;
                     display: flex;
                     flex-direction: column;
                     overflow: hidden;
+                    min-width: 0;
                     position: relative; /* For popover positioning context if needed */
                 }
 
                 .day-column.weekend-column {
                     grid-column: span 1;
+                    display: flex;
+                    flex-direction: column;
                 }
 
                 .day-column.today {
@@ -1008,17 +1365,20 @@ ${extractText}`;
                 }
 
                 .day-header {
-                    padding: 0.75rem;
+                    padding: 0.5rem 0.65rem;
                     border-bottom: 1px solid var(--color-border);
                     font-weight: bold;
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
                     background: #f8fafc;
+                    font-size: 0.9rem;
                 }
 
                 .day-header.weekend-header {
-                    background: linear-gradient(135deg, #dbeafe 0%, #fecaca 100%);
+                    background: #f0fdf4;
+                    color: #166534;
+                    border-bottom: 1px solid #bbf7d0;
                 }
 
                 .day-column.today .day-header {
@@ -1077,19 +1437,115 @@ ${extractText}`;
                     flex: 1;
                 }
 
+                .green-date-range-badge {
+                    font-size: 0.92rem;
+                    font-weight: 800;
+                    color: #15803d;
+                    background: rgba(240, 253, 244, 0.95);
+                    border: 1px solid #bbf7d0;
+                    padding: 0.4rem 0.85rem;
+                    border-radius: 10px;
+                    letter-spacing: -0.2px;
+                    box-shadow: 0 2px 6px rgba(22, 163, 74, 0.08);
+                    display: inline-flex;
+                    align-items: center;
+                }
+
+                /* 상단 주차 수행평가 알림 필 뱃지 (연한 붉은색 로즈 카드 테마) */
+                .dashboard-perf-week-pill {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
+                    border: 1.5px solid #fca5a5;
+                    padding: 0.35rem 0.85rem;
+                    border-radius: 10px;
+                    color: #be123c;
+                    font-size: 0.84rem;
+                    font-weight: 800;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    box-shadow: 0 2px 8px rgba(225, 29, 72, 0.12);
+                    animation: perfPulseRed 3s infinite ease-in-out;
+                }
+
+                .dashboard-perf-week-pill:hover {
+                    background: linear-gradient(135deg, #ffe4e6 0%, #fecdd3 100%);
+                    border-color: #f87171;
+                    color: #9f1239;
+                    transform: translateY(-1.5px);
+                    box-shadow: 0 4px 12px rgba(225, 29, 72, 0.22);
+                }
+
+                .perf-pill-bell {
+                    font-size: 0.95rem;
+                    display: inline-block;
+                    animation: perfBellSwing 2s infinite ease-in-out;
+                }
+
+                .perf-pill-label {
+                    font-weight: 800;
+                    color: #be123c;
+                    white-space: nowrap;
+                }
+
+                .perf-pill-tags {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                    flex-wrap: wrap;
+                }
+
+                .perf-pill-tag {
+                    background: #ffffff;
+                    color: #be123c;
+                    border: 1px solid #fecdd3;
+                    padding: 1px 7px;
+                    border-radius: 6px;
+                    font-size: 0.78rem;
+                    font-weight: 700;
+                    box-shadow: 0 1px 2px rgba(225, 29, 72, 0.06);
+                }
+
+                .perf-pill-arrow {
+                    font-size: 0.8rem;
+                    color: #e11d48;
+                    margin-left: 2px;
+                    font-weight: 900;
+                }
+
+                @keyframes perfPulseRed {
+                    0%, 100% { box-shadow: 0 2px 8px rgba(225, 29, 72, 0.12); }
+                    50% { box-shadow: 0 0 14px rgba(244, 63, 94, 0.35); border-color: #fb7185; }
+                }
+
+                @keyframes perfBellSwing {
+                    0%, 100% { transform: rotate(0deg); }
+                    20% { transform: rotate(12deg); }
+                    40% { transform: rotate(-12deg); }
+                    60% { transform: rotate(8deg); }
+                    80% { transform: rotate(-8deg); }
+                }
+
                 .todo-list {
                     flex: 1;
-                    padding: 0.5rem;
-                    overflow-y: auto;
-                    overflow-x: visible; /* Allow popover to show */
+                    padding: 0.4rem;
+                    overflow-y: visible !important;
+                    overflow-x: visible !important;
+                    scrollbar-width: none !important;
+                }
+
+                .todo-list::-webkit-scrollbar {
+                    display: none !important;
+                    width: 0 !important;
                 }
 
                 .todo-item {
                     display: flex;
                     align-items: center;
-                    gap: 0.5rem;
-                    padding: 0.25rem 0.25rem 0.25rem 12px;
-                    font-size: 1rem;
+                    gap: 0.4rem;
+                    padding: 0.2rem 0.2rem 0.2rem 10px;
+                    font-size: 0.88rem;
                     position: relative;
                     cursor: grab;
                     transition: background-color 0.2s, transform 0.2s;
@@ -1304,7 +1760,7 @@ ${extractText}`;
                 }
 
                 .add-todo-form {
-                    padding: 0.5rem;
+                    padding: 0.6rem 0.7rem;
                     border-top: 1px solid var(--color-border);
                 }
 
@@ -1312,27 +1768,29 @@ ${extractText}`;
                     width: 100%;
                     border: none;
                     background: transparent;
-                    font-size: 1rem;
-                    line-height: 1.5;
+                    font-size: 0.92rem;
+                    line-height: 1.6;
                     outline: none;
+                    box-sizing: border-box;
                 }
 
                 .add-todo-form input::placeholder {
                     color: var(--color-text-muted);
-                    opacity: 0.7;
+                    opacity: 0.65;
                 }
 
                 .notes-textarea {
                     width: 100%;
-                    min-height: 150px;
-                    padding: 1rem;
+                    min-height: 80px;
+                    padding: 0.65rem 0.8rem;
                     border: 1px solid var(--color-border);
                     border-radius: var(--radius-sm);
                     resize: vertical;
                     font-family: inherit;
-                    font-size: 1rem;
+                    font-size: 0.92rem;
                     line-height: 1.5;
                     outline: none;
+                    box-sizing: border-box;
                 }
 
                 .notes-textarea:focus {

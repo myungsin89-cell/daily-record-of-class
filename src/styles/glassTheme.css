@@ -1,0 +1,486 @@
+/* ===== Glassmorphism (Teid Floating Theme) ===== */
+/* 일체형 아크릴 유리 사이드바 + 흰색 게시판 레이아웃 */
+
+/* ===== 기존 Sidebar.css / Layout.css 충돌 무효화 ===== */
+.glass-app-wrapper .layout {
+    display: flex;
+    flex-direction: column;
+}
+
+.glass-app-wrapper .main-content {
+    margin-left: 0 !important;
+}
+
+.glass-app-wrapper .sidebar.glass-sidebar {
+    position: relative !important;
+    width: 230px !important;
+    min-width: 230px !important;
+    max-width: 230px !important;
+    flex-shrink: 0 !important;
+    height: auto !important;
+    top: auto !important;
+    left: auto !important;
+    background: #f8fafc !important;
+    border-right: 1px solid #e2e8f0 !important;
+    transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.22s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.22s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.glass-app-wrapper .sidebar.glass-sidebar.collapsed {
+    width: 68px !important;
+    min-width: 68px !important;
+    max-width: 68px !important;
+    flex-shrink: 0 !important;
+}
+
+.sidebar.collapsed .logo {
+    padding: 0.75rem 0.4rem !important;
+    justify-content: center;
+}
+
+.sidebar.collapsed .nav-item {
+    justify-content: center !important;
+    padding: 0.65rem 0 !important;
+}
+
+.sidebar.collapsed .bottom-nav {
+    padding: 0.5rem 0.2rem !important;
+}
+
+.sidebar.collapsed .student-reg-item {
+    justify-content: center !important;
+}
+
+.collapse-sidebar-btn {
+    position: absolute !important;
+    top: 13px !important;
+    right: 12px !important;
+    background: transparent !important;
+    border: none !important;
+    color: #94a3b8 !important;
+    -webkit-text-fill-color: #94a3b8 !important;
+    font-size: 0.95rem !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    padding: 0.1rem 0.3rem !important;
+    border-radius: 6px !important;
+    box-shadow: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.15s ease !important;
+    z-index: 1000 !important;
+}
+
+.collapse-sidebar-btn:hover {
+    background: rgba(0, 0, 0, 0.04) !important;
+    color: #64748b !important;
+    -webkit-text-fill-color: #64748b !important;
+}
+
+.sidebar.collapsed .collapse-sidebar-btn {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    margin: 0.6rem auto 0.2rem auto !important;
+}
+
+.nav-item-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    color: #475569;
+    transition: color 0.18s ease;
+}
+
+.nav-item:hover .nav-item-icon,
+.nav-item.active .nav-item-icon {
+    color: #15803d;
+}
+
+.glass-app-wrapper .sidebar.glass-sidebar .bottom-nav {
+    background-color: transparent !important;
+}
+
+.glass-app-wrapper .sidebar.glass-sidebar .logo {
+    background: transparent !important;
+    -webkit-text-fill-color: unset !important;
+    background-clip: unset !important;
+    -webkit-background-clip: unset !important;
+    height: auto !important;
+}
+
+.glass-app-wrapper .sidebar.glass-sidebar .nav-item:hover,
+.glass-app-wrapper .sidebar.glass-sidebar .nav-item.active {
+    background-color: unset !important;
+}
+
+.glass-app-wrapper .main-header {
+    background: transparent !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    min-height: auto !important;
+    padding: 0.85rem 0 1rem 0 !important;
+}
+
+/* ===== 최상위 데스크톱 창 컨테이너 (Antigravity IDE 일체형 모서리) ===== */
+.app-root.is-desktop {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    background: transparent;
+}
+
+/* 상단 타이틀바 (드래그 영역) */
+.window-titlebar {
+    height: 38px;
+    background: #f8fafc;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 1rem;
+    user-select: none;
+    -webkit-app-region: drag;
+    border-bottom: 1px solid #e2e8f0;
+    z-index: 9999;
+    flex-shrink: 0;
+}
+
+.window-titlebar.login-mode {
+    background: #ffffff !important;
+    border-bottom: none !important;
+}
+
+.window-titlebar-left {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.window-titlebar-title {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #15803d;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.window-titlebar-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    -webkit-app-region: no-drag;
+}
+
+.titlebar-icon-btn {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #475569;
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.titlebar-icon-btn:hover {
+    background: #ffffff;
+    color: #15803d;
+    border-color: #86efac;
+    transform: scale(1.05);
+}
+
+.titlebar-icon-btn.logout:hover {
+    color: #dc2626;
+    border-color: #fca5a5;
+    background: #fef2f2;
+}
+
+.titlebar-quiet-class-name {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #64748b;
+    margin-left: 0.4rem;
+    letter-spacing: -0.2px;
+    user-select: none;
+    cursor: default;
+}
+
+/* Windows Controls (Min, Max, Close) */
+.windows-controls {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    height: 38px;
+    margin-right: -1rem;
+    -webkit-app-region: no-drag;
+}
+
+.window-control-btn.win-minimize,
+.window-control-btn.win-maximize,
+.window-control-btn.win-close {
+    width: 44px;
+    height: 38px;
+    border-radius: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #475569;
+    background: transparent;
+    transition: background 0.15s, color 0.15s;
+}
+
+.window-control-btn.win-minimize:hover,
+.window-control-btn.win-maximize:hover {
+    background: rgba(0, 0, 0, 0.06);
+    color: #0f172a;
+}
+
+.window-control-btn.win-close:hover {
+    background: #ef4444;
+    color: #ffffff;
+}
+
+/* ===== 앱 전체 레이아웃 (이중 여백 제거 & 창 외각에 직접 연결) ===== */
+.glass-app-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    overflow: hidden;
+    background: #f8fafc;
+}
+
+.is-desktop.glass-app-wrapper {
+    background: transparent !important;
+}
+
+/* 레이아웃 컨테이너: 꽉 채움 (여백 없음) */
+.glass-layout-container {
+    display: flex;
+    flex: 1;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden;
+}
+
+/* 통합 패널: 외각 테두리와 100% 일체화 */
+.glass-unified-panel {
+    display: flex;
+    flex: 1;
+    border-radius: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    overflow: hidden;
+}
+
+/* ===== 좌측 사이드바: 상단 창과 100% 일체화된 #f8fafc 배경 ===== */
+.sidebar.glass-sidebar {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    height: 100% !important;
+    width: 230px !important;
+    min-width: 230px !important;
+    background: #f8fafc !important;
+    border-right: 1px solid #e2e8f0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    flex-shrink: 0 !important;
+    z-index: 10 !important;
+}
+
+/* 중복 "학급 일지" 로고 숨김 (상단 타이틀바에 이미 표시됨) */
+.glass-sidebar .logo {
+    display: none !important;
+}
+
+.glass-sidebar .nav-links {
+    padding: 1rem 0 0.5rem 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* 메뉴 글자: 뚜렷하고 또렷한 짙은 슬레이트 컬러 */
+.glass-sidebar .nav-item {
+    margin: 0.2rem 0.75rem !important;
+    padding: 0.65rem 0.9rem !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    font-size: 0.92rem !important;
+    letter-spacing: -0.2px !important;
+    color: #1e293b !important;
+    transition: background 0.18s ease, color 0.18s ease !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.55rem !important;
+    text-decoration: none !important;
+    border: 1px solid transparent !important;
+    background: transparent !important;
+    box-sizing: border-box !important;
+}
+
+.glass-sidebar .drag-handle {
+    width: 12px !important;
+    min-width: 12px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    font-size: 0.75rem !important;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.glass-sidebar .nav-item:hover .drag-handle {
+    opacity: 0.4;
+}
+
+.glass-sidebar .nav-item-icon {
+    width: 22px !important;
+    min-width: 22px !important;
+    height: 22px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.glass-sidebar .nav-item-label {
+    flex: 1 !important;
+    text-align: left !important;
+    line-height: 1.2 !important;
+    font-weight: 600 !important;
+}
+
+.glass-sidebar .nav-item:hover {
+    background: rgba(22, 163, 74, 0.08) !important;
+    color: #15803d !important;
+}
+
+/* 선택된 메뉴: 순백색 알약 버튼 하이라이트 (다이어리 위치와 100% 동일하게 폰트 굵기/여백 통일) */
+.glass-sidebar .nav-item.active {
+    background: #ffffff !important;
+    color: #15803d !important;
+    font-weight: 600 !important;
+    border-radius: 10px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+    border: 1px solid rgba(226, 232, 240, 0.9) !important;
+}
+
+.glass-sidebar .bottom-nav {
+    border-top: 1px solid rgba(226, 232, 240, 0.8);
+    padding-top: 0.5rem;
+}
+
+.glass-sidebar .student-reg-item {
+    color: #15803d !important;
+    font-weight: 700 !important;
+    background: transparent !important;
+}
+
+.glass-sidebar .student-reg-item:hover {
+    background: rgba(22, 163, 74, 0.08) !important;
+}
+
+.glass-sidebar .student-reg-item.active {
+    background: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+}
+
+.glass-sidebar .creator-signature {
+    padding: 0.75rem 1.25rem 1rem 1.25rem;
+    font-size: 0.72rem;
+    color: #64748b;
+    text-align: center;
+}
+
+/* ===== 우측 메인 게시판: 순백색 (#ffffff) 꽉 찬 보드 영역 ===== */
+.glass-main-content {
+    flex: 1 !important;
+    min-width: 0 !important;
+    background: #ffffff !important;
+    padding: 1rem 1.25rem !important;
+    box-sizing: border-box !important;
+    overflow-y: auto !important;
+    scrollbar-gutter: stable !important;
+    height: calc(100vh - 38px) !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.glass-main-content .class-info h2 {
+    color: #0f172a;
+    font-size: 1.35rem;
+    font-weight: 800;
+}
+
+.glass-main-content .page-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+/* ===== 모바일 반응형 ===== */
+@media (max-width: 768px) {
+    .glass-unified-panel {
+        flex-direction: column;
+    }
+
+    .sidebar.glass-sidebar {
+        width: 100% !important;
+        min-width: 100% !important;
+        border-right: none !important;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+    }
+
+    .glass-main-content {
+        height: auto !important;
+    }
+}
+
+/* ===== 인쇄 (@media print) 시 데스크톱 래퍼 리셋 ===== */
+@media print {
+    .app-root.is-desktop,
+    .glass-app-wrapper,
+    .glass-layout-container,
+    .glass-unified-panel,
+    .glass-main-content,
+    .page-content {
+        height: auto !important;
+        min-height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+        position: static !important;
+        background: #ffffff !important;
+        border: none !important;
+        box-shadow: none !important;
+        display: block !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .window-titlebar,
+    .sidebar.glass-sidebar,
+    .collapse-sidebar-btn {
+        display: none !important;
+    }
+}

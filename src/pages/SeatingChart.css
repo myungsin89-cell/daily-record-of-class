@@ -35,21 +35,39 @@ body.student-mode-active .layout {
 }
 
 /* Header & Navigation */
-.seating-chart-container .seating-header {
+.seating-chart-container .seating-top-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     margin-bottom: 2rem;
-    padding: 0 0.5rem;
+    border: 1px solid #e2e8f0;
 }
 
-.seating-chart-container .seating-header h1 {
-    font-size: 1.8rem;
-    color: #0f172a;
+.seating-chart-container .seating-top-header .header-title {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 1rem;
+}
+
+.seating-chart-container .seating-top-header h1 {
+    font-size: 1.8rem;
+    color: #15803d;
+    margin: 0;
     font-weight: 800;
+}
+
+.seating-chart-container .grid-size-badge {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #15803d;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.9rem;
 }
 
 .seating-chart-container .stealth-back-btn {
@@ -93,23 +111,105 @@ body.student-mode-active .layout {
 
 .seating-chart-container .mode-btn.active {
     background: white;
-    color: #2563eb;
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    color: #15803d;
+    box-shadow: 0 4px 10px rgba(21, 128, 61, 0.15);
+}
+
+.seating-chart-container .base-btn.text-card-btn.save-btn-dirty,
+.seating-chart-container .text-card-btn.save-btn-dirty,
+.seating-chart-container .save-btn-dirty,
+.save-btn-dirty {
+    background-color: #ea580c !important;
+    background: #ea580c !important;
+    color: #ffffff !important;
+    border: 1.5px solid #c2410c !important;
+    font-weight: 800 !important;
+    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.4) !important;
+}
+
+.seating-chart-container .base-btn.text-card-btn.save-btn-dirty:hover,
+.seating-chart-container .text-card-btn.save-btn-dirty:hover,
+.seating-chart-container .save-btn-dirty:hover,
+.save-btn-dirty:hover {
+    background-color: #c2410c !important;
+    background: #c2410c !important;
+    color: #ffffff !important;
+}
+
+/* 기본창 전용 전체 화면 안내 배너 (깔끔한 단일 행 뱃지) */
+.small-window-fullscreen-notice {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 10px;
+    padding: 0.6rem 1rem;
+    margin-top: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    box-shadow: 0 2px 6px rgba(22, 163, 74, 0.08);
+}
+
+.small-window-fullscreen-notice .notice-left-content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    overflow: hidden;
+}
+
+.small-window-fullscreen-notice .notice-badge-icon {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.small-window-fullscreen-notice .notice-text-single {
+    font-size: 0.88rem;
+    color: #334155;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.small-window-fullscreen-notice .notice-text-single strong {
+    color: #15803d;
+}
+
+.fullscreen-recommend-btn {
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    color: #ffffff;
+    border: none;
+    padding: 0.45rem 0.95rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(22, 163, 74, 0.2);
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.fullscreen-recommend-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(22, 163, 74, 0.3);
 }
 
 /* Control Bar (Setup Bar) */
+/* Control Bar (Setup Bar) - Green Theme */
 .seating-chart-container .setup-bar {
     display: flex;
     align-items: center;
     flex-wrap: nowrap;
-    background: white;
+    background: #ffffff;
     padding: 0.65rem 1.25rem;
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    margin: 0 auto 2.5rem;
+    border-radius: 14px;
+    border: 1px solid #bbf7d0;
+    box-shadow: 0 4px 16px rgba(22, 163, 74, 0.08);
+    margin: 0 auto 1.25rem;
     width: fit-content;
-    gap: 1.25rem;
+    gap: 0.85rem;
+    justify-content: center;
+    box-sizing: border-box;
 }
 
 .seating-chart-container .setup-group {
@@ -131,9 +231,9 @@ body.student-mode-active .layout {
 }
 
 .seating-chart-container .setup-label {
-    font-size: 0.78rem;
-    font-weight: 700;
-    color: #64748b;
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #15803d;
     margin: 0;
     line-height: normal;
     white-space: nowrap;
@@ -142,11 +242,11 @@ body.student-mode-active .layout {
 .seating-chart-container .input-row {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
-    background: #f8fafc;
-    padding: 0.25rem 0.6rem;
-    border-radius: 6px;
-    border: 1px solid #cbd5e1;
+    gap: 0.3rem;
+    background: #f0fdf4;
+    padding: 0.35rem 0.75rem;
+    border-radius: 10px;
+    border: 1px solid #bbf7d0;
 }
 
 .seating-chart-container .input-row input {
@@ -154,22 +254,38 @@ body.student-mode-active .layout {
     border: none;
     background: transparent;
     text-align: center;
-    font-weight: 700;
-    font-size: 0.9rem;
-    color: #0f172a;
+    font-weight: 800;
+    font-size: 0.95rem;
+    color: #15803d;
     padding: 0;
     line-height: normal;
 }
 
 .seating-chart-container .config-section select {
-    background: #f8fafc;
-    border: 1px solid #cbd5e1;
-    padding: 0.25rem 0.5rem;
-    border-radius: 6px;
-    font-weight: 700;
-    font-size: 0.85rem;
-    color: #0f172a;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    padding: 0.35rem 0.75rem;
+    border-radius: 10px;
+    font-weight: 800;
+    font-size: 0.88rem;
+    color: #15803d;
     line-height: normal;
+    cursor: pointer;
+}
+
+.seating-chart-container .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: #15803d;
+    cursor: pointer;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    padding: 0.35rem 0.75rem;
+    border-radius: 10px;
+    white-space: nowrap;
 }
 
 /* Status Section */
@@ -263,7 +379,7 @@ body.student-mode-active .layout {
 .seating-chart-container input:checked + .g-slider { background-color: #16a34a; }
 .seating-chart-container input:checked + .g-slider:before { transform: translateX(14px); }
 
-/* Buttons */
+/* Buttons - Green Theme Overhaul */
 .seating-chart-container .btn-group {
     display: flex;
     gap: 0.5rem;
@@ -277,11 +393,11 @@ body.student-mode-active .layout {
 }
 
 .seating-chart-container .base-btn {
-    padding: 0.5rem 0.9rem;
-    border-radius: 8px;
-    font-weight: 700;
-    font-size: 0.82rem;
-    transition: all 0.2s;
+    padding: 0.6rem 1.05rem;
+    border-radius: 10px;
+    font-weight: 800;
+    font-size: 0.88rem;
+    transition: all 0.2s ease;
     cursor: pointer;
     border: 1px solid transparent;
     line-height: normal;
@@ -289,20 +405,51 @@ body.student-mode-active .layout {
     flex-shrink: 0;
 }
 
-.seating-chart-container .base-btn.reset { 
-    background: #f8fafc;
-    color: #475569;
-    border-color: #e2e8f0;
-}
-
 .seating-chart-container .base-btn.randomize {
-    background: #2563eb;
-    color: white;
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
+    color: #ffffff !important;
+    font-weight: 800 !important;
+    border: none !important;
+    box-shadow: 0 4px 14px rgba(22, 163, 74, 0.25) !important;
 }
 
-.seating-chart-container .base-btn.save {
-    background: #16a34a;
-    color: white;
+.seating-chart-container .base-btn.randomize:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(22, 163, 74, 0.35) !important;
+}
+
+.seating-chart-container .base-btn.reset {
+    background: #fff1f2 !important;
+    border: 1px solid #fecdd3 !important;
+    color: #e11d48 !important;
+    font-weight: 800 !important;
+}
+
+.seating-chart-container .base-btn.reset:hover {
+    background: #ffe4e6 !important;
+    border-color: #fda4af !important;
+    transform: translateY(-1px);
+}
+
+.seating-chart-container .base-btn.text-card-btn {
+    background: #f0fdf4 !important;
+    border: 1px solid #bbf7d0 !important;
+    color: #15803d !important;
+    font-weight: 800 !important;
+}
+
+.seating-chart-container .base-btn.text-card-btn:hover {
+    background: #dcfce7 !important;
+    border-color: #86efac !important;
+    color: #166534 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.12) !important;
+}
+
+.seating-chart-container .base-btn.randomize:hover,
+.seating-chart-container .base-btn.save:hover {
+    box-shadow: 0 6px 12px rgba(22, 163, 74, 0.3);
+    filter: brightness(1.05);
 }
 
 .seating-chart-container .base-btn.load {
@@ -341,9 +488,12 @@ body.student-mode-active .layout {
 /* Workspace Layout */
 .seating-chart-container .seating-main-workspace {
     display: flex;
-    gap: 1.5rem;
-    align-items: start;
+    gap: 1.75rem;
+    align-items: flex-start;
+    justify-content: flex-start;
     width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .seating-chart-container .seating-main-workspace.student-view {
@@ -370,13 +520,13 @@ body.student-mode-active .layout {
     width: 60%;
     min-width: 250px;
     height: 40px;
-    background: #064e3b;
-    border: 4px solid #78350f;
-    border-radius: 4px;
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    border: 3px solid #14532d;
+    border-radius: 8px;
     margin-top: 0.5rem;
     margin-bottom: 2rem;
     position: relative;
-    box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -487,27 +637,39 @@ body.student-mode-active .layout {
 .seating-chart-container .student-card {
     width: 140px;
     height: 70px;
-    background: white;
-    border-radius: 6px;
+    background: #ffffff;
+    border-radius: 12px;
     display: flex;
     flex-direction: row;
     justify-content: center;
     padding: 0 0.5rem;
     align-items: center;
-    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     border: 1px solid #e2e8f0;
     cursor: grab;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     user-select: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: element;
     gap: 0.5rem;
+}
+
+.seating-chart-container .student-card span {
+    pointer-events: none !important;
+}
+
+.seating-chart-container .student-card.selected-pool-student {
+    border: 2.5px solid #16a34a !important;
+    box-shadow: 0 0 14px rgba(22, 163, 74, 0.45) !important;
+    transform: scale(1.04) !important;
 }
 
 .seating-chart-container .student-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3), 0 2px 8px rgba(0, 0, 0, 0.1);
-    border-color: #3b82f6;
-    background: #f0f7ff;
+    box-shadow: 0 0 0 2px #16a34a, 0 4px 12px rgba(22, 163, 74, 0.15);
+    border-color: transparent;
+    background: #f0fdf4;
 }
 
 .seating-chart-container .student-card.card-male {
@@ -596,33 +758,67 @@ body.student-mode-active .layout {
 
 /* Pool Panel */
 .seating-chart-container .student-pool-panel {
-    background: #f8fafc;
-    padding: 1rem;
-    border-radius: 24px;
+    background: #ffffff;
+    padding: 1.25rem 1.1rem;
+    border-radius: 16px;
     height: calc(100vh - 200px);
     display: flex;
     flex-direction: column;
     position: sticky;
     top: 1rem;
-    border: 1px solid #e2e8f0;
-    width: 480px;
+    border: 1px solid #bbf7d0;
+    width: 495px;
+    box-sizing: border-box;
     flex-shrink: 0;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 16px rgba(22, 163, 74, 0.08);
 }
 
 .seating-chart-container .pool-header {
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1.5px solid #e2e8f0;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    width: 100%;
+    margin-bottom: 0.85rem;
+    padding: 0 0.2rem;
+    box-sizing: border-box;
+    flex-shrink: 0;
 }
 
 .seating-chart-container .pool-header h3 {
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     color: #0f172a;
     font-weight: 800;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.seating-chart-container .pool-header .pool-auto-btn {
+    padding: 0.35rem 0.75rem !important;
+    font-size: 0.8rem !important;
+    font-weight: 800 !important;
+    border-radius: 8px !important;
+    line-height: 1.2 !important;
+    white-space: nowrap !important;
+    margin: 0 !important;
+    box-shadow: 0 2px 6px rgba(22, 163, 74, 0.2) !important;
+    flex-shrink: 0 !important;
+}
+
+.classroom-bottom-status-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.75rem;
+}
+
+.faded-seat-click-hint {
+    margin: 0;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #94a3b8;
+    text-align: center;
+    opacity: 0.85;
 }
 
 /* Flip Toggle Button */
@@ -654,138 +850,276 @@ body.student-mode-active .layout {
 
 .seating-chart-container .pool-list {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.4rem;
+    grid-template-columns: repeat(3, 140px);
+    gap: 0.75rem;
+    justify-content: center;
     overflow-y: auto;
-    padding-right: 0.75rem;
+    width: 100%;
+    box-sizing: border-box;
+    padding-right: 0.25rem;
+    flex: 1;
+}
+
+.seating-chart-container .student-pool-panel .pool-list .student-card {
+    width: 140px !important;
+    height: 70px !important;
+    min-width: 140px !important;
+    max-width: 140px !important;
+    padding: 0.4rem !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 0.2rem !important;
+    border-radius: 6px !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05) !important;
+    cursor: grab !important;
+}
+
+.seating-chart-container .student-pool-panel .pool-list .student-card:active {
+    cursor: grabbing !important;
+}
+
+.seating-chart-container .student-pool-panel .pool-list .student-card .student-no {
+    font-size: 0.72rem !important;
+    padding: 1px 6px !important;
+    border-radius: 10px !important;
+    text-align: center !important;
+}
+
+.seating-chart-container .student-pool-panel .pool-list .student-card .student-name {
+    font-size: 0.95rem !important;
+    font-weight: 800 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    text-align: center !important;
+}
+
+@media (max-width: 1449px) {
+    .seating-chart-container .seating-main-workspace {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        align-items: flex-start;
+        gap: 1.5rem;
+    }
+
+    .seating-chart-container .student-pool-panel {
+        width: 495px;
+        max-height: calc(100vh - 160px);
+        height: auto;
+        min-height: 380px;
+        position: sticky;
+        top: 1rem;
+        flex-direction: column;
+        align-items: stretch;
+        padding: 1.25rem 1.1rem;
+        box-sizing: border-box;
+    }
+    
+    .seating-chart-container .pool-header {
+        margin-bottom: 0.85rem;
+        padding: 0;
+        border: none;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+    }
+
+    .seating-chart-container .pool-list {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        overflow-y: auto;
+        max-height: calc(100vh - 240px);
+        width: 100%;
+        padding-right: 0.25rem;
+        gap: 0.5rem;
+    }
+    
+    .seating-chart-container .pool-list .student-card {
+        flex-shrink: 0;
+        width: 100%;
+        height: auto;
+        min-height: 48px;
+    }
+}
+
+/* Teacher Bottom Settings Grid (1행 2열 Layout - 넓은 배치 제약 조건 & 콤팩트 기록) */
+.seating-chart-container .teacher-bottom-settings-grid {
+    display: grid;
+    grid-template-columns: 1.8fr 1fr;
+    gap: 1.5rem;
+    margin-top: 2.5rem;
+    width: 100%;
+    align-items: stretch;
+}
+
+.seating-chart-container .constraints-panel,
+.seating-chart-container .seating-history-panel {
+    margin-top: 0 !important;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
 }
 
 /* Constraints Panel */
 .seating-chart-container .constraints-panel {
-    margin-top: 4rem;
-    padding-top: 3rem;
-    border-top: 1px solid #e2e8f0;
+    padding: 1.5rem;
+    background: #ffffff;
+    border: 1px solid #bbf7d0;
+    border-radius: 14px;
+    box-shadow: 0 4px 16px rgba(22, 163, 74, 0.08);
+    text-align: center;
+    justify-content: flex-start;
+    align-items: center;
 }
 
 .seating-chart-container .constraints-header {
-    margin-bottom: 2.5rem;
+    margin-bottom: 2rem;
+    text-align: center;
+    justify-content: center;
+    align-items: center;
 }
 
 .seating-chart-container .constraints-header h2 {
     font-size: 1.5rem;
-    color: #0f172a;
-    margin-bottom: 0.5rem;
+    font-weight: 800;
+    color: #15803d;
+    margin: 0 auto 0.5rem auto;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    justify-content: center;
+    text-align: center;
+    gap: 0.5rem;
 }
 
 .seating-chart-container .constraints-header p {
     color: #64748b;
     font-size: 0.95rem;
+    text-align: center;
+    margin: 0 auto;
 }
 
 .seating-chart-container .constraints-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
+    gap: 1.25rem;
+    justify-content: center;
+    align-items: stretch;
 }
 
 .seating-chart-container .constraint-card {
     background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 20px;
-    padding: 1.5rem;
+    border: 1px solid #bbf7d0;
+    border-radius: 14px;
+    padding: 1rem 1.25rem;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    transition: transform 0.2s;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: center;
+    box-shadow: 0 4px 16px rgba(22, 163, 74, 0.08);
+    transition: transform 0.2s, box-shadow 0.2s;
+    margin: 0 auto;
+    width: 100%;
+    height: 200px;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+}
+
+.seating-chart-container .constraint-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(22, 163, 74, 0.12);
 }
 
 .seating-chart-container .card-title {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid #f1f5f9;
+    text-align: center;
+    gap: 0.5rem;
+    margin: 0 0 0.85rem 0;
+    padding-bottom: 0.65rem;
+    border-bottom: 1.5px solid #f0fdf4;
+    width: 100%;
+    position: sticky;
+    top: 0;
+    background: #ffffff;
+    z-index: 5;
+    flex-shrink: 0;
+}
+
+.seating-chart-container .card-title .icon {
+    font-size: 1.2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .seating-chart-container .card-title h3 {
     margin: 0;
     font-size: 1.1rem;
     font-weight: 800;
-    color: #0f172a;
+    color: #15803d;
+    text-align: center;
 }
 
 .seating-chart-container .mini-add-btn {
-    background: #f1f5f9;
-    color: #475569;
-    border: none;
-    padding: 0.4rem 0.8rem;
+    background: #f0fdf4;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+    padding: 0.35rem 0.75rem;
     border-radius: 8px;
     font-size: 0.8rem;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.2s;
+    margin-left: 0.5rem;
 }
 
 .seating-chart-container .mini-add-btn:hover {
-    background: #e2e8f0;
-    color: #1e293b;
+    background: #dcfce7;
+    border-color: #86efac;
+    transform: translateY(-1px);
 }
 
-/* Front Preference Buttons */
-.seating-chart-container .preference-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
-
-.seating-chart-container .preference-btn {
-    padding: 0.4rem 0.8rem;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: #64748b;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.seating-chart-container .preference-btn:hover {
-    border-color: #3b82f6;
-    color: #3b82f6;
-    background: #eff6ff;
-}
-
-.seating-chart-container .preference-btn.active {
-    background: #2563eb;
-    border-color: #2563eb;
-    color: white;
-    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
-}
-
-/* Active List Items (Avoidance/Pairing) */
+/* Active List Items (Avoidance/Pairing/Preference) */
 .seating-chart-container .constraint-active-list {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    max-height: 200px;
+    max-height: 125px;
     overflow-y: auto;
     padding-right: 0.25rem;
+    width: 100%;
+    align-items: center;
+    justify-content: flex-start;
+    margin: 0 auto;
 }
 
 .seating-chart-container .active-item {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
-    padding: 0.6rem 0.8rem;
+    text-align: center;
+    padding: 0.5rem 0.85rem;
     border-radius: 12px;
     font-size: 0.85rem;
     font-weight: 700;
+    width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+
+.seating-chart-container .active-item.preference-chip {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
 }
 
 .seating-chart-container .active-item.avoidance {
@@ -796,8 +1130,17 @@ body.student-mode-active .layout {
 
 .seating-chart-container .active-item.pairing {
     background: #f0fdf4;
-    color: #16a34a;
+    color: #15803d;
     border: 1px solid #bbf7d0;
+}
+
+.seating-chart-container .active-item .pair-names {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    margin: 0 auto;
+    flex: 1;
 }
 
 .seating-chart-container .active-item .del-btn {
@@ -805,11 +1148,14 @@ body.student-mode-active .layout {
     border: none;
     font-size: 1.1rem;
     color: currentColor;
-    opacity: 0.5;
+    opacity: 0.6;
     cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    padding: 0;
+    justify-content: center;
+    padding: 0 0.25rem;
+    margin-left: 0.5rem;
+    transition: opacity 0.2s;
 }
 
 .seating-chart-container .active-item .del-btn:hover {
@@ -820,8 +1166,10 @@ body.student-mode-active .layout {
     font-size: 0.85rem;
     color: #94a3b8;
     text-align: center;
-    margin: 1rem 0;
+    justify-content: center;
+    margin: 1rem auto;
     font-style: italic;
+    width: 100%;
 }
 
 /* Modals */
@@ -1135,6 +1483,80 @@ body.student-mode-active .layout {
     z-index: 10001;
 }
 
+/* 자리배치 기록 저장 & 불러오기 모달 전용 스타일 */
+.seating-chart-container .seating-dialog-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10001;
+    padding: 16px;
+    box-sizing: border-box;
+}
+
+.seating-chart-container .seating-dialog-card {
+    background: #ffffff !important;
+    border-radius: 18px;
+    box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.seating-chart-container .seating-dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 24px;
+    border-bottom: 1px solid #f1f5f9;
+    background: #ffffff;
+}
+
+.seating-chart-container .seating-dialog-header h3 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.seating-chart-container .seating-dialog-close-btn {
+    background: transparent;
+    border: none;
+    font-size: 16px;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    line-height: 1;
+    transition: all 0.15s ease;
+}
+
+.seating-chart-container .seating-dialog-close-btn:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
+.seating-chart-container .seating-dialog-body {
+    padding: 24px;
+    background: #ffffff;
+}
+
+.seating-chart-container .seating-dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 24px;
+    border-top: 1px solid #f1f5f9;
+    background: #f8fafc;
+}
+
 .seating-chart-container .music-help-modal {
     background: white;
     width: 450px;
@@ -1393,107 +1815,142 @@ body.student-mode-active .layout {
 
 /* --- Seating History Panel --- */
 .seating-chart-container .seating-history-panel {
-    margin-top: 3rem;
-    padding-top: 2.5rem;
-    border-top: 1px solid #e2e8f0;
+    padding: 1.5rem;
+    background: #ffffff;
+    border: 1px solid #bbf7d0;
+    border-radius: 14px;
+    box-shadow: 0 4px 16px rgba(22, 163, 74, 0.08);
+    text-align: center;
+    justify-content: flex-start;
+    align-items: center;
+    box-sizing: border-box;
 }
 
 .seating-chart-container .history-header {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
+    text-align: center;
+    justify-content: center;
+    align-items: center;
 }
 
 .seating-chart-container .history-header h2 {
     font-size: 1.4rem;
-    color: #0f172a;
+    color: #15803d;
     font-weight: 800;
-    margin-bottom: 0.4rem;
+    margin: 0 auto 0.4rem auto;
     display: flex;
     align-items: center;
+    justify-content: center;
+    text-align: center;
     gap: 0.5rem;
 }
 
 .seating-chart-container .history-header p {
-    font-size: 0.9rem;
+    font-size: 0.925rem;
     color: #64748b;
+    text-align: center;
+    margin: 0 auto;
 }
 
 .seating-chart-container .history-empty {
     font-size: 0.9rem;
-    color: #94a3b8;
+    color: #15803d;
     font-style: italic;
     text-align: center;
+    justify-content: center;
     padding: 2rem;
-    background: #f8fafc;
+    background: #f0fdf4;
     border-radius: 12px;
-    border: 1px dashed #e2e8f0;
+    border: 1px dashed #bbf7d0;
+    margin: auto;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .seating-chart-container .history-list {
     display: flex;
     flex-direction: column;
-    gap: 0.6rem;
+    gap: 0.75rem;
+    align-items: center;
+    justify-content: flex-start;
+    margin: 0 auto;
+    width: 100%;
+    max-width: 900px;
+    max-height: 200px;
+    overflow-y: auto;
+    padding-right: 0.25rem;
 }
 
 .seating-chart-container .history-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    text-align: center;
     padding: 0.9rem 1.25rem;
-    background: white;
-    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    border: 1px solid #bbf7d0;
     border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    box-shadow: 0 2px 8px rgba(22, 163, 74, 0.04);
     transition: all 0.2s;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .seating-chart-container .history-item:hover {
-    border-color: #cbd5e1;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.06);
+    border-color: #86efac;
+    box-shadow: 0 4px 16px rgba(22, 163, 74, 0.12);
 }
 
 .seating-chart-container .history-info {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 1rem;
     flex-wrap: wrap;
+    text-align: center;
 }
 
 .seating-chart-container .history-name {
     font-weight: 800;
-    color: #1e293b;
+    color: #15803d;
     font-size: 0.95rem;
+    text-align: center;
 }
 
 .seating-chart-container .history-date {
     font-size: 0.8rem;
-    color: #94a3b8;
+    color: #64748b;
     font-weight: 500;
+    text-align: center;
 }
 
 .seating-chart-container .history-pairs-count {
     font-size: 0.8rem;
+    background: #f0fdf4;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+    border-radius: 6px;
+    padding: 0.2rem 0.55rem;
     font-weight: 700;
-    color: #2563eb;
-    background: #eff6ff;
-    padding: 0.2rem 0.6rem;
-    border-radius: 20px;
-    border: 1px solid #dbeafe;
+    text-align: center;
 }
 
 .seating-chart-container .history-actions {
     display: flex;
     gap: 0.5rem;
     align-items: center;
+    justify-content: center;
     flex-shrink: 0;
 }
 
 .seating-chart-container .history-load-btn {
-    padding: 0.35rem 0.75rem;
+    padding: 0.45rem 0.9rem;
     border-radius: 8px;
-    border: 1px solid #bfdbfe;
-    background: #eff6ff;
-    color: #2563eb;
-    font-size: 0.8rem;
+    border: none;
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    color: #ffffff;
+    font-size: 0.85rem;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.2s;
@@ -1501,17 +1958,17 @@ body.student-mode-active .layout {
 }
 
 .seating-chart-container .history-load-btn:hover {
-    background: #dbeafe;
-    border-color: #93c5fd;
+    box-shadow: 0 4px 10px rgba(22, 163, 74, 0.25);
+    transform: translateY(-1px);
 }
 
 .seating-chart-container .history-del-btn {
-    padding: 0.35rem 0.75rem;
+    padding: 0.45rem 0.8rem;
     border-radius: 8px;
-    border: 1px solid #fecaca;
+    border: 1px solid #fecdd3;
     background: #fff1f2;
-    color: #e11d48;
-    font-size: 0.8rem;
+    color: #ef4444;
+    font-size: 0.85rem;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.2s;
@@ -1520,7 +1977,7 @@ body.student-mode-active .layout {
 
 .seating-chart-container .history-del-btn:hover {
     background: #ffe4e6;
-    border-color: #fda4af;
+    transform: translateY(-1px);
 }
 
 /* Load History Modal */
@@ -1999,4 +2456,818 @@ body.student-mode-active .layout {
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
+}
+
+/* Text Card Button Styling for Setup Bar */
+.seating-chart-container .text-card-btn {
+    padding: 0.55rem 1rem;
+    font-size: 0.88rem;
+    font-weight: 700;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.seating-chart-container .text-card-btn.load {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    color: #334155;
+}
+
+.seating-chart-container .text-card-btn.load:hover:not(:disabled) {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+    color: #0f172a;
+}
+
+.seating-chart-container .text-card-btn.save {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #15803d;
+}
+
+.seating-chart-container .text-card-btn.save:hover {
+    background: #dcfce7;
+    border-color: #86efac;
+    box-shadow: 0 2px 8px rgba(22, 163, 74, 0.15);
+}
+
+.seating-chart-container .text-card-btn.print-st,
+.seating-chart-container .text-card-btn.print-tc {
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    color: #166534;
+}
+
+.seating-chart-container .text-card-btn.print-st:hover,
+.seating-chart-container .text-card-btn.print-tc:hover {
+    background: #15803d;
+    color: #ffffff;
+    border-color: #15803d;
+    box-shadow: 0 4px 10px rgba(21, 128, 61, 0.2);
+}
+
+.expand-view-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    border: 1px solid #bbf7d0;
+    background: #f0fdf4;
+    color: #15803d;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-right: 0.5rem;
+}
+
+.expand-view-btn:hover,
+.expand-view-btn.active {
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    color: #ffffff;
+    border-color: #15803d;
+    box-shadow: 0 4px 10px rgba(22, 163, 74, 0.2);
+}
+
+/* Real-time Validation Status Pill & Initial Setup Modal Styles */
+.validation-status-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.5rem 1.1rem;
+    border-radius: 12px;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.validation-status-pill.valid {
+    background: #f0fdf4;
+    border: 1.5px solid #86efac;
+    color: #15803d;
+}
+
+.validation-status-pill.invalid {
+    background: #fff1f2;
+    border: 1.5px solid #fecdd3;
+    color: #e11d48;
+}
+
+.status-main-badge {
+    font-size: 0.92rem;
+    font-weight: 900;
+    line-height: normal;
+}
+
+.status-sub-text {
+    font-size: 0.85rem;
+    font-weight: 700;
+    opacity: 0.95;
+    line-height: normal;
+}
+
+.initial-setup-card-btn {
+    background: #f0fdf4 !important;
+    border: 1.5px solid #86efac !important;
+    color: #15803d !important;
+    font-weight: 800 !important;
+    padding: 0.55rem 1.1rem !important;
+    border-radius: 12px !important;
+}
+
+.initial-setup-card-btn:hover {
+    background: #dcfce7 !important;
+    border-color: #4ade80 !important;
+    color: #166534 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.15) !important;
+}
+
+/* 초기 설정 모달 */
+.ro-modal-container.initial-setup-modal {
+    width: 90% !important;
+    max-width: 600px !important;
+    padding: 1.5rem !important;
+}
+
+.setup-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    padding: 1rem 0;
+}
+
+.modal-config-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.config-group-title {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.grid-dim-inputs-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+}
+
+.dim-input-box {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: #15803d;
+}
+
+.dim-input-box input {
+    width: 46px;
+    padding: 0.4rem 0.5rem;
+    border: 1.5px solid #86efac;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: 900;
+    font-size: 1rem;
+    color: #15803d;
+    background: #ffffff;
+}
+
+.dim-multiply {
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: #15803d;
+}
+
+.dim-total-badge {
+    background: #15803d;
+    color: #ffffff;
+    font-size: 0.82rem;
+    font-weight: 800;
+    padding: 5px 12px;
+    border-radius: 20px;
+    margin-left: auto;
+}
+
+/* 가상 배치 구조 미리보기 박스 */
+.preview-layout-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.preview-blackboard-tag {
+    background: #1e293b;
+    color: #f8fafc;
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 3px 24px;
+    border-radius: 6px;
+    letter-spacing: 2px;
+}
+
+.preview-grid-mini {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+    width: 100%;
+}
+
+.preview-row-mini {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: 100%;
+}
+
+.preview-desk-chip {
+    background: #ffffff;
+    border: 1.5px solid #86efac;
+    color: #15803d;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 4px 8px;
+    border-radius: 6px;
+    min-width: 32px;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.preview-desk-chip.has-gap {
+    margin-right: 12px;
+}
+
+/* 이모티콘 전용 아이콘 버튼 */
+.base-btn.icon-only-btn {
+    padding: 0.55rem 0.75rem !important;
+    font-size: 1.1rem !important;
+    line-height: 1 !important;
+    border-radius: 10px !important;
+}
+
+/* 자리배치표 & 하단 상태 안내 컬럼 */
+.seating-chart-and-status-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+}
+
+/* 자리배치표 하단 실시간 배정 상태 알림 바 */
+.classroom-bottom-status-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    margin-top: 1.25rem;
+    padding-top: 0.5rem;
+}
+
+/* 미배정 학생 영역 자동 배치 버튼 (명단 카드 넓어지지 않도록 균형 배치) */
+.pool-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 0.85rem;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.pool-header h3 {
+    font-size: 0.92rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.pool-auto-btn {
+    padding: 0.28rem 0.6rem !important;
+    font-size: 0.78rem !important;
+    font-weight: 800 !important;
+    border-radius: 6px !important;
+    line-height: 1.2 !important;
+    white-space: nowrap !important;
+    margin-right: 0 !important;
+}
+
+.dim-total-badge {
+    background: #15803d;
+    color: #ffffff;
+    font-size: 0.82rem;
+    font-weight: 800;
+    padding: 5px 12px;
+    border-radius: 20px;
+    margin-left: auto;
+}
+
+.setup-summary-tip {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #64748b;
+}
+
+/* 기본창 모드 (:not(.expanded-workspace-active)): 미배정 학생 카드를 숨겨 깔끔한 기본 뷰 유지 */
+.seating-chart-container:not(.expanded-workspace-active) .student-pool-panel,
+.seating-chart-container:not(.expanded-workspace-active) .constraints-panel,
+.seating-chart-container:not(.expanded-workspace-active) .seating-history-panel {
+    display: none !important;
+}
+
+.seating-chart-container:not(.expanded-workspace-active) .setup-bar {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 0.85rem !important;
+    padding: 0.65rem 1.25rem !important;
+    margin: 0 auto 1.5rem !important;
+    flex-wrap: nowrap !important;
+    width: fit-content !important;
+}
+
+.seating-chart-container:not(.expanded-workspace-active) .actions-section {
+    width: auto !important;
+    display: flex !important;
+    gap: 0.85rem !important;
+}
+
+.seating-chart-container:not(.expanded-workspace-active) .btn-group.main,
+.seating-chart-container:not(.expanded-workspace-active) .btn-group.print {
+    display: flex !important;
+    gap: 0.85rem !important;
+}
+
+/* 전체창 배치 작업 모드 (.expanded-workspace-active): 툴바가 늘어나지 않고 중앙에 콤팩트 배치 */
+.seating-chart-container.expanded-workspace-active .setup-bar {
+    width: fit-content !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-wrap: nowrap !important;
+    padding: 0.65rem 1.25rem !important;
+    margin: 0 auto 1.25rem !important;
+    gap: 0.75rem !important;
+    box-sizing: border-box !important;
+}
+
+.seating-chart-container.expanded-workspace-active .actions-section {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
+    flex-wrap: nowrap !important;
+}
+
+.seating-chart-container.expanded-workspace-active .btn-group.main,
+.seating-chart-container.expanded-workspace-active .btn-group.print {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+}
+
+/* Student Mode Unified Header & Sliding Switch */
+.student-unified-header {
+    width: 100%;
+    max-width: 1200px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 1.5rem auto 1.5rem auto !important;
+    padding: 1rem 1.5rem !important;
+    background: #ffffff;
+    border: 1px solid #bbf7d0;
+    border-radius: 14px;
+    box-shadow: 0 4px 16px rgba(22, 163, 74, 0.08);
+    box-sizing: border-box;
+}
+
+.green-back-pill {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #475569 !important;
+    font-weight: 700 !important;
+    padding: 0.6rem 1.1rem !important;
+    border-radius: 10px !important;
+    font-size: 0.9rem !important;
+    white-space: nowrap !important;
+    transition: all 0.2s ease !important;
+    margin-right: 1rem !important;
+}
+
+.green-back-pill:hover {
+    background: #f8fafc !important;
+    color: #15803d !important;
+    border-color: #86efac !important;
+}
+
+.student-main-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #15803d;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    white-space: nowrap;
+}
+
+.student-actions-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: nowrap;
+}
+
+.green-action-pill {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #15803d;
+    font-weight: 700;
+    font-size: 0.9rem;
+    padding: 0.6rem 1.05rem;
+    border-radius: 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.green-action-pill:hover {
+    background: #dcfce7;
+    border-color: #86efac;
+    transform: translateY(-1px);
+}
+
+.green-action-pill.dark {
+    background: #0f172a;
+    border-color: #334155;
+    color: #ffffff;
+}
+
+.green-action-pill.dark:hover {
+    background: #1e293b;
+    border-color: #475569;
+}
+
+/* Clean Pill Toggle Switch for Music */
+.music-switch-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 0.35rem 0.75rem;
+    border-radius: 10px;
+    white-space: nowrap;
+}
+
+.switch-label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #475569;
+}
+
+.green-toggle-pill {
+    width: 44px;
+    height: 24px;
+    background-color: #cbd5e1;
+    border-radius: 20px;
+    position: relative;
+    cursor: pointer;
+    transition: background-color 0.25s ease;
+}
+
+.green-toggle-pill.active {
+    background-color: #22c55e;
+}
+
+.pill-thumb {
+    width: 18px;
+    height: 18px;
+    background-color: #ffffff;
+    border-radius: 50%;
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    transition: transform 0.25s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.green-toggle-pill.active .pill-thumb {
+    transform: translateX(20px);
+}
+
+.switch-state-badge {
+    font-size: 0.8rem;
+    font-weight: 800;
+    min-width: 28px;
+}
+
+.switch-state-badge.on {
+    color: #16a34a;
+}
+
+.switch-state-badge.off {
+    color: #64748b;
+}
+
+/* Modal Selector Layouts */
+.modal-selector.single-line-selector {
+    display: flex;
+    gap: 0.6rem;
+}
+
+.modal-selector.single-line-selector button {
+    flex: 1;
+    padding: 0.7rem 0.5rem;
+    font-size: 0.88rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.modal-selector.triple-selector {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.modal-selector.triple-selector button {
+    flex: 1;
+    padding: 0.6rem 0.4rem;
+    font-size: 0.83rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.sub-config-group {
+    background: #f8fafc;
+    border: 1px solid #f1f5f9;
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+}
+
+.green-toggle-switch input:checked + .switch-slider::before {
+    transform: translateX(34px);
+}
+
+.switch-text {
+    font-size: 0.7rem;
+    font-weight: 800;
+    user-select: none;
+}
+
+.switch-text.off {
+    color: #475569;
+    margin-left: auto;
+}
+
+.switch-text.on {
+    color: #ffffff;
+    margin-right: auto;
+}
+
+.green-gradient-main-btn {
+    white-space: nowrap !important;
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
+    color: #ffffff !important;
+    font-size: 1.02rem !important;
+    font-weight: 800 !important;
+    padding: 0.65rem 1.5rem !important;
+    border-radius: 10px !important;
+    border: none !important;
+    box-shadow: 0 4px 14px rgba(22, 163, 74, 0.25) !important;
+    transition: all 0.2s ease !important;
+    cursor: pointer;
+}
+
+.green-gradient-main-btn:hover:not(:disabled) {
+    transform: translateY(-1px) scale(1.02);
+    box-shadow: 0 8px 20px rgba(22, 163, 74, 0.35) !important;
+}
+
+.student-reveal-config-modal {
+    max-width: 560px !important;
+    width: 92% !important;
+    padding: 1.75rem !important;
+    border-radius: 18px !important;
+    background: #ffffff !important;
+    border: 1px solid #bbf7d0 !important;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18) !important;
+}
+
+.student-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.student-modal-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #15803d;
+}
+
+.modal-close-x-btn {
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 0 0.4rem;
+    line-height: 1;
+    transition: color 0.15s ease;
+}
+
+.modal-close-x-btn:hover {
+    color: #0f172a;
+}
+
+.modal-config-group {
+    margin-bottom: 1.35rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.config-group-title {
+    font-size: 0.92rem;
+    font-weight: 800;
+    color: #15803d;
+}
+
+.modal-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+
+.modal-selector button {
+    flex: 1 1 calc(50% - 0.6rem);
+    padding: 0.7rem 0.9rem;
+    font-size: 0.88rem;
+    font-weight: 700;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-align: center;
+}
+
+.modal-selector button:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+}
+
+.modal-selector button.active {
+    background: #f0fdf4 !important;
+    border-color: #86efac !important;
+    color: #15803d !important;
+    font-weight: 800 !important;
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.15) !important;
+}
+
+.m-btn.confirm-full {
+    width: 100%;
+    margin-top: 1rem;
+    padding: 0.85rem;
+    font-size: 1.05rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(22, 163, 74, 0.28);
+    transition: all 0.2s ease;
+}
+
+/* Avoidance Warning Modal */
+.warning-modal-card {
+    max-width: 480px !important;
+    width: 90% !important;
+    background: #ffffff !important;
+    border-radius: 18px !important;
+    border: 1px solid #fecaca !important;
+    border-top: 5px solid #dc2626 !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3) !important;
+    padding: 1.5rem !important;
+}
+
+.gender-warning-card {
+    border-top: 5px solid #0284c7 !important;
+    border-color: #bae6fd !important;
+}
+
+.warning-header h3 {
+    color: #dc2626 !important;
+    font-size: 1.15rem !important;
+}
+
+.gender-warning-header h3 {
+    color: #0284c7 !important;
+}
+
+.warning-modal-body {
+    padding: 1.5rem 1rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.warning-icon-badge {
+    font-size: 2.8rem;
+    background: #fef2f2;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #fecaca;
+    margin-bottom: 0.25rem;
+}
+
+.gender-icon-badge {
+    background: #f0f9ff !important;
+    border-color: #bae6fd !important;
+}
+
+.warning-main-msg {
+    font-size: 1rem;
+    color: #1e293b;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.warning-main-msg strong {
+    color: #dc2626;
+    font-weight: 800;
+}
+
+.warning-sub-msg {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.warning-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding-top: 1rem;
+    border-top: 1px solid #f1f5f9;
+}
+
+.warning-modal-footer .cancel-btn {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    padding: 0.6rem 1.25rem;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.warning-modal-footer .cancel-btn:hover {
+    background: #e2e8f0;
+}
+
+.warning-modal-footer .override-btn {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.3) !important;
+}
+
+.warning-modal-footer .override-btn:hover {
+    box-shadow: 0 6px 18px rgba(220, 38, 38, 0.4) !important;
+}
+
+.m-btn.confirm-full:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(22, 163, 74, 0.38);
 }
