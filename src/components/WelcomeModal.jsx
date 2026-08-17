@@ -30,8 +30,8 @@ const WelcomeModal = ({ isOpen, onClose }) => {
             )
         },
         {
-            title: '3. 스마트 학생기록 지원 (행발 연동)',
-            desc: '학생 보상 관리 및 일상 누가기록을 체계적으로 누적하여, 추후 행동발달특성(행발) 작성의 풍부한 기초 자료로 활용할 수 있습니다.',
+            title: '3. 스마트 학생기록 지원 (행발 연동 업데이트 예정)',
+            desc: '학생 보상 관리 및 일상 누가기록을 체계적으로 누적 관리할 수 있으며, 추후 행동발달특성(행발) 작성 연동 기능이 업데이트될 예정입니다.',
             icon: (
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
