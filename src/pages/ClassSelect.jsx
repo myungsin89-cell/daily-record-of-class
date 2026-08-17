@@ -73,9 +73,7 @@ const ClassSelect = () => {
 
                 {classes.length === 0 && (
                     <div className="empty-state">
-                        <div className="empty-icon">📚</div>
-                        <h2>학급이 없습니다</h2>
-                        <p>새 학급을 만들어서 시작하세요!</p>
+                        <h2>새 학급을 만들어서 시작하세요.</h2>
                     </div>
                 )}
             </div>
