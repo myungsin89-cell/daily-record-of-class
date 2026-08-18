@@ -3312,7 +3312,7 @@ className={`student-list-item-btn ${selectedStudentId === student.id ? 'active' 
                                         {analysis.overallTopPercent !== null ? `상위 ${analysis.overallTopPercent}%` : '-'}
                                     </span>
                                     <span className="kpi-subtitle" style={{ color: '#166534', fontWeight: '700' }}>
-                                        단원평가 기준
+                                        {analysis.overallRank ? `학급 ${analysis.overallRank}위 / ${analysis.totalStudentsCount}명` : '단원평가 기준'}
                                     </span>
                                 </div>
                                 <div className="kpi-card highlight-green">
@@ -3321,7 +3321,7 @@ className={`student-list-item-btn ${selectedStudentId === student.id ? 'active' 
                                         {analysis.bestSubject ? analysis.bestSubject.name : '-'}
                                     </span>
                                     <span className="kpi-subtitle">
-                                        {analysis.bestSubject && analysis.bestSubject.studentSubjectAvg !== null ? `상위 ${analysis.bestSubject.subjectTopPercent}% (${Math.round(analysis.bestSubject.studentSubjectAvg)}점)` : '-'}
+                                        {analysis.bestSubject && analysis.bestSubject.studentSubjectAvg !== null ? `상위 ${analysis.bestSubject.subjectTopPercent}% (${analysis.bestSubject.subjectRank}위 / ${Math.round(analysis.bestSubject.studentSubjectAvg)}점)` : '-'}
                                     </span>
                                 </div>
                                 <div className="kpi-card highlight-red">
@@ -3330,7 +3330,7 @@ className={`student-list-item-btn ${selectedStudentId === student.id ? 'active' 
                                         {analysis.worstSubject ? analysis.worstSubject.name : '-'}
                                     </span>
                                     <span className="kpi-subtitle">
-                                        {analysis.worstSubject && analysis.worstSubject.studentSubjectAvg !== null ? `상위 ${analysis.worstSubject.subjectTopPercent}% (${Math.round(analysis.worstSubject.studentSubjectAvg)}점)` : '-'}
+                                        {analysis.worstSubject && analysis.worstSubject.studentSubjectAvg !== null ? `상위 ${analysis.worstSubject.subjectTopPercent}% (${analysis.worstSubject.subjectRank}위 / ${Math.round(analysis.worstSubject.studentSubjectAvg)}점)` : '-'}
                                     </span>
                                 </div>
                             </div>
@@ -3352,7 +3352,7 @@ className={`student-list-item-btn ${selectedStudentId === student.id ? 'active' 
                                                             <span className="bar-subject-name">{g.name}</span>
                                                             {g.subjectTopPercent !== null && (
                                                                 <span style={{ fontSize: '11.5px', fontWeight: '800', background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: '6px', border: '1px solid #86efac' }}>
-                                                                    상위 {g.subjectTopPercent}%
+                                                                    상위 {g.subjectTopPercent}% ({g.subjectRank}위/{g.totalStudentsCount}명)
                                                                 </span>
                                                             )}
                                                         </div>
