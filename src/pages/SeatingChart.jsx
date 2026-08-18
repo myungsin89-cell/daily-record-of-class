@@ -398,7 +398,8 @@ const SeatingChart = () => {
     };
 
     const initYoutubePlayer = () => {
-        const videoId = extractVideoId(youtubeUrl);
+        const urlToUse = youtubeUrl || 'https://www.youtube.com/watch?v=17_n3286YpY';
+        const videoId = extractVideoId(urlToUse);
         if (!videoId || !window.YT || !window.YT.Player) return;
 
         // Unique ID for this initialization attempt
@@ -429,8 +430,8 @@ const SeatingChart = () => {
 
         try {
             ytPlayerRef.current = new window.YT.Player('yt-player-placeholder', {
-                height: '10',
-                width: '10',
+                height: '200',
+                width: '200',
                 videoId: videoId,
                 playerVars: {
                     'autoplay': 0,
@@ -441,7 +442,7 @@ const SeatingChart = () => {
                     'modestbranding': 1,
                     'showinfo': 0,
                     'enablejsapi': 1,
-                    'origin': window.location.origin
+                    'playsinline': 1
                 },
                 events: {
                     'onReady': (event) => {
@@ -451,7 +452,10 @@ const SeatingChart = () => {
                         }
                         console.log(`[YT] Player Ready for init #${currentInitId}`);
                         setIsPlayerReady(true);
-                        event.target.setVolume(50);
+                        try {
+                            event.target.setVolume(70);
+                            event.target.unMute();
+                        } catch (e) {}
                     },
                     'onError': (e) => {
                         if (lastInitId.current !== currentInitId) return;
@@ -460,7 +464,9 @@ const SeatingChart = () => {
                     },
                     'onStateChange': (event) => {
                         if (lastInitId.current !== currentInitId) return;
-                        if (event.data === -1) setIsPlayerReady(true);
+                        if (event.data === -1 || event.data === 1 || event.data === 2) {
+                            setIsPlayerReady(true);
+                        }
                     }
                 }
             });
