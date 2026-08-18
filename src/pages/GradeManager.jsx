@@ -1177,6 +1177,17 @@ const GradeManager = () => {
             return count > 0 ? sum / count : null;
         };
 
+        // 절대평가 5단계 성취도 환산 헬퍼 (90점+ 최우수, 80점+ 우수, 70점+ 양호, 60점+ 보통, 60점 미만 보완 필요)
+        const getAchievementLevel = (score) => {
+            if (score === null || score === undefined || isNaN(score)) return null;
+            const rounded = Math.round(score);
+            if (rounded >= 90) return { label: '최우수', level: 1, color: '#15803d', bg: '#dcfce7', border: '#86efac', desc: '성취기준 탁월 달성' };
+            if (rounded >= 80) return { label: '우수', level: 2, color: '#0284c7', bg: '#e0f2fe', border: '#7dd3fc', desc: '성취기준 도달' };
+            if (rounded >= 70) return { label: '양호', level: 3, color: '#6366f1', bg: '#e0e7ff', border: '#a5b4fc', desc: '기본 개념 충실' };
+            if (rounded >= 60) return { label: '보통', level: 4, color: '#d97706', bg: '#fef3c7', border: '#fcd34d', desc: '기초 학습 중' };
+            return { label: '보완 필요', level: 5, color: '#ef4444', bg: '#fee2e2', border: '#fca5a5', desc: '개별 보충 지도 요망' };
+        };
+
         // 각 학생의 전체 단원평가 종합 평균 점수 산출
         const getStudentOverallScore = (sId) => {
             let sum = 0;
@@ -1196,44 +1207,35 @@ const GradeManager = () => {
             return count > 0 ? sum / count : null;
         };
 
-        // 전체 학생 종합 점수 목록 & 현재 학생 석차/백분위
+        // 전체 학생 종합 점수 목록 & 현재 학생 성취도
         const allStudentOverallScores = sortedStudents
             .map(s => ({ studentId: s.id, score: getStudentOverallScore(s.id) }))
             .filter(item => item.score !== null);
 
         const currentStudentOverall = getStudentOverallScore(studentId);
-        let overallRank = null;
-        let overallTopPercent = null;
         let overallClassAvg = null;
+        let overallAchievement = getAchievementLevel(currentStudentOverall);
 
-        if (allStudentOverallScores.length > 0 && currentStudentOverall !== null) {
-            const higherCount = allStudentOverallScores.filter(item => item.score > currentStudentOverall).length;
-            overallRank = higherCount + 1;
-            overallTopPercent = Math.max(1, Math.round((overallRank / allStudentOverallScores.length) * 100));
+        if (allStudentOverallScores.length > 0) {
             const totalSum = allStudentOverallScores.reduce((acc, curr) => acc + curr.score, 0);
             overallClassAvg = totalSum / allStudentOverallScores.length;
         }
 
-        // 2. 과목별 분석 (단원평가 점수 + 과목별 상위 % + 회차별 학급 평균 대비)
+        // 2. 과목별 분석 (단원평가 점수 + 절대평가 성취도 + 회차별 학급 평균 대비)
         const subjectAnalyses = groups.map(group => {
             const cardsInGroup = unitCards.filter(c => c.groupId === group.id);
             if (cardsInGroup.length === 0) return null;
 
             const studentSubjectAvg = getStudentSubjectScore(studentId, group.id);
+            const subjectAchievement = getAchievementLevel(studentSubjectAvg);
 
-            // 해당 과목 전체 학생 평균 및 석차 계산
+            // 해당 과목 전체 학생 평균 계산
             const allStudentSubjectScores = sortedStudents
                 .map(s => ({ studentId: s.id, score: getStudentSubjectScore(s.id, group.id) }))
                 .filter(item => item.score !== null);
 
-            let subjectRank = null;
-            let subjectTopPercent = null;
             let classSubjectAvg = null;
-
-            if (allStudentSubjectScores.length > 0 && studentSubjectAvg !== null) {
-                const higherCount = allStudentSubjectScores.filter(item => item.score > studentSubjectAvg).length;
-                subjectRank = higherCount + 1;
-                subjectTopPercent = Math.max(1, Math.round((subjectRank / allStudentSubjectScores.length) * 100));
+            if (allStudentSubjectScores.length > 0) {
                 const totalSubSum = allStudentSubjectScores.reduce((acc, curr) => acc + curr.score, 0);
                 classSubjectAvg = totalSubSum / allStudentSubjectScores.length;
             }
@@ -1281,17 +1283,16 @@ const GradeManager = () => {
                 name: group.name,
                 studentSubjectAvg,
                 classSubjectAvg,
-                subjectRank,
-                subjectTopPercent,
+                subjectAchievement,
                 totalStudentsCount: allStudentSubjectScores.length,
                 cards: cardsData
             };
         }).filter(Boolean);
 
-        // 최우수 / 보완 필요 과목 찾기
+        // 최우수 / 보완 필요 과목 찾기 (점수 기준)
         const rankedSubjects = subjectAnalyses
-            .filter(s => s.studentSubjectAvg !== null && s.subjectTopPercent !== null)
-            .sort((a, b) => a.subjectTopPercent - b.subjectTopPercent);
+            .filter(s => s.studentSubjectAvg !== null)
+            .sort((a, b) => b.studentSubjectAvg - a.studentSubjectAvg);
 
         const bestSubject = rankedSubjects.length > 0 ? rankedSubjects[0] : null;
         const worstSubject = rankedSubjects.length > 1 ? rankedSubjects[rankedSubjects.length - 1] : null;
@@ -1303,7 +1304,6 @@ const GradeManager = () => {
             if (!col) return null;
 
             const studentVal = scores[card.id]?.[col.id]?.[studentId];
-            const criteria = criteriaTemplates.find(t => t.id === card.criteriaId) || DEFAULT_TEMPLATES[0];
             const studentLabel = getFormattedScore(card, col, studentId);
             const studentRemark = scores[card.id]?.['remarks']?.[studentId];
 
@@ -1336,8 +1336,7 @@ const GradeManager = () => {
         return {
             currentStudentOverall,
             overallClassAvg,
-            overallRank,
-            overallTopPercent,
+            overallAchievement,
             totalStudentsCount: allStudentOverallScores.length,
             bestSubject,
             worstSubject,
@@ -3307,21 +3306,25 @@ className={`student-list-item-btn ${selectedStudentId === student.id ? 'active' 
                                     </span>
                                 </div>
                                 <div className="kpi-card highlight-green">
-                                    <span className="kpi-title">학급 상위 백분위</span>
-                                    <span className="kpi-value" style={{ color: '#15803d' }}>
-                                        {analysis.overallTopPercent !== null ? `상위 ${analysis.overallTopPercent}%` : '-'}
+                                    <span className="kpi-title">종합 성취 수준</span>
+                                    <span className="kpi-value" style={{ 
+                                        color: analysis.overallAchievement ? analysis.overallAchievement.color : '#15803d',
+                                        fontSize: '1.5rem',
+                                        fontWeight: '800'
+                                    }}>
+                                        {analysis.overallAchievement ? `${analysis.overallAchievement.label}` : '-'}
                                     </span>
                                     <span className="kpi-subtitle" style={{ color: '#166534', fontWeight: '700' }}>
-                                        {analysis.overallRank ? `학급 ${analysis.overallRank}위 / ${analysis.totalStudentsCount}명` : '단원평가 기준'}
+                                        {analysis.overallAchievement ? analysis.overallAchievement.desc : '단원평가 기준'}
                                     </span>
                                 </div>
                                 <div className="kpi-card highlight-green">
-                                    <span className="kpi-title">최우수 교과</span>
+                                    <span className="kpi-title">최고 성취 교과</span>
                                     <span className="kpi-value-small">
                                         {analysis.bestSubject ? analysis.bestSubject.name : '-'}
                                     </span>
                                     <span className="kpi-subtitle">
-                                        {analysis.bestSubject && analysis.bestSubject.studentSubjectAvg !== null ? `상위 ${analysis.bestSubject.subjectTopPercent}% (${analysis.bestSubject.subjectRank}위 / ${Math.round(analysis.bestSubject.studentSubjectAvg)}점)` : '-'}
+                                        {analysis.bestSubject && analysis.bestSubject.studentSubjectAvg !== null ? `${analysis.bestSubject.subjectAchievement?.label || ''} (${Math.round(analysis.bestSubject.studentSubjectAvg)}점)` : '-'}
                                     </span>
                                 </div>
                                 <div className="kpi-card highlight-red">
@@ -3330,29 +3333,38 @@ className={`student-list-item-btn ${selectedStudentId === student.id ? 'active' 
                                         {analysis.worstSubject ? analysis.worstSubject.name : '-'}
                                     </span>
                                     <span className="kpi-subtitle">
-                                        {analysis.worstSubject && analysis.worstSubject.studentSubjectAvg !== null ? `상위 ${analysis.worstSubject.subjectTopPercent}% (${analysis.worstSubject.subjectRank}위 / ${Math.round(analysis.worstSubject.studentSubjectAvg)}점)` : '-'}
+                                        {analysis.worstSubject && analysis.worstSubject.studentSubjectAvg !== null ? `${analysis.worstSubject.subjectAchievement?.label || ''} (${Math.round(analysis.worstSubject.studentSubjectAvg)}점)` : '-'}
                                     </span>
                                 </div>
                             </div>
 
-                            {/* 2. 교과별 성적 성취율 및 학급 백분위 */}
+                            {/* 2. 교과별 성적 성취율 및 학급 평균 대비 */}
                             {analysis.subjectAnalyses.length > 0 && (
                                 <div className="dashboard-chart-section">
-                                    <h4 className="section-title">📊 교과별 성적 성취율 및 학급 백분위 (단원평가 기준)</h4>
+                                    <h4 className="section-title">📊 교과별 성적 성취 수준 및 학급 평균 대비 (단원평가 기준)</h4>
                                     <div className="chart-bars-list">
                                         {analysis.subjectAnalyses.map(g => {
                                             const studentScore = g.studentSubjectAvg !== null ? Math.round(g.studentSubjectAvg) : 0;
                                             const classScore = g.classSubjectAvg !== null ? Math.round(g.classSubjectAvg) : 0;
                                             const diff = studentScore - classScore;
+                                            const ach = g.subjectAchievement;
 
                                             return (
                                                 <div key={g.id} className="chart-bar-item">
                                                     <div className="bar-label-group">
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                             <span className="bar-subject-name">{g.name}</span>
-                                                            {g.subjectTopPercent !== null && (
-                                                                <span style={{ fontSize: '11.5px', fontWeight: '800', background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: '6px', border: '1px solid #86efac' }}>
-                                                                    상위 {g.subjectTopPercent}% ({g.subjectRank}위/{g.totalStudentsCount}명)
+                                                            {ach && (
+                                                                <span style={{ 
+                                                                    fontSize: '11.5px', 
+                                                                    fontWeight: '800', 
+                                                                    background: ach.bg, 
+                                                                    color: ach.color, 
+                                                                    padding: '2px 8px', 
+                                                                    borderRadius: '6px', 
+                                                                    border: `1px solid ${ach.border}` 
+                                                                }}>
+                                                                    {ach.label} ({studentScore}점)
                                                                 </span>
                                                             )}
                                                         </div>

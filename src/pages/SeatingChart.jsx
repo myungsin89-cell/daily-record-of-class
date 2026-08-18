@@ -927,56 +927,13 @@ const SeatingChart = () => {
     };
 
     const handlePrint = (view) => {
-        // ① 팝업을 클릭 이벤트 직후 동기적으로 열어야 브라우저 팝업 차단을 피할 수 있음
-        const printWindow = window.open('', '_blank');
-
         setPrintMode(view);
-
-        if (!printWindow) {
-            alert('팝업이 차단되었습니다. 브라우저에서 이 사이트의 팝업을 허용해 주세요.');
-            setPrintMode(null);
-            return;
-        }
-
-        // ② React 재렌더링 대기 후 DOM 캡처
         setTimeout(() => {
-            const classroomEl = containerRef.current?.querySelector('.classroom-area');
-            if (!classroomEl) { printWindow.close(); setPrintMode(null); return; }
-
-            // ③ 현재 페이지에 로드된 CSS 파일 링크 수집
-            const cssLinks = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
-                .map(l => `<link rel="stylesheet" href="${l.href}">`)
-                .join('\n');
-
-            const isTeacher = view === 'teacher';
-
-            printWindow.document.write(`<!DOCTYPE html>
-<html><head><meta charset="UTF-8">
-${cssLinks}
-<style>@page{size:A4 landscape;margin:8mm;}</style>
-<style>
-body{margin:0;padding:0;background:white;display:flex;justify-content:center;
--webkit-print-color-adjust:exact;print-color-adjust:exact;}
-.seating-chart-container{padding:0!important;width:100%!important;
-display:flex!important;justify-content:center!important;}
-.seating-main-workspace{display:flex!important;justify-content:center!important;
-width:100%!important;margin:0!important;padding:0!important;}
-.classroom-area{box-shadow:none!important;border:none!important;
-margin:0 auto!important;padding:6mm!important;}
-.grid-row{justify-content:center!important;align-items:center!important;}
-</style>
-</head><body>
-<div class="seating-chart-container${isTeacher ? ' printing print-teacher' : ''}">
-<div class="seating-main-workspace">${classroomEl.outerHTML}</div>
-</div>
-<script>
-window.addEventListener('load',function(){
-  setTimeout(function(){window.print();window.close();},400);
-});<\/script>
-</body></html>`);
-            printWindow.document.close();
-            setPrintMode(null);
-        }, 350);
+            window.print();
+            setTimeout(() => {
+                setPrintMode(null);
+            }, 1000);
+        }, 150);
     };
 
     const [isExpandedWorkspace, setIsExpandedWorkspace] = useState(false);
@@ -1133,13 +1090,53 @@ window.addEventListener('load',function(){
                             📺 전체화면
                         </button>
 
-                        <button 
-                            className="green-gradient-main-btn" 
-                            onClick={() => startReveal(shouldRerandomOnReveal || !isGridAssigned)} 
-                            disabled={isRevealing || isShuffling || (revealedCount > 0 && revealedCount === revealOrder.length) || (isMusicEnabled && !isPlayerReady)}
-                        >
-                            {isMusicEnabled && !isPlayerReady ? '음악 준비 중...' : (isShuffling ? '자리 배치 중...' : (revealedCount > 0 ? (revealedCount === revealOrder.length ? '전체 공개 완료' : '공개 진행 중...') : '자리 공개 시작'))}
-                        </button>
+                        {isRevealing && (
+                            <button 
+                                className="green-gradient-main-btn" 
+                                style={{ background: '#f59e0b', borderColor: '#d97706' }}
+                                onClick={() => {
+                                    setRevealedCount(revealOrder.length);
+                                    setIsRevealing(false);
+                                }}
+                            >
+                                ⚡ 한번에 전체 공개
+                            </button>
+                        )}
+
+                        {revealedCount > 0 && revealedCount === revealOrder.length && !isShuffling && (
+                            <>
+                                <button 
+                                    className="green-action-pill"
+                                    onClick={() => {
+                                        setRevealedCount(0);
+                                        startReveal(false);
+                                    }}
+                                    title="현재 배치된 자리 그대로 다시 공개 애니메이션 시작"
+                                >
+                                    🔄 다시 공개하기
+                                </button>
+                                <button 
+                                    className="green-gradient-main-btn" 
+                                    onClick={() => {
+                                        setRevealedCount(0);
+                                        startReveal(true);
+                                    }}
+                                    title="자리를 새로 섞고 공개 시작"
+                                >
+                                    🎲 새로 섞고 공개
+                                </button>
+                            </>
+                        )}
+
+                        {!isRevealing && !(revealedCount > 0 && revealedCount === revealOrder.length) && (
+                            <button 
+                                className="green-gradient-main-btn" 
+                                onClick={() => startReveal(shouldRerandomOnReveal || !isGridAssigned)} 
+                                disabled={isShuffling}
+                            >
+                                {isShuffling ? '자리 배치 중...' : '🎉 자리 공개 시작'}
+                            </button>
+                        )}
                     </div>
 
                     {/* YouTube Player Container */}
@@ -1946,6 +1943,76 @@ window.addEventListener('load',function(){
                                 닫기
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* A4 가로 전용 고해상도 인쇄 뷰 (window.print 실행 시 렌더링) */}
+            {printMode && (
+                <div className="seating-print-overlay">
+                    <div className="seating-print-sheet">
+                        <div className="print-sheet-header">
+                            <h1 className="print-main-title">
+                                {currentClass ? `${currentClass.grade || ''}학년 ${currentClass.classNumber || ''}반` : '우리 반'} 자리배치표
+                                <span className="print-type-badge">
+                                    {printMode === 'teacher' ? '교사용 (칠판 아래)' : '학생용 (칠판 위)'}
+                                </span>
+                            </h1>
+                            <div className="print-date-info">
+                                <span>인쇄일자: {new Date().toLocaleDateString('ko-KR')}</span>
+                                <span>총원: {students?.length || 0}명</span>
+                            </div>
+                        </div>
+
+                        {/* 칠판 영역 (학생용일 때는 위, 교사용일 때는 아래) */}
+                        {printMode !== 'teacher' && (
+                            <div className="print-blackboard top">
+                                <span>칠 판 (앞 쪽)</span>
+                            </div>
+                        )}
+
+                        <div className={`print-grid-container ${printMode === 'teacher' ? 'flipped' : ''}`}>
+                            {(printMode === 'teacher' ? [...grid].reverse() : grid).map((row, rIdx) => {
+                                const actualR = printMode === 'teacher' ? (grid.length - 1 - rIdx) : rIdx;
+                                const cols = printMode === 'teacher' ? [...row].reverse() : row;
+
+                                return (
+                                    <div key={rIdx} className="print-grid-row">
+                                        {cols.map((seat, cIdx) => {
+                                            const actualC = printMode === 'teacher' ? (row.length - 1 - cIdx) : cIdx;
+                                            const actualSeat = grid[actualR][actualC];
+                                            const student = students?.find(s => s.id === actualSeat.studentId);
+                                            const isBlocked = actualSeat.genderPreference === 'blocked';
+
+                                            return (
+                                                <div 
+                                                    key={cIdx} 
+                                                    className={`print-seat-box ${isBlocked ? 'blocked' : ''} ${student ? (student.gender === '남' ? 'male' : 'female') : 'empty'}`}
+                                                >
+                                                    {isBlocked ? (
+                                                        <span className="print-blocked-text">통로</span>
+                                                    ) : student ? (
+                                                        <>
+                                                            <span className="print-seat-num">{student.attendanceNumber}번</span>
+                                                            <span className="print-seat-name">{student.name}</span>
+                                                        </>
+                                                    ) : (
+                                                        <span className="print-seat-empty">빈자리</span>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* 칠판 영역 (교사용일 때는 아래) */}
+                        {printMode === 'teacher' && (
+                            <div className="print-blackboard bottom">
+                                <span>칠 판 / 교 탁 (교사 시점)</span>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
