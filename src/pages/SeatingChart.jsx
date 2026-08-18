@@ -125,10 +125,35 @@ const SeatingChart = () => {
                     setGrid(saved.grid || generateEmptyGrid(5, 6, 2));
                     if (saved.youtubeUrl) setYoutubeUrl(saved.youtubeUrl);
                 } else {
+                    // Fallback to localStorage seating layout if available
+                    const localSaved = localStorage.getItem(`seating_layout_${currentClass.id}`) || localStorage.getItem(`seating_layout_default`);
+                    if (localSaved) {
+                        try {
+                            const parsedGrid = JSON.parse(localSaved);
+                            if (Array.isArray(parsedGrid) && parsedGrid.length > 0) {
+                                setGrid(parsedGrid);
+                                setIsConfigLoaded(true);
+                                setHasChanges(false);
+                                return;
+                            }
+                        } catch (e) {}
+                    }
                     setGrid(generateEmptyGrid(5, 6, 2));
                 }
             } catch (e) {
                 console.error("Failed to load seating config:", e);
+                const localSaved = localStorage.getItem(`seating_layout_${currentClass.id}`) || localStorage.getItem(`seating_layout_default`);
+                if (localSaved) {
+                    try {
+                        const parsedGrid = JSON.parse(localSaved);
+                        if (Array.isArray(parsedGrid) && parsedGrid.length > 0) {
+                            setGrid(parsedGrid);
+                            setIsConfigLoaded(true);
+                            setHasChanges(false);
+                            return;
+                        }
+                    } catch (err) {}
+                }
                 setGrid(generateEmptyGrid(5, 6, 2));
             } finally {
                 setIsConfigLoaded(true);

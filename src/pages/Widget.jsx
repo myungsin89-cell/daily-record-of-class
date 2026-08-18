@@ -79,6 +79,8 @@ const Widget = () => {
         };
     }, [currentNote]);
 
+    const syncTimerRef = React.useRef(null);
+
     // Handle Title / Content change
     const handleFieldChange = (field, value) => {
         if (!currentNote) return;
@@ -100,9 +102,15 @@ const Widget = () => {
             localStorage.setItem(storageKey, JSON.stringify(updatedList));
         }
 
-        // Notify main window via IPC
+        // Notify main window via IPC (Debounced to protect Korean IME composition)
         if (window.electronAPI && window.electronAPI.syncMemoUpdate) {
-            window.electronAPI.syncMemoUpdate(updated);
+            if (syncTimerRef.current) {
+                clearTimeout(syncTimerRef.current);
+            }
+            syncTimerRef.current = setTimeout(() => {
+                window.electronAPI.syncMemoUpdate(updated);
+                syncTimerRef.current = null;
+            }, 250);
         }
     };
 

@@ -137,6 +137,10 @@
 
 /* 상단 타이틀바 (드래그 영역) */
 .window-titlebar {
+    position: sticky;
+    top: 0;
+    width: 100%;
+    box-sizing: border-box;
     height: 38px;
     background: #f8fafc;
     display: flex;
@@ -146,7 +150,7 @@
     user-select: none;
     -webkit-app-region: drag;
     border-bottom: 1px solid #e2e8f0;
-    z-index: 9999;
+    z-index: 99999;
     flex-shrink: 0;
 }
 

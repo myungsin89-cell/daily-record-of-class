@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Button from '../components/Button';
 import { useClass } from '../context/ClassContext';
 import { useAuth } from '../context/AuthContext';
@@ -33,6 +33,8 @@ const Notepad = () => {
     const [modalContent, setModalContent] = useState('');
     const [modalIsPinned, setModalIsPinned] = useState(false);
 
+    const syncDebounceTimers = useRef({});
+
     useEffect(() => {
         const key = `memos_${classId}`;
         const saved = localStorage.getItem(key);
@@ -62,16 +64,22 @@ const Notepad = () => {
         if (notes.length > 0) updateSaveStatus();
     }, [notes, isLoaded, classId, updateSaveStatus]);
 
-
-
     const [activePaletteNoteId, setActivePaletteNoteId] = useState(null);
 
     const handleInlineNoteChange = (id, field, value) => {
         setNotes(prev => prev.map(note => {
             if (note.id === id) {
                 const updated = { ...note, [field]: value, updatedAt: new Date().toISOString() };
+                
+                // Debounce electron IPC sync to prevent IME Korean stutter
                 if (window.electronAPI) {
-                    window.electronAPI.syncMemoUpdate(updated);
+                    if (syncDebounceTimers.current[id]) {
+                        clearTimeout(syncDebounceTimers.current[id]);
+                    }
+                    syncDebounceTimers.current[id] = setTimeout(() => {
+                        window.electronAPI.syncMemoUpdate(updated);
+                        delete syncDebounceTimers.current[id];
+                    }, 250);
                 }
                 return updated;
             }

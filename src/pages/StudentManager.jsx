@@ -134,8 +134,9 @@ const StudentManager = ({ showTitle = true }) => {
             setRecentlyAddedIds(newIds);
 
             setTimeout(() => {
-                if (studentListRef.current) {
-                    studentListRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                const scrollContainer = document.querySelector('.main-content') || document.querySelector('.page-content');
+                if (scrollContainer && studentListRef.current) {
+                    scrollContainer.scrollTo({ top: studentListRef.current.offsetTop - 80, behavior: 'smooth' });
                 }
             }, 100);
 
@@ -211,8 +212,9 @@ const StudentManager = ({ showTitle = true }) => {
                     setRecentlyAddedIds(newIds);
 
                     setTimeout(() => {
-                        if (studentListRef.current) {
-                            studentListRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        const scrollContainer = document.querySelector('.main-content') || document.querySelector('.page-content');
+                        if (scrollContainer && studentListRef.current) {
+                            scrollContainer.scrollTo({ top: studentListRef.current.offsetTop - 80, behavior: 'smooth' });
                         }
                     }, 100);
 
@@ -283,7 +285,10 @@ const StudentManager = ({ showTitle = true }) => {
                     <div className="header-right">
                         <button className="green-gradient-btn" onClick={() => {
                             const form = document.querySelector('.student-form-grid');
-                            if (form) form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            const scrollContainer = document.querySelector('.main-content') || document.querySelector('.page-content');
+                            if (form && scrollContainer) {
+                                scrollContainer.scrollTo({ top: form.offsetTop - 80, behavior: 'smooth' });
+                            }
                         }}>
                             ➕ 학생 추가
                         </button>

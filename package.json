@@ -45,15 +45,12 @@
     "appId": "com.classdiary.app",
     "productName": "학급일지",
     "directories": {
-      "output": "dist-electron"
-    },
-    "publish": {
-      "provider": "github",
-      "owner": "myungsin89-cell",
-      "repo": "daily-record-of-class"
+      "output": "C:/Users/소미네/Desktop/학급일지_설치파일_출력"
     },
     "win": {
-      "target": "nsis",
+      "target": [
+        "nsis"
+      ],
       "icon": "build/icon.ico"
     },
     "nsis": {
@@ -61,12 +58,8 @@
       "allowToChangeInstallationDirectory": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "학급일지"
-    },
-    "files": [
-      "dist/**/*",
-      "electron/**/*",
-      "package.json"
-    ]
+      "shortcutName": "학급일지",
+      "artifactName": "학급일지_Setup_v${version}.${ext}"
+    }
   }
 }

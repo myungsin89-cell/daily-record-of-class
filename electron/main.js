@@ -290,13 +290,14 @@ ipcMain.on('set-always-on-top', (event, isAlwaysOnTop) => {
     }
 });
 
-// Sync Memo Data between Main Window and ALL Widget Windows
+// Sync Memo Data between Main Window and ALL Widget Windows (Exclude Sender to prevent IME stutter)
 ipcMain.on('sync-memo-update', (event, noteData) => {
-    if (mainWindow && mainWindow.webContents) {
+    const senderWebContents = event.sender;
+    if (mainWindow && mainWindow.webContents && mainWindow.webContents !== senderWebContents) {
         mainWindow.webContents.send('memo-synced', noteData);
     }
     for (const [id, win] of widgetWindowsMap.entries()) {
-        if (win && win.webContents && !win.isDestroyed()) {
+        if (win && win.webContents && !win.isDestroyed() && win.webContents !== senderWebContents) {
             win.webContents.send('memo-synced', noteData);
         }
     }
