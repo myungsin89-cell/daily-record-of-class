@@ -3,6 +3,7 @@ import { useStudentContext } from '../context/StudentContext';
 import { useClass } from '../context/ClassContext';
 import { groupConsecutiveDates, formatDateKorean, calculateSchoolDays } from '../utils/dateUtils';
 import { useAuth } from '../context/AuthContext';
+import { useModal } from '../context/ModalContext';
 import * as XLSX from 'xlsx';
 import './ExperientialLearning.css';
 
@@ -10,6 +11,7 @@ const ExperientialLearning = () => {
     const { students, attendance, fieldTrips, saveFieldTripMetadata, updateAttendance, holidays } = useStudentContext();
     const { currentClass } = useClass();
     const { user } = useAuth();
+    const { showConfirm, showAlert } = useModal();
     const [sortConfig, setSortConfig] = useState({ key: 'application', direction: 'asc' });
     const [isEditMode, setIsEditMode] = useState(false);
 
@@ -158,10 +160,11 @@ const ExperientialLearning = () => {
         saveFieldTripMetadata(studentId, updatedMetadata);
     };
 
-    const handleDeleteTrip = (trip) => {
+    const handleDeleteTrip = async (trip) => {
         const confirmMessage = `${trip.studentName}의 체험학습 (${trip.dateRange})을 삭제하시겠습니까?\n\n출석 체크에서도 모두 제거됩니다.`;
 
-        if (!window.confirm(confirmMessage)) {
+        const confirmed = await showConfirm(confirmMessage, '체험학습 기록 삭제', '삭제', '취소');
+        if (!confirmed) {
             return;
         }
 

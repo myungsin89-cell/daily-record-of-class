@@ -2,12 +2,14 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useStudentContext } from '../context/StudentContext';
 import { useClass } from '../context/ClassContext';
 import { useAuth } from '../context/AuthContext';
+import { useModal } from '../context/ModalContext';
 import './ClassRole.css';
 
 const ClassRole = () => {
     const { students } = useStudentContext();
     const { currentClass } = useClass();
     const { user } = useAuth();
+    const { showConfirm, showAlert } = useModal();
     const rawClassId = currentClass?.id || 'default';
     const classId = user ? `${user.username}_${rawClassId}` : rawClassId;
     const storageKey = `class_roles_${classId}`;
@@ -83,13 +85,15 @@ const ClassRole = () => {
         setShowAddModal(false);
     };
 
-    const handleDeleteRole = (index) => {
-        if (!window.confirm(`'${roles[index].name}' 역할을 삭제하시겠습니까?`)) return;
+    const handleDeleteRole = async (index) => {
+        const confirmed = await showConfirm(`'${roles[index].name}' 역할을 삭제하시겠습니까?`, '역할 삭제 확인', '삭제', '취소');
+        if (!confirmed) return;
         saveRoles(roles.filter((_, i) => i !== index));
     };
 
-    const handleClearAllStudents = () => {
-        if (!window.confirm('모든 역할에서 배정된 학생을 초기화할까요?')) return;
+    const handleClearAllStudents = async () => {
+        const confirmed = await showConfirm('모든 역할에서 배정된 학생을 초기화할까요?', '배정 초기화', '초기화', '취소');
+        if (!confirmed) return;
         saveRoles(roles.map(r => ({ ...r, assignedStudents: [] })));
     };
 

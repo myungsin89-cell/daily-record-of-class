@@ -2,12 +2,14 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useStudentContext } from '../context/StudentContext';
 import { useClass } from '../context/ClassContext';
 import { useAuth } from '../context/AuthContext';
+import { useModal } from '../context/ModalContext';
 import './RandomOrder.css';
 
 const RandomOrder = () => {
     const { students } = useStudentContext();
     const { currentClass } = useClass();
     const { user } = useAuth();
+    const { showConfirm, showAlert } = useModal();
     const rawClassId = currentClass?.id || 'default';
     const classId = user ? `${user.username}_${rawClassId}` : rawClassId;
     const storageKey = `random_order_history_${classId}`;
@@ -217,8 +219,9 @@ const RandomOrder = () => {
         if (activeOrderRecord?.id === id) setShowOrderModal(false);
     };
 
-    const handleClearAllHistory = () => {
-        if (!window.confirm('저장된 모든 순서 기록을 삭제하시겠습니까?')) return;
+    const handleClearAllHistory = async () => {
+        const confirmed = await showConfirm('저장된 모든 순서 기록을 삭제하시겠습니까?', '기록 초기화', '전체 삭제', '취소');
+        if (!confirmed) return;
         setHistory([]);
         localStorage.setItem(storageKey, JSON.stringify([]));
     };

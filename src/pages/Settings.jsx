@@ -162,7 +162,8 @@ const Settings = () => {
     };
 
     const handleDeleteAPIKey = async () => {
-        if (!window.confirm('정말로 API 키를 삭제하시겠습니까? AI 기능을 사용할 수 없게 됩니다.')) {
+        const confirmed = await showConfirm('정말로 API 키를 삭제하시겠습니까? AI 기능을 사용할 수 없게 됩니다.', 'API 키 삭제', '삭제', '취소');
+        if (!confirmed) {
             return;
         }
 
@@ -373,8 +374,9 @@ const Settings = () => {
         connectGoogle();
     };
 
-    const handleGoogleDisconnect = () => {
-        if (!window.confirm('Google 계정 연결을 해제하시겠습니까?')) return;
+    const handleGoogleDisconnect = async () => {
+        const confirmed = await showConfirm('Google 계정 연결을 해제하시겠습니까?', 'Google 연결 해제', '해제', '취소');
+        if (!confirmed) return;
         disconnectGoogle();
         setMessage({ type: 'success', text: '✅ Google 계정 연결이 해제되었습니다.' });
     };
@@ -412,7 +414,8 @@ const Settings = () => {
     };
 
     const handleDriveRestore = async (fileId, fileName) => {
-        if (!window.confirm(`"${fileName}" 파일로 복원하시겠습니까?\n기존 데이터가 덮어씌워집니다.`)) return;
+        const confirmed = await showConfirm(`"${fileName}" 파일로 복원하시겠습니까?\n기존 데이터가 덮어씌워집니다.`, '데이터 복원 확인', '복원', '취소');
+        if (!confirmed) return;
         setIsGoogleBusy(true);
         setMessage({ type: '', text: '' });
         try {

@@ -192,6 +192,7 @@ button, a, .pill-thumb, .green-toggle-pill {
 }
 
 /* 모든 모달 오버레이를 타이틀바(999999)보다 위로 강제 배치 */
+.global-modal-overlay,
 .cr-modal-overlay,
 .grade-modal-overlay,
 .modal-overlay,
@@ -203,6 +204,25 @@ button, a, .pill-thumb, .green-toggle-pill {
 .seating-dialog-overlay {
     z-index: 9999999 !important;
     -webkit-app-region: no-drag !important;
+}
+
+/* 전역 인쇄 레이아웃 초기화 (A4 출력 시 100vh 잠금 해제 & 타이틀바 숨김) */
+@media print {
+    html, body, #root, .app-root, .app-root.is-desktop, .layout, .layout.is-desktop, .glass-app-wrapper, .main-content, .page-content {
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
+        padding-top: 0 !important;
+        margin: 0 !important;
+        background: #ffffff !important;
+        box-shadow: none !important;
+        border: none !important;
+    }
+
+    .window-titlebar, .sidebar, .glass-sidebar, .desktop-titlebar, .cr-header, .cr-summary, .cr-table-wrap, .cr-no-roles, .cr-empty {
+        display: none !important;
+    }
 }
 
 .window-titlebar.login-mode {

@@ -1,11 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useClass } from '../context/ClassContext';
+import { useModal } from '../context/ModalContext';
 import './ClassSelect.css';
 
 const ClassSelect = () => {
     const { user, logout } = useAuth();
     const { classes, selectClass, deleteClass } = useClass();
+    const { showConfirm } = useModal();
     const navigate = useNavigate();
 
     const handleSelectClass = (classData) => {
@@ -17,9 +19,10 @@ const ClassSelect = () => {
         navigate('/create-class');
     };
 
-    const handleDeleteClass = (e, classId) => {
+    const handleDeleteClass = async (e, classId) => {
         e.stopPropagation();
-        if (window.confirm('이 학급을 삭제하시겠습니까?')) {
+        const confirmed = await showConfirm('이 학급을 삭제하시겠습니까? (학급의 모든 데이터가 삭제됩니다)', '학급 삭제', '삭제', '취소');
+        if (confirmed) {
             deleteClass(classId);
         }
     };

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useStudentContext } from '../context/StudentContext';
 import { useClass } from '../context/ClassContext';
+import { useModal } from '../context/ModalContext';
 import { getData, saveData, deleteData, getAllDataByIndex, STORES } from '../db/indexedDB';
 import { generateEmptyGrid, assignSeatsRandomly } from '../utils/seatingUtils';
 import './SeatingChart.css';
@@ -8,6 +9,7 @@ import './SeatingChart.css';
 const SeatingChart = () => {
     const { students } = useStudentContext();
     const { currentClass } = useClass();
+    const { showConfirm, showAlert } = useModal();
     const containerRef = useRef(null);
     
     const [mode, setMode] = useState('teacher'); // 'teacher' or 'student'
@@ -316,12 +318,13 @@ const SeatingChart = () => {
 
         setHasChanges(false); // 저장 완료 -> 주황색 해제
         setShowSaveModal(false);
-        alert(`'${name}' 이름으로 자리배치가 기록되었습니다.`);
+        showAlert(`'${name}' 이름으로 자리배치가 기록되었습니다.`, '저장 완료', '확인', 'success');
     };
 
     // Load a history record into the current grid
     const handleLoadRecord = async (record) => {
-        if (!window.confirm(`'${record.name}' 자리배치를 불러올까요?\n현재 배치가 덮어씌워집니다.`)) return;
+        const confirmed = await showConfirm(`'${record.name}' 자리배치를 불러올까요?\n현재 배치가 덮어씌워집니다.`, '기록 불러오기', '불러오기', '취소');
+        if (!confirmed) return;
         setGrid(record.grid);
         setGridConfig(record.gridConfig);
         syncLocalStorageSeating(record.grid);
@@ -341,7 +344,8 @@ const SeatingChart = () => {
 
     // Delete a history entry
     const handleDeleteHistory = async (id) => {
-        if (!window.confirm('이 기록을 삭제하시겠습니까?')) return;
+        const confirmed = await showConfirm('이 기록을 삭제하시겠습니까?', '기록 삭제', '삭제', '취소');
+        if (!confirmed) return;
         await deleteData(STORES.SEATING_HISTORY, id);
         setSeatingHistory(prev => prev.filter(h => h.id !== id));
     };
@@ -477,7 +481,7 @@ const SeatingChart = () => {
 
     const handleRandomize = () => {
         if (!students || students.length === 0) {
-            alert('학생 정보가 없습니다.');
+            showAlert('학생 정보가 없습니다.', '안내', '확인', 'error');
             return;
         }
         const newGrid = assignSeatsRandomly(students, grid, constraints, useFemaleSeats);
@@ -485,8 +489,9 @@ const SeatingChart = () => {
         syncLocalStorageSeating(newGrid);
     };
 
-    const resetGrid = () => {
-        if (window.confirm('모든 학생 배치를 초기화하시겠습니까? (빈 좌석 설정은 유지됩니다)')) {
+    const resetGrid = async () => {
+        const confirmed = await showConfirm('모든 학생 배치를 초기화하시겠습니까? (빈 좌석 설정은 유지됩니다)', '자리 초기화', '초기화', '취소');
+        if (confirmed) {
             const newGrid = grid.map(row => row.map(seat => ({ ...seat, studentId: null })));
             setGrid(newGrid);
             syncLocalStorageSeating(newGrid);

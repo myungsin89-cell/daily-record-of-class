@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useStudentContext } from '../context/StudentContext';
 import { useClass } from '../context/ClassContext';
 import { useAuth } from '../context/AuthContext';
+import { useModal } from '../context/ModalContext';
 import Button from '../components/Button';
 import './AssignmentManager.css';
 
@@ -10,6 +11,7 @@ import { useSaveStatus } from '../context/SaveStatusContext';
 const AssignmentManager = () => {
     const { currentClass } = useClass();
     const { user } = useAuth();
+    const { showConfirm, showAlert } = useModal();
     const rawClassId = currentClass?.id || 'default';
     const classId = user ? `${user.username}_${rawClassId}` : rawClassId;
     const { students } = useStudentContext();
@@ -87,8 +89,9 @@ const AssignmentManager = () => {
         setSelectedAssignmentId(newAssignment.id);
     };
 
-    const handleDeleteAssignment = (id) => {
-        if (window.confirm('이 과제를 삭제하시겠습니까?')) {
+    const handleDeleteAssignment = async (id) => {
+        const confirmed = await showConfirm('이 과제를 삭제하시겠습니까?', '과제 삭제', '삭제', '취소');
+        if (confirmed) {
             const updatedAssignments = assignments.filter(a => a.id !== id);
             setAssignments(updatedAssignments);
             if (selectedAssignmentId === id) {

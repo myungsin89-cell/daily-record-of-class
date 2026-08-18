@@ -121,7 +121,6 @@ export const StudentProvider = ({ children }) => {
     };
 
     const deleteJournalEntry = (studentId, entryId) => {
-        if (!window.confirm('기록을 삭제하시겠습니까?')) return;
         setJournals((prev) => {
             const studentEntries = prev[studentId] || [];
             const updatedEntries = studentEntries.filter(entry => entry.id !== entryId);
