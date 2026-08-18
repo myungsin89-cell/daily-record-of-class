@@ -124,34 +124,85 @@
 }
 
 /* ===== 최상위 데스크톱 창 컨테이너 (Antigravity IDE 일체형 모서리) ===== */
+html, body {
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+}
+
+#root {
+    height: 100% !important;
+    overflow: hidden !important;
+}
+
 .app-root.is-desktop {
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+    height: 100vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
     border-radius: 16px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.4);
     background: transparent;
 }
 
-/* 상단 타이틀바 (드래그 영역) */
+/* 상단 타이틀바 (고정 드래그 영역) */
 .window-titlebar {
-    position: sticky;
-    top: 0;
-    width: 100%;
-    box-sizing: border-box;
-    height: 38px;
-    background: #f8fafc;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 1rem;
-    user-select: none;
-    -webkit-app-region: drag;
-    border-bottom: 1px solid #e2e8f0;
-    z-index: 99999;
-    flex-shrink: 0;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    height: 38px !important;
+    background: #f8fafc !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 0 1rem !important;
+    user-select: none !important;
+    -webkit-app-region: drag !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    z-index: 999999 !important;
+    flex-shrink: 0 !important;
+}
+
+.glass-app-wrapper.is-desktop,
+.layout.is-desktop,
+.create-class-container,
+.class-select-container {
+    padding-top: 38px !important;
+    box-sizing: border-box !important;
+    height: 100vh !important;
+    overflow: hidden !important;
+}
+
+/* Electron 드래그 영역 침범 방지 & 모든 입력창 포커스/타이핑 100% 활성화 */
+button, input, textarea, select, a, [contenteditable="true"], .modal, .cr-modal, .grade-modal, .journal-modal, .seating-dialog-card {
+    -webkit-app-region: no-drag !important;
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    pointer-events: auto !important;
+}
+
+button, a, .pill-thumb, .green-toggle-pill {
+    user-select: none !important;
+    -webkit-user-select: none !important;
+}
+
+/* 모든 모달 오버레이를 타이틀바(999999)보다 위로 강제 배치 */
+.cr-modal-overlay,
+.grade-modal-overlay,
+.modal-overlay,
+.journal-modal-overlay,
+.settings-modal-overlay,
+.music-help-overlay,
+.warning-modal-overlay,
+.initial-setup-modal-overlay,
+.seating-dialog-overlay {
+    z-index: 9999999 !important;
+    -webkit-app-region: no-drag !important;
 }
 
 .window-titlebar.login-mode {

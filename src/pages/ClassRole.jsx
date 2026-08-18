@@ -315,6 +315,7 @@ const ClassRole = () => {
                                 <label>역할명 *</label>
                                 <input
                                     type="text"
+                                    autoFocus
                                     value={form.name}
                                     onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                                     placeholder="예: 청소 담당, 환경 미화원"
@@ -337,7 +338,7 @@ const ClassRole = () => {
                                     type="number"
                                     value={form.count}
                                     min={1}
-                                    max={sortedStudents.length}
+                                    max={Math.max(1, sortedStudents.length || 40)}
                                     onChange={e => setForm(f => ({ ...f, count: e.target.value }))}
                                     className="cr-input cr-input-number"
                                 />
