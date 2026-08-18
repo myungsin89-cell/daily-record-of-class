@@ -44,6 +44,11 @@
   "build": {
     "appId": "com.classdiary.app",
     "productName": "학급일지",
+    "publish": {
+      "provider": "github",
+      "owner": "myungsin89-cell",
+      "repo": "daily-record-of-class"
+    },
     "directories": {
       "output": "C:/Users/소미네/Desktop/학급일지_설치파일_출력"
     },
