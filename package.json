@@ -47,7 +47,7 @@
     "publish": {
       "provider": "github",
       "owner": "myungsin89-cell",
-      "repo": "daily-record-of-class"
+      "repo": "new-daily"
     },
     "directories": {
       "output": "C:/Users/소미네/Desktop/학급일지_설치파일_출력"
