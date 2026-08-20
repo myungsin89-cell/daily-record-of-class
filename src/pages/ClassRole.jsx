@@ -3,6 +3,7 @@ import { useStudentContext } from '../context/StudentContext';
 import { useClass } from '../context/ClassContext';
 import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
+import ClassRolePrintModal from '../components/ClassRolePrintModal';
 import './ClassRole.css';
 
 const ClassRole = () => {
@@ -29,6 +30,7 @@ const ClassRole = () => {
     const [roles, setRoles] = useState([]);
     const [showAddModal, setShowAddModal] = useState(false);
     const [showAssignModal, setShowAssignModal] = useState(null); // role index
+    const [showPrintModal, setShowPrintModal] = useState(false);
     const [editingRole, setEditingRole] = useState(null); // role index for editing
     const [form, setForm] = useState({ name: '', description: '', count: 1 });
     const [selectedStudents, setSelectedStudents] = useState([]);
@@ -148,7 +150,7 @@ const ClassRole = () => {
     const allFull = roles.length > 0 && totalAssigned === totalCapacity;
 
     const handlePrint = () => {
-        window.print();
+        setShowPrintModal(true);
     };
 
     if (!students || students.length === 0) {
@@ -463,6 +465,15 @@ const ClassRole = () => {
                     </div>
                 </div>
             )}
+
+            {/* 1인 1역 A4 세로 인쇄 및 미리보기 모달 */}
+            <ClassRolePrintModal 
+                isOpen={showPrintModal}
+                onClose={() => setShowPrintModal(false)}
+                currentClass={currentClass}
+                roles={roles}
+                students={sortedStudents}
+            />
         </div>
     );
 };

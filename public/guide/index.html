@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>이음초등학교 선생님을 위한 [학급일지] 초간단 사용 가이드</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+  <style>
+    :root {
+      --primary: #15803d;
+      --primary-hover: #166534;
+      --primary-light: #f0fdf4;
+      --primary-border: #bbf7d0;
+      --primary-accent: #22c55e;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --bg-page: #f8fafc;
+      --bg-card: #ffffff;
+      --border-color: #e2e8f0;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.07);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.08);
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Top Sticky Navigation */
+    .nav-bar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      padding: 12px 24px;
+    }
+
+    .nav-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    .brand svg {
+      width: 24px;
+      height: 24px;
+      stroke: var(--primary);
+    }
+
+    .school-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--primary-light);
+      color: var(--primary);
+      border: 1px solid var(--primary-border);
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 4px 0;
+    }
+
+    .nav-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 6px 11px;
+      border-radius: var(--radius-sm);
+      white-space: nowrap;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-link:hover {
+      color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    .nav-link.killer-nav {
+      color: #b45309;
+      background: #fef3c7;
+      border: 1px solid #fde68a;
+      font-weight: 700;
+    }
+
+    .nav-link.killer-nav:hover {
+      background: #fde047;
+    }
+
+    /* Container */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 20px 80px;
+    }
+
+    /* Hero Section */
+    .hero {
+      background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+      border: 1px solid var(--primary-border);
+      border-radius: var(--radius-lg);
+      padding: 36px 28px;
+      margin-bottom: 32px;
+      box-shadow: var(--shadow-sm);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-top-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #ffffff;
+      border: 1px solid var(--primary-border);
+      color: var(--primary);
+      font-size: 0.85rem;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 4px rgba(21, 128, 61, 0.08);
+    }
+
+    .hero h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+      margin-bottom: 10px;
+    }
+
+    .hero h1 span {
+      color: var(--primary);
+    }
+
+    .hero p {
+      font-size: 1rem;
+      color: var(--text-muted);
+      max-width: 680px;
+      margin: 0 auto;
+      word-break: keep-all;
+      line-height: 1.6;
+    }
+
+    /* Section Cards */
+    .guide-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 30px;
+      margin-bottom: 28px;
+      box-shadow: var(--shadow-sm);
+      transition: box-shadow 0.2s ease, transform 0.2s ease;
+      scroll-margin-top: 80px;
+    }
+
+    .guide-section:hover {
+      box-shadow: var(--shadow-md);
+    }
+
+    /* Killer Section Special Border */
+    .guide-section.killer-section {
+      border: 2px solid #f59e0b;
+      background: linear-gradient(180deg, #fffdfa 0%, #ffffff 100%);
+      box-shadow: 0 8px 24px rgba(245, 158, 11, 0.15);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 18px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .section-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-badge-num {
+      width: 32px;
+      height: 32px;
+      background: var(--primary-light);
+      color: var(--primary);
+      border: 1.5px solid var(--primary-border);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.95rem;
+    }
+
+    .killer-section .section-badge-num {
+      background: #fef3c7;
+      color: #d97706;
+      border-color: #fde68a;
+    }
+
+    .section-title-wrap h2 {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .section-tag {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: #f1f5f9;
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    .killer-section .section-tag {
+      background: #fef3c7;
+      color: #b45309;
+      font-weight: 700;
+    }
+
+    /* Grid Layout: GIF + Instructions */
+    .section-body {
+      display: grid;
+      grid-template-columns: 1.25fr 1fr;
+      gap: 26px;
+      align-items: start;
+    }
+
+    /* GIF Media Box */
+    .gif-container {
+      background: #0f172a;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-sm);
+      position: relative;
+    }
+
+    .gif-container img {
+      width: 100%;
+      height: auto;
+      display: block;
+      transition: transform 0.25s ease;
+      cursor: zoom-in;
+    }
+
+    .gif-container:hover img {
+      transform: scale(1.01);
+    }
+
+    .gif-zoom-hint {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(4px);
+      color: #ffffff;
+      font-size: 0.75rem;
+      padding: 4px 8px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      pointer-events: none;
+    }
+
+    .gif-zoom-hint svg {
+      width: 14px;
+      height: 14px;
+      stroke: #ffffff;
+    }
+
+    /* Steps List */
+    .steps-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 14px;
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      transition: background 0.15s ease;
+    }
+
+    .step-item:hover {
+      background: var(--primary-light);
+      border-color: var(--primary-border);
+    }
+
+    .step-num {
+      width: 22px;
+      height: 22px;
+      background: var(--primary);
+      color: #ffffff;
+      font-size: 0.78rem;
+      font-weight: 700;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .step-text {
+      font-size: 0.92rem;
+      color: #334155;
+      line-height: 1.5;
+    }
+
+    .step-text strong {
+      color: #0f172a;
+      display: block;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+
+    /* Killer Feature Spotlight Card in Attendance Section */
+    .killer-spotlight-top {
+      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+      border: 2px solid #f59e0b;
+      border-radius: var(--radius-sm);
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: 0 4px 10px rgba(245, 158, 11, 0.12);
+    }
+
+    .killer-spotlight-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #92400e;
+      font-size: 1rem;
+      font-weight: 800;
+    }
+
+    .killer-spotlight-header svg {
+      width: 20px;
+      height: 20px;
+      stroke: #d97706;
+      flex-shrink: 0;
+    }
+
+    .killer-spotlight-desc {
+      font-size: 0.92rem;
+      color: #78350f;
+      line-height: 1.55;
+      word-break: keep-all;
+    }
+
+    .killer-spotlight-desc strong {
+      color: #92400e;
+      background: #fde68a;
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+
+    /* Key Benefits Pills */
+    .benefit-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .chip {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      padding: 4px 9px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #475569;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .chip.gold-chip {
+      background: #ffffff;
+      border-color: #fde68a;
+      color: #92400e;
+      font-weight: 700;
+    }
+
+    .chip svg {
+      width: 13px;
+      height: 13px;
+      stroke: var(--primary);
+    }
+
+    .chip.gold-chip svg {
+      stroke: #d97706;
+    }
+
+    /* Lightbox Modal for GIF Zoom */
+    .lightbox-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      cursor: zoom-out;
+    }
+
+    .lightbox-modal.active {
+      display: flex;
+    }
+
+    .lightbox-img {
+      max-width: 90vw;
+      max-height: 90vh;
+      border-radius: var(--radius-md);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .lightbox-close {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: #ffffff;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .lightbox-close:hover {
+      background: rgba(255, 255, 255, 0.4);
+    }
+
+    .lightbox-close svg {
+      width: 20px;
+      height: 20px;
+      stroke: #ffffff;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+      font-size: 0.88rem;
+      border-top: 1px solid var(--border-color);
+      margin-top: 50px;
+    }
+
+    .footer strong {
+      color: var(--primary);
+    }
+
+    /* Responsive */
+    @media (max-width: 860px) {
+      .section-body {
+        grid-template-columns: 1fr;
+      }
+      .hero h1 {
+        font-size: 1.65rem;
+      }
+      .hero {
+        padding: 28px 20px;
+      }
+      .guide-section {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Sticky Navigation -->
+  <nav class="nav-bar">
+    <div class="nav-container">
+      <a href="#" class="brand">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+        </svg>
+        <span>학급일지 사용 가이드</span>
+        <span class="school-badge">이음초등학교</span>
+      </a>
+      <div class="nav-links">
+        <a href="#section-start" class="nav-link">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
+          1. 처음사용
+        </a>
+        <a href="#section-diary" class="nav-link">2. 다이어리/메모</a>
+        <a href="#section-attendance" class="nav-link killer-nav">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+          3. 🌟출결 & 이음초 서식
+        </a>
+        <a href="#section-observation" class="nav-link">4. 누가기록</a>
+        <a href="#section-grades" class="nav-link">5. 성적/수행</a>
+        <a href="#section-tools" class="nav-link">6. 스마트도구</a>
+        <a href="#section-settings" class="nav-link">7. 설정/백업</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+
+    <!-- Hero Header -->
+    <header class="hero">
+      <div class="hero-top-tag">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        <span>선생님의 칼퇴를 돕는 스마트 교무수첩</span>
+      </div>
+
+      <h1>이음초 선생님을 위한 <span>[학급일지]</span> 3분 사용법</h1>
+      <p>
+        복잡하고 두꺼운 매뉴얼 없이 10초 움짤만 슥- 보셔도 오늘 바로 학급 경영에 활용하실 수 있습니다.
+      </p>
+    </header>
+
+    <!-- SECTION 1: 처음 사용하기 -->
+    <section class="guide-section" id="section-start">
+      <div class="section-header">
+        <div class="section-title-wrap">
+          <div class="section-badge-num">1</div>
+          <h2>처음 사용하기 (1분 세팅)</h2>
+        </div>
+        <span class="section-tag">초기 학급 명렬 등록</span>
+      </div>
+
+      <div class="section-body">
+        <div class="gif-container" onclick="openLightbox('./gifs/처음사용.gif')">
+          <img src="./gifs/처음사용.gif" alt="학급일지 처음사용 화면" loading="lazy">
+          <div class="gif-zoom-hint">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+            클릭하여 확대
+          </div>
+        </div>
+
+        <div class="steps-container">
+          <div class="step-item">
+            <div class="step-num">1</div>
+            <div class="step-text">
+              <strong>학년 / 반 / 담임 교사명 입력</strong>
+              기본 학급 정보와 비밀번호를 간단히 설정합니다.
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">2</div>
+            <div class="step-text">
+              <strong>나이스(NEIS) 학생 명렬 복사 & 붙여넣기</strong>
+              나이스 출석부나 엑셀에서 학생 명단을 복사해 그대로 붙여넣으면 번호·이름·성별이 자동 등록됩니다.
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">3</div>
+            <div class="step-text">
+              <strong>준비 완료!</strong>
+              1분 만에 우리 반 세팅이 끝나고 바로 일지를 사용할 수 있습니다.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: 다이어리 & 포스트잇 메모장 -->
+    <section class="guide-section" id="section-diary">
+      <div class="section-header">
+        <div class="section-title-wrap">
+          <div class="section-badge-num">2</div>
+          <h2>다이어리 & 바탕화면 포스트잇 메모</h2>
+        </div>
+        <span class="section-tag">일과 시간표 & 바탕화면 스티커</span>
+      </div>
+
+      <div class="section-body">
+        <div class="gif-container" onclick="openLightbox('./gifs/다이어리 메모장.gif')">
+          <img src="./gifs/다이어리 메모장.gif" alt="다이어리 및 메모장 화면" loading="lazy">
+          <div class="gif-zoom-hint">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+            클릭하여 확대
+          </div>
+        </div>
+
+        <div class="steps-container">
+          <div class="step-item">
+            <div class="step-num">1</div>
+            <div class="step-text">
+              <strong>주간 시간표 및 수업 진도 일지</strong>
+              교시별 수업 내용과 준비물을 캘린더 다이어리에서 바로 확인하고 작성합니다.
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">2</div>
+            <div class="step-text">
+              <strong>무테 감성 컬러 포스트잇 메모</strong>
+              카드 안에서 글씨를 타이핑하면 카드 높이가 자연스럽게 늘어나며 실시간 자동 저장됩니다.
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">3</div>
+            <div class="step-text">
+              <strong>[바탕화면 스티커] 모드 지원</strong>
+              모니터 아이콘을 누르면 윈도우 바탕화면에 항상 떠 있는 깔끔한 플로팅 스티커로 변신합니다.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: 🌟 출결 관리 & 이음초 서식 (칩 2개로 정돈) -->
+    <section class="guide-section killer-section" id="section-attendance">
+      <div class="section-header">
+        <div class="section-title-wrap">
+          <div class="section-badge-num">3</div>
+          <h2>출결 관리 & 이음초 전용 서식 출력</h2>
+        </div>
+        <span class="section-tag">🌟 이음초 킬러 기능</span>
+      </div>
+
+      <div class="section-body">
+        <div class="gif-container" onclick="openLightbox('./gifs/출결관리.gif')">
+          <img src="./gifs/출결관리.gif" alt="출결관리 및 이음초 서식 출력" loading="lazy">
+          <div class="gif-zoom-hint">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+            클릭하여 확대
+          </div>
+        </div>
+
+        <div class="steps-container">
+
+          <!-- 🌟 [이음초 킬러 기능: 관리대장 & 결석계 2개 칩] -->
+          <div class="killer-spotlight-top">
+            <div class="killer-spotlight-header">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+              <span>[이음초 킬러 기능] 원클릭 공식 서식 인쇄</span>
+            </div>
+            <div class="killer-spotlight-desc">
+              출결 체크 후 <strong>[인쇄] 버튼 한 번만 누르면</strong> 학생 이름, 기간, 사유가 채워진 <strong>이음초 공식 [교외체험학습 출결관리대장]</strong> 및 <strong>[결석계]</strong>가 1초 만에 규격 출력됩니다! (한글 서식 타이핑 불필요)
+            </div>
+            <div class="benefit-chips">
+              <span class="chip gold-chip"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>이음초 교외체험학습 출결관리대장</span>
+              <span class="chip gold-chip"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>이음초 공식 결석계 자동출력</span>
+            </div>
+          </div>
+
+          <!-- Step 1 -->
+          <div class="step-item">
+            <div class="step-num">1</div>
+            <div class="step-text">
+              <strong>매일 아침 출결 상태 원클릭 체크</strong>
+              결석, 지각, 조퇴, 결과 및 교외체험학습을 달력에서 클릭 한 번으로 기록합니다.
+            </div>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="step-item">
+            <div class="step-num">2</div>
+            <div class="step-text">
+              <strong>체험학습 잔여 일수 실시간 자동 계산</strong>
+              학생별 교외체험학습 인정 가능 잔여 일수가 자동 계산되어 초과 결석을 미연에 방지합니다.
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4: 학생 관찰 & 누가기록 -->
+    <section class="guide-section" id="section-observation">
+      <div class="section-header">
+        <div class="section-title-wrap">
+          <div class="section-badge-num">4</div>
+          <h2>학생 관찰 & 누가기록</h2>
+        </div>
+        <span class="section-tag">행동발달·상담·특기사항</span>
+      </div>
+
+      <div class="section-body">
+        <div class="gif-container" onclick="openLightbox('./gifs/학생 누가기록.gif')">
+          <img src="./gifs/학생 누가기록.gif" alt="학생 누가기록 화면" loading="lazy">
+          <div class="gif-zoom-hint">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+            클릭하여 확대
+          </div>
+        </div>
+
+        <div class="steps-container">
+          <div class="step-item">
+            <div class="step-num">1</div>
+            <div class="step-text">
+              <strong>학생 선택 후 관찰 내용 빠른 메모</strong>
+              수업 중 눈에 띈 칭찬할 점, 친구 관계, 상담 내용을 날짜와 함께 바로 기록합니다.
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">2</div>
+            <div class="step-text">
+              <strong>영역별 태그 분류</strong>
+              [자율/동아리/진로/행발/교우관계] 태그로 깔끔하게 정리되어 한눈에 모아볼 수 있습니다.
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">3</div>
+            <div class="step-text">
+              <strong>학기말 생기부 & 통지표 작성 시 검색</strong>
+              학생별로 누적된 관찰 타임라인을 확인하며 손쉽게 생기부를 작성할 수 있습니다.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 5: 수행평가 & 성적 기록 -->
+    <section class="guide-section" id="section-grades">
+      <div class="section-header">
+        <div class="section-title-wrap">
+          <div class="section-badge-num">5</div>
+          <h2>수행평가 & 성적 기록</h2>
+        </div>
+        <span class="section-tag">과목별 평가 척도 및 관찰 비고</span>
+      </div>
+
+      <div class="section-body">
+        <div class="gif-container" onclick="openLightbox('./gifs/학생성적기록.gif')">
+          <img src="./gifs/학생성적기록.gif" alt="학생성적기록 화면" loading="lazy">
+          <div class="gif-zoom-hint">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+            클릭하여 확대
+          </div>
+        </div>
+
+        <div class="steps-container">
+          <div class="step-item">
+            <div class="step-num">1</div>
+            <div class="step-text">
+              <strong>과목 및 성취기준 평가 항목 생성</strong>
+              국어, 수학 등 과목별 수행평가 영역과 평가 기준을 등록합니다.
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">2</div>
+            <div class="step-text">
+              <strong>척도(매우잘함/잘함/보통/노력요함) 및 비고 입력</strong>
+              넓고 쾌적한 입력창에서 학생별 수행 수준과 특이사항을 빠르게 탭(Tab) 키로 입력합니다.
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">3</div>
+            <div class="step-text">
+              <strong>성적 일람표 엑셀 내보내기 & 통계 확인</strong>
+              나이스 성적 입력에 최적화된 엑셀(XLSX) 양식으로 원클릭 다운로드할 수 있습니다.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 6: 스마트 학급경영 도구 -->
+    <section class="guide-section" id="section-tools">
+      <div class="section-header">
+        <div class="section-title-wrap">
+          <div class="section-badge-num">6</div>
+          <h2>스마트 학급경영 도구</h2>
+        </div>
+        <span class="section-tag">자리배치·발표뽑기·모둠·학급예산</span>
+      </div>
+
+      <div class="section-body">
+        <div class="gif-container" onclick="openLightbox('./gifs/학급경영도구.gif')">
+          <img src="./gifs/학급경영도구.gif" alt="학급경영 도구 화면" loading="lazy">
+          <div class="gif-zoom-hint">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+            클릭하여 확대
+          </div>
+        </div>
+
+        <div class="steps-container">
+          <div class="step-item">
+            <div class="step-num">1</div>
+            <div class="step-text">
+              <strong>자리배치 & 짝 바꾸기</strong>
+              시력 배려 학생 고정석 지정, 남녀 짝꿍 분리, 1초 만에 공정한 랜덤 자리 배치가 완성됩니다.
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">2</div>
+            <div class="step-text">
+              <strong>랜덤 발표자 뽑기 & 모둠 편성</strong>
+              수업 중 학생들의 흥미를 돋우는 애니메이션 추첨과 균형 잡힌 모둠 구성을 지원합니다.
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">3</div>
+            <div class="step-text">
+              <strong>학급 운영비 & 예산 관리</strong>
+              학급비, 준비물 구매 등 품의·지출 내역을 기록하고 남은 잔여 예산을 실시간으로 계산 관리합니다.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 7: 환경설정 & 자동 백업 (메뉴 순서/노출 조절 및 자동 백업) -->
+    <section class="guide-section" id="section-settings">
+      <div class="section-header">
+        <div class="section-title-wrap">
+          <div class="section-badge-num">7</div>
+          <h2>환경설정 & 자동 백업</h2>
+        </div>
+        <span class="section-tag">보안 100% · 자동백업 · 메뉴 커스텀</span>
+      </div>
+
+      <div class="section-body">
+        <div class="gif-container" onclick="openLightbox('./gifs/설정.gif')">
+          <img src="./gifs/설정.gif" alt="설정 및 데이터 백업 화면" loading="lazy">
+          <div class="gif-zoom-hint">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+            클릭하여 확대
+          </div>
+        </div>
+
+        <div class="steps-container">
+          <div class="step-item">
+            <div class="step-num">1</div>
+            <div class="step-text">
+              <strong>서버 저장 없는 100% 로컬 보안</strong>
+              학생의 소중한 개인정보와 관찰 기록은 외부 서버로 전송되지 않고 선생님 PC에만 안전하게 암호화 보관됩니다.
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">2</div>
+            <div class="step-text">
+              <strong>지정 폴더 자동 백업 지원</strong>
+              선생님 컴퓨터의 원하는 폴더(USB, 업무용 드라이브 등)를 지정해두면 자동으로 안전하게 백업 파일이 저장됩니다.
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">3</div>
+            <div class="step-text">
+              <strong>게시판/메뉴 순서 변경 & 노출 조절</strong>
+              자주 쓰는 메뉴 순서를 바꾸거나, 쓰지 않는 게시판은 숨겨서 선생님 스타일에 꼭 맞는 맞춤 화면으로 조절할 수 있습니다.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>🌿 <strong>이음초등학교</strong> 선생님들의 쾌적하고 행복한 교직 생활을 응원합니다!</p>
+      <p style="margin-top: 6px; font-size: 0.8rem; color: #94a3b8;">학급일지 프로그램 문의 및 건의사항은 언제든 편하게 말씀해 주세요.</p>
+    </footer>
+
+  </div>
+
+  <!-- Lightbox Modal for GIF Zoom -->
+  <div class="lightbox-modal" id="lightboxModal" onclick="closeLightbox()">
+    <button class="lightbox-close" onclick="closeLightbox()">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    </button>
+    <img src="" alt="확대 이미지" class="lightbox-img" id="lightboxImg">
+  </div>
+
+  <script>
+    // Smooth scrolling for navigation links
+    document.querySelectorAll('.nav-link').forEach(link => {
+      link.addEventListener('click', function(e) {
+        const targetId = this.getAttribute('href');
+        if (targetId.startsWith('#')) {
+          e.preventDefault();
+          const targetElement = document.querySelector(targetId);
+          if (targetElement) {
+            targetElement.scrollIntoView({ behavior: 'smooth' });
+          }
+        }
+      });
+    });
+
+    // Lightbox functions
+    function openLightbox(src) {
+      const modal = document.getElementById('lightboxModal');
+      const img = document.getElementById('lightboxImg');
+      img.src = src;
+      modal.classList.add('active');
+    }
+
+    function closeLightbox() {
+      const modal = document.getElementById('lightboxModal');
+      modal.classList.remove('active');
+    }
+
+    // Close on Escape key
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeLightbox();
+      }
+    });
+  </script>
+</body>
+</html>

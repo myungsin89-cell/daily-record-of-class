@@ -4,6 +4,7 @@ import { useClass } from '../context/ClassContext';
 import { useModal } from '../context/ModalContext';
 import { getData, saveData, deleteData, getAllDataByIndex, STORES } from '../db/indexedDB';
 import { generateEmptyGrid, assignSeatsRandomly } from '../utils/seatingUtils';
+import SeatingPrintModal from '../components/SeatingPrintModal';
 import './SeatingChart.css';
 
 const SeatingChart = () => {
@@ -33,6 +34,7 @@ const SeatingChart = () => {
     const [isRevealing, setIsRevealing] = useState(false);
     const [revealOrder, setRevealOrder] = useState([]);
     const [printMode, setPrintMode] = useState(null); // 'standard' | 'teacher'
+    const [showPrintModal, setShowPrintModal] = useState(false);
     const [isFlipped, setIsFlipped] = useState(true); // false: student view (blackboard top), true: teacher view (blackboard bottom)
 
     // Seating History State
@@ -1047,11 +1049,8 @@ const SeatingChart = () => {
                         </div>
 
                         <div className="btn-group print">
-                            <button className="base-btn text-card-btn" onClick={() => handlePrint('standard')}>
-                                🖨️ 학생용 인쇄
-                            </button>
-                            <button className="base-btn text-card-btn" onClick={() => handlePrint('teacher')}>
-                                🖨️ 교사용 인쇄
+                            <button className="base-btn text-card-btn print-open-btn" onClick={() => setShowPrintModal(true)} title="자리배치표 A4 가로 인쇄 및 미리보기">
+                                🖨️ 자리배치표 인쇄 / 미리보기
                             </button>
                         </div>
                     </div>
@@ -2027,6 +2026,15 @@ const SeatingChart = () => {
                     </div>
                 </div>
             )}
+
+            {/* A4 가로 인쇄 & 실시간 미리보기 모달 */}
+            <SeatingPrintModal 
+                isOpen={showPrintModal}
+                onClose={() => setShowPrintModal(false)}
+                currentClass={currentClass}
+                students={students}
+                grid={grid}
+            />
         </div>
     );
 };

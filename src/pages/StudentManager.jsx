@@ -134,13 +134,6 @@ const StudentManager = ({ showTitle = true }) => {
             setRecentlyAddedIds(newIds);
 
             setTimeout(() => {
-                const scrollContainer = document.querySelector('.main-content') || document.querySelector('.page-content');
-                if (scrollContainer && studentListRef.current) {
-                    scrollContainer.scrollTo({ top: studentListRef.current.offsetTop - 80, behavior: 'smooth' });
-                }
-            }, 100);
-
-            setTimeout(() => {
                 setRecentlyAddedIds([]);
             }, 3000);
 
@@ -210,13 +203,6 @@ const StudentManager = ({ showTitle = true }) => {
                     addStudents(validStudents);
                     const newIds = validStudents.map(s => s.id);
                     setRecentlyAddedIds(newIds);
-
-                    setTimeout(() => {
-                        const scrollContainer = document.querySelector('.main-content') || document.querySelector('.page-content');
-                        if (scrollContainer && studentListRef.current) {
-                            scrollContainer.scrollTo({ top: studentListRef.current.offsetTop - 80, behavior: 'smooth' });
-                        }
-                    }, 100);
 
                     setTimeout(() => {
                         setRecentlyAddedIds([]);

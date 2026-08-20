@@ -269,3 +269,143 @@ export const exportElementToA4Pdf = async (element, fileName = '성적분석리�
         throw error;
     }
 };
+
+/**
+ * 자리배치표나 1인1역 등 단일 페이지 문서를 A4 가로/세로 규격에 딱 맞춰 고해상도 PDF로 내보내는 유틸리티
+ */
+export const exportSinglePageA4Pdf = async (element, fileName = '문서.pdf', options = {}) => {
+    if (!element) throw new Error('PDF로 변환할 요소를 찾을 수 없습니다.');
+    const { orientation = 'landscape', margin = 8, onProgress } = options;
+
+    try {
+        if (onProgress) onProgress(true, 'PDF 생성 중...');
+
+        const canvas = await html2canvas(element, {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            backgroundColor: '#ffffff'
+        });
+
+        const isLandscape = orientation === 'landscape';
+        const pdf = new jsPDF(isLandscape ? 'l' : 'p', 'mm', 'a4');
+        const pageWidth = isLandscape ? 297 : 210;
+        const pageHeight = isLandscape ? 210 : 297;
+
+        const maxPrintWidth = pageWidth - (margin * 2);
+        const maxPrintHeight = pageHeight - (margin * 2);
+
+        // 원본 비율 유지하면서 A4 페이지에 맞춤
+        const canvasRatio = canvas.width / canvas.height;
+        let printWidth = maxPrintWidth;
+        let printHeight = printWidth / canvasRatio;
+
+        if (printHeight > maxPrintHeight) {
+            printHeight = maxPrintHeight;
+            printWidth = printHeight * canvasRatio;
+        }
+
+        // 페이지 정가운데 정렬
+        const offsetX = margin + (maxPrintWidth - printWidth) / 2;
+        const offsetY = margin + (maxPrintHeight - printHeight) / 2;
+
+        const imgData = canvas.toDataURL('image/png', 1.0);
+        pdf.addImage(imgData, 'PNG', offsetX, offsetY, printWidth, printHeight);
+
+        pdf.save(fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`);
+        if (onProgress) onProgress(false, '');
+        return true;
+    } catch (error) {
+        console.error('Single page PDF export error:', error);
+        if (onProgress) onProgress(false, '');
+        throw error;
+    }
+};
+
+/**
+ * 부모 컨테이너(overflow, height 등)의 스타일 간섭 없이
+ * 100% 독립된 iframe을 통해 깔끔하게 출력하는 안전 인쇄 헬퍼
+ */
+export const printHtmlElement = (element, options = {}) => {
+    if (!element) return;
+    const { orientation = 'landscape', title = '인쇄' } = options;
+
+    // 기존 임시 print iframe이 있다면 제거
+    const existingIframe = document.getElementById('print-sandbox-iframe');
+    if (existingIframe) existingIframe.remove();
+
+    const iframe = document.createElement('iframe');
+    iframe.id = 'print-sandbox-iframe';
+    iframe.style.position = 'fixed';
+    iframe.style.top = '-99999px';
+    iframe.style.left = '-99999px';
+    iframe.style.width = '1000px';
+    iframe.style.height = '1000px';
+    iframe.style.border = 'none';
+
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>${title}</title>
+            <style>
+                @page {
+                    size: A4 ${orientation};
+                    margin: 8mm;
+                }
+                * {
+                    box-sizing: border-box;
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                }
+                html, body {
+                    margin: 0;
+                    padding: 0;
+                    background: #ffffff;
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
+                    width: 100%;
+                    height: 100%;
+                }
+                .print-container-wrapper {
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="print-container-wrapper">
+                ${element.outerHTML}
+            </div>
+        </body>
+        </html>
+    `);
+
+    // 모든 현재 페이지의 link/style 태그 복사
+    document.querySelectorAll('link[rel="stylesheet"], style').forEach(styleTag => {
+        doc.head.appendChild(styleTag.cloneNode(true));
+    });
+
+    doc.close();
+
+    setTimeout(() => {
+        try {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+        } catch (e) {
+            console.error('Print iframe error:', e);
+            window.print();
+        } finally {
+            setTimeout(() => {
+                iframe.remove();
+            }, 3000);
+        }
+    }, 300);
+};
