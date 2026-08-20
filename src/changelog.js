@@ -3,6 +3,16 @@
 
 export const CHANGELOG = [
     {
+        version: '2.0.1',
+        date: '2026-08-20',
+        title: '🌱 2.0.1 인쇄 & 미리보기 업데이트',
+        changes: [
+            '🪑 자리배치표 A4 가로 인쇄 & 실시간 미리보기: 학생용, 교사용, 학부모용 맞춤 인쇄 및 A4 가로 PDF 다운로드 지원',
+            '📋 1인 1역 인쇄 개선: A4 세로 실시간 미리보기 및 고해상도 PDF 다운로드/인쇄 완벽 지원',
+            '✨ 인쇄 비율 안정화: 여백 및 레이아웃이 A4 용지 정가운데에 꽉 차도록 최적화',
+        ]
+    },
+    {
         version: '2.0.0',
         date: '2026-03-20',
         title: '🌱 2.0.0 대규모 업데이트',
@@ -51,4 +61,4 @@ export const CHANGELOG = [
 ];
 
 // 현재 버전
-export const APP_VERSION = '2.0.0';
+export const APP_VERSION = '2.0.1';
