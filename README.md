@@ -1,16 +1,24 @@
-# React + Vite
+# 🌱 학급일지 (Class Diary)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+선생님을 위한 스마트 학급일지 프로그램입니다.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 📖 문서 바로가기
 
-## React Compiler
+- 🚀 **[배포 및 자동 업데이트 릴리즈 가이드 (RELEASE_GUIDE.md)](./RELEASE_GUIDE.md)**: 버전별 릴리즈 방법 및 자동 업데이트 절차 안내
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## 💻 실행 및 빌드
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 개발 서버 실행
+```bash
+npm run electron:dev
+```
+
+### 설치 파일 빌드
+```bash
+npm run electron:build
+```
+> 빌드된 설치 파일과 `latest.yml`은 `release-build/` 폴더에 생성됩니다.
