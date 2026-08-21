@@ -50,7 +50,7 @@
       "repo": "new-daily"
     },
     "directories": {
-      "output": "C:/Users/소미네/Desktop/학급일지_설치파일_출력"
+      "output": "release-build"
     },
     "win": {
       "target": [
@@ -64,7 +64,7 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "학급일지",
-      "artifactName": "학급일지_Setup_v${version}.${ext}"
+      "artifactName": "ClassDiary_Setup_v${version}.${ext}"
     }
   }
 }

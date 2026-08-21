@@ -15,6 +15,9 @@ dist-package
 setup.iss
 dist-ssr
 *.local
+*.exe
+latest.yml
+latest*.yml
 
 # Editor directories and files
 .vscode/*
