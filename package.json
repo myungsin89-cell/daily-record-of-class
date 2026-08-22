@@ -61,10 +61,11 @@
     "nsis": {
       "oneClick": true,
       "allowToChangeInstallationDirectory": false,
-      "createDesktopShortcut": true,
+      "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,
       "shortcutName": "학급일지",
-      "artifactName": "ClassDiary_Setup_v${version}.${ext}"
+      "artifactName": "ClassDiary_Setup_v${version}.${ext}",
+      "include": "build/installer.nsh"
     }
   }
 }
