@@ -1,7 +1,7 @@
 {
   "name": "class-diary",
   "private": true,
-  "version": "2.0.1",
+  "version": "2.0.2",
   "main": "electron/main.js",
   "scripts": {
     "dev": "vite",
@@ -47,7 +47,7 @@
     "publish": {
       "provider": "github",
       "owner": "myungsin89-cell",
-      "repo": "new-daily"
+      "repo": "daily-record-of-class"
     },
     "directories": {
       "output": "release-build"

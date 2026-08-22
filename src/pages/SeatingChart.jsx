@@ -989,6 +989,29 @@ const SeatingChart = () => {
                 </div>
             )}
 
+            {/* 학생 공개 모드: 회색 배경 좌측 상단 고정 뒤로가기 버튼 */}
+            {mode === 'student' && (
+                <button 
+                    type="button"
+                    className="student-mode-back-btn" 
+                    onClick={() => {
+                        setMode('teacher');
+                        setIsRevealing(false);
+                        setRevealedCount(0);
+                        if (ytPlayerRef.current && ytPlayerRef.current.stopVideo) {
+                            try { ytPlayerRef.current.stopVideo(); } catch(e) {}
+                        }
+                    }} 
+                    title="교사 모드로 돌아가기"
+                >
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="19" y1="12" x2="5" y2="12"/>
+                        <polyline points="12 19 5 12 12 5"/>
+                    </svg>
+                    <span>교사 모드</span>
+                </button>
+            )}
+
             {mode === 'teacher' && (
                 <header className="seating-top-header">
                     <div className="header-title">
@@ -1059,15 +1082,6 @@ const SeatingChart = () => {
 
             {mode === 'student' && (
                 <div className="student-unified-header">
-                    <button className="stealth-back-btn green-back-pill" onClick={() => {
-                        setMode('teacher');
-                        setIsRevealing(false);
-                        setRevealedCount(0);
-                        if (ytPlayerRef.current && ytPlayerRef.current.stopVideo) {
-                            try { ytPlayerRef.current.stopVideo(); } catch(e) {}
-                        }
-                    }} title="교사 설정으로 돌아가기">← 돌아가기</button>
-
                     <div className="student-main-title">
                         🌱 우리 반 자리 배치
                     </div>
@@ -2034,6 +2048,7 @@ const SeatingChart = () => {
                 currentClass={currentClass}
                 students={students}
                 grid={grid}
+                gridConfig={gridConfig}
             />
         </div>
     );

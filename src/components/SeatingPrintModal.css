@@ -60,27 +60,12 @@
 
 .seating-modal-title-group {
     display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.seating-modal-badge {
-    display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: #15803d;
-    background: #f0fdf4;
-    padding: 0.15rem 0.55rem;
-    border-radius: 99px;
-    width: fit-content;
-    border: 1px solid #bbf7d0;
 }
 
 .seating-modal-header h3 {
     margin: 0;
-    font-size: 1.2rem;
+    font-size: 1.15rem;
     font-weight: 800;
     color: #0f172a;
     letter-spacing: -0.3px;
@@ -106,16 +91,14 @@
     background: #f1f5f9;
 }
 
-/* 상단 컨트롤 바 (탭 및 가이드) */
+/* 상단 컨트롤 바 (탭) */
 .seating-modal-controls {
-    padding: 0.75rem 1.5rem;
+    padding: 0.65rem 1.5rem;
     background: #f8fafc;
     border-bottom: 1px solid #e2e8f0;
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 0.75rem;
 }
 
 .seating-mode-tabs {
@@ -149,12 +132,6 @@
     background: #ffffff;
     color: #15803d;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-}
-
-.seating-preview-guide {
-    font-size: 0.8rem;
-    color: #64748b;
-    font-weight: 500;
 }
 
 /* 미리보기 스크롤 영역 */
@@ -194,73 +171,31 @@
     color: #0f172a;
 }
 
-/* 시트 상단 헤더 */
-.sp-sheet-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    border-bottom: 2.5px solid #16a34a;
-    padding-bottom: 8px;
-    margin-bottom: 12px;
-}
-
-.sp-title-area {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.sp-main-title {
-    margin: 0;
-    font-size: 20pt;
-    font-weight: 900;
-    color: #15803d;
-    letter-spacing: -0.5px;
-}
-
-.sp-mode-tag {
-    font-size: 10pt;
-    font-weight: 800;
-    background: #dcfce7;
-    color: #15803d;
-    padding: 3px 10px;
-    border-radius: 6px;
-    border: 1px solid #86efac;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-}
-
-.sp-meta-info {
-    display: flex;
-    gap: 14px;
-    font-size: 10pt;
-    color: #64748b;
-    font-weight: 600;
-}
-
-/* 칠판 바 */
+/* 칠판 바 (싱그러운 그린 테마 & 깔끔한 무테 라운드) */
 .sp-blackboard {
-    width: 55%;
+    width: 48%;
     margin: 0 auto;
-    background: #1e293b;
+    background: #15803d;
     color: #ffffff;
     text-align: center;
-    padding: 6px 0;
-    font-size: 11pt;
+    padding: 5px 0;
+    font-size: 10.5pt;
     font-weight: 800;
-    letter-spacing: 3px;
-    border-radius: 6px;
-    border: 1px solid #334155;
+    letter-spacing: 2px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(21, 128, 61, 0.2);
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
 }
 
 .sp-blackboard.top {
+    margin-top: 2px;
     margin-bottom: 14px;
 }
 
 .sp-blackboard.bottom {
     margin-top: 14px;
+    margin-bottom: 2px;
 }
 
 /* 자리 배치 그리드 컨테이너 (정가운데 정렬) */
@@ -312,17 +247,6 @@
     background: #fdf2f8;
 }
 
-/* 학부모용 모노톤/그린 라인 스타일 */
-.sp-seat-box.parent-style {
-    border: 1.5px solid #94a3b8;
-    background: #ffffff;
-}
-
-.sp-seat-box.parent-style.occupied {
-    background: #f8fafc;
-    border-color: #64748b;
-}
-
 .sp-seat-box.blocked {
     background: #f1f5f9;
     border: 1.5px dashed #cbd5e1;
@@ -333,9 +257,14 @@
     border: 1.5px dashed #e2e8f0;
 }
 
+/* 분단 / 모둠 그룹 간격 (2/2/2, 3/3 등 대열 유지) */
+.sp-seat-box.has-group-gap {
+    margin-right: 22px;
+}
+
 .sp-seat-num {
-    font-size: 8.5pt;
-    font-weight: 800;
+    font-size: 8pt;
+    font-weight: 700;
     color: #64748b;
     line-height: 1;
     margin-bottom: 2px;
@@ -350,26 +279,30 @@
 }
 
 .sp-seat-name {
-    font-size: 13.5pt;
-    font-weight: 900;
+    font-size: 12.5pt;
+    font-weight: 700;
     color: #0f172a;
-    letter-spacing: -0.5px;
+    letter-spacing: -0.3px;
     line-height: 1.1;
 }
 
 .sp-text-blocked, .sp-text-empty {
-    font-size: 10pt;
+    font-size: 9.5pt;
     color: #94a3b8;
     font-weight: 600;
 }
 
-/* 하단 푸터 */
+/* 하단 푸터 (인쇄일자 및 재적 정보) */
 .sp-sheet-footer {
-    margin-top: 10px;
+    margin-top: 12px;
     padding-top: 6px;
-    border-top: 1px solid #e2e8f0;
+    border-top: 1px solid #f1f5f9;
     display: flex;
     justify-content: space-between;
+    align-items: center;
+}
+
+.sp-footer-meta {
     font-size: 8.5pt;
     color: #94a3b8;
     font-weight: 600;

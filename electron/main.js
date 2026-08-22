@@ -175,13 +175,71 @@ app.on('second-instance', () => {
     }
 });
 
+// AutoUpdater Setup - Interactive Dialog Flow
+autoUpdater.autoDownload = false;
+autoUpdater.autoInstallOnAppQuit = true;
+
+autoUpdater.on('update-available', (info) => {
+    console.log(`[AutoUpdater] Update available: v${info.version}`);
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        title: '🌱 학급일지 업데이트 알림',
+        message: `새로운 버전(v${info.version})이 출시되었습니다!`,
+        detail: '최신 기능 및 개선사항을 적용하기 위해 지금 다운로드하시겠습니까?',
+        buttons: ['지금 다운로드', '나중에'],
+        defaultId: 0,
+        cancelId: 1
+    }).then(result => {
+        if (result.response === 0) {
+            autoUpdater.downloadUpdate().catch(err => {
+                console.error('[AutoUpdater] Download error:', err);
+            });
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                dialog.showMessageBox(mainWindow, {
+                    type: 'info',
+                    title: '🌱 학급일지 업데이트',
+                    message: '업데이트 다운로드를 시작합니다.',
+                    detail: '다운로드가 완료되면 재시작 안내창이 나타납니다. 평소처럼 앱을 사용하셔도 됩니다.',
+                    buttons: ['확인']
+                });
+            }
+        }
+    });
+});
+
+autoUpdater.on('update-downloaded', (info) => {
+    console.log(`[AutoUpdater] Update downloaded: v${info.version}`);
+    if (!mainWindow || mainWindow.isDestroyed()) {
+        autoUpdater.quitAndInstall(false, true);
+        return;
+    }
+    dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        title: '✨ 학급일지 업데이트 준비 완료',
+        message: `v${info.version} 버전 다운로드가 완료되었습니다!`,
+        detail: '지금 바로 프로그램을 재시작하여 최신 버전을 적용하시겠습니까?',
+        buttons: ['지금 재시작하여 적용', '나중에 (종료 시 자동 적용)'],
+        defaultId: 0,
+        cancelId: 1
+    }).then(result => {
+        if (result.response === 0) {
+            autoUpdater.quitAndInstall(false, true);
+        }
+    });
+});
+
+autoUpdater.on('error', (err) => {
+    console.error('[AutoUpdater] Error:', err == null ? 'unknown' : (err.stack || err).toString());
+});
+
 app.whenReady().then(() => {
     createMainWindow();
 
     // Check for updates on startup (packaged production only)
     if (app.isPackaged) {
-        autoUpdater.checkForUpdatesAndNotify().catch(err => {
-            console.error('Failed to check for updates:', err);
+        autoUpdater.checkForUpdates().catch(err => {
+            console.error('[AutoUpdater] Check for updates error:', err);
         });
     }
 
@@ -257,6 +315,24 @@ ipcMain.handle('save-backup-file', async (event, folderPath, filename, content) 
         }
         const filePath = path.join(folderPath, filename);
         fs.writeFileSync(filePath, content, 'utf-8');
+        return { success: true, filePath };
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
+});
+
+// Save PDF to temp folder and open with system default viewer for printing
+ipcMain.handle('save-temp-and-open', async (event, pdfDataArray, fileName) => {
+    try {
+        const os = require('os');
+        const tmpDir = path.join(os.tmpdir(), 'ClassDiary_Print');
+        if (!fs.existsSync(tmpDir)) {
+            fs.mkdirSync(tmpDir, { recursive: true });
+        }
+        const filePath = path.join(tmpDir, fileName);
+        const buffer = Buffer.from(pdfDataArray);
+        fs.writeFileSync(filePath, buffer);
+        await shell.openPath(filePath);
         return { success: true, filePath };
     } catch (err) {
         return { success: false, error: err.message };

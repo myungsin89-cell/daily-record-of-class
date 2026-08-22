@@ -104,23 +104,19 @@ const Sidebar = ({ isOpen, onClose, isCollapsed = false, onToggleCollapse, class
     };
 
     return (
-        <aside className={`sidebar ${isOpen ? 'open' : ''} ${isCollapsed ? 'collapsed' : ''} ${className}`} style={{ position: 'relative' }}>
-            {/* Collapse Toggle Button - Top Right of Gray Sidebar */}
-            {onToggleCollapse && (
-                <button
-                    className="collapse-sidebar-btn"
-                    onClick={onToggleCollapse}
-                    title={isCollapsed ? '사이드바 펼치기' : '사이드바 접기'}
-                >
-                    {isCollapsed ? '>' : '<'}
-                </button>
-            )}
-
-            <div className="logo" style={{ padding: isCollapsed ? '0.75rem 0.2rem' : '0.85rem 2.5rem 0.85rem 0.85rem', display: 'flex', alignItems: 'center', minHeight: '48px', boxSizing: 'border-box' }}>
-                <div className="logo-content" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <span style={{ fontSize: '1.2rem' }}>🌿</span>
-                    {!isCollapsed && <span className="logo-title-text" style={{ fontSize: '1.05rem', fontWeight: 800, color: '#1e293b', WebkitTextFillColor: '#1e293b' }}>학급 일지</span>}
-                </div>
+        <aside className={`sidebar ${isOpen ? 'open' : ''} ${isCollapsed ? 'collapsed' : ''} ${className}`}>
+            {/* Sidebar Top Header & Collapse Button */}
+            <div className="sidebar-top-bar">
+                {onToggleCollapse && (
+                    <button
+                        type="button"
+                        className="collapse-sidebar-btn"
+                        onClick={onToggleCollapse}
+                        title={isCollapsed ? '사이드바 펼치기' : '사이드바 접기'}
+                    >
+                        {isCollapsed ? '>' : '<'}
+                    </button>
+                )}
             </div>
 
             <nav className="nav-links">

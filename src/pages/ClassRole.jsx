@@ -34,6 +34,8 @@ const ClassRole = () => {
     const [editingRole, setEditingRole] = useState(null); // role index for editing
     const [form, setForm] = useState({ name: '', description: '', count: 1 });
     const [selectedStudents, setSelectedStudents] = useState([]);
+    const [draggedRoleIndex, setDraggedRoleIndex] = useState(null);
+    const [dragOverRoleIndex, setDragOverRoleIndex] = useState(null);
 
     useEffect(() => {
         const saved = localStorage.getItem(storageKey);
@@ -91,6 +93,44 @@ const ClassRole = () => {
         const confirmed = await showConfirm(`'${roles[index].name}' 역할을 삭제하시겠습니까?`, '역할 삭제 확인', '삭제', '취소');
         if (!confirmed) return;
         saveRoles(roles.filter((_, i) => i !== index));
+    };
+
+    // 드래그 앤 드롭 순서 변경 핸들러
+    const handleDragStart = (e, index) => {
+        setDraggedRoleIndex(index);
+        e.dataTransfer.effectAllowed = 'move';
+        // 고스트 이미지 설정 지원
+        try {
+            e.dataTransfer.setData('text/plain', index.toString());
+        } catch (err) {}
+    };
+
+    const handleDragOver = (e, index) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        if (dragOverRoleIndex !== index) {
+            setDragOverRoleIndex(index);
+        }
+    };
+
+    const handleDrop = (e, targetIndex) => {
+        e.preventDefault();
+        if (draggedRoleIndex === null || draggedRoleIndex === targetIndex) {
+            setDraggedRoleIndex(null);
+            setDragOverRoleIndex(null);
+            return;
+        }
+        const updated = [...roles];
+        const [movedItem] = updated.splice(draggedRoleIndex, 1);
+        updated.splice(targetIndex, 0, movedItem);
+        saveRoles(updated);
+        setDraggedRoleIndex(null);
+        setDragOverRoleIndex(null);
+    };
+
+    const handleDragEnd = () => {
+        setDraggedRoleIndex(null);
+        setDragOverRoleIndex(null);
     };
 
     const handleClearAllStudents = async () => {
@@ -248,8 +288,17 @@ const ClassRole = () => {
             ) : (
                 <div className="cr-table-wrap">
                     <table className="cr-table">
+                        <colgroup>
+                            <col style={{ width: '7%' }} />
+                            <col style={{ width: '17%' }} />
+                            <col style={{ width: '22%' }} />
+                            <col style={{ width: '8%' }} />
+                            <col style={{ width: '30%' }} />
+                            <col style={{ width: '16%' }} />
+                        </colgroup>
                         <thead>
                             <tr>
+                                <th>순번</th>
                                 <th>역할</th>
                                 <th>내용</th>
                                 <th>인원</th>
@@ -263,28 +312,51 @@ const ClassRole = () => {
                                 const filled = assigned.length;
                                 const isFull = filled >= role.count;
                                 return (
-                                    <tr key={role.id} className={isFull ? 'cr-row-full' : 'cr-row-incomplete'}>
+                                    <tr 
+                                        key={role.id} 
+                                        draggable
+                                        onDragStart={(e) => handleDragStart(e, index)}
+                                        onDragOver={(e) => handleDragOver(e, index)}
+                                        onDrop={(e) => handleDrop(e, index)}
+                                        onDragEnd={handleDragEnd}
+                                        className={`cr-draggable-row ${isFull ? 'cr-row-full' : 'cr-row-incomplete'} ${draggedRoleIndex === index ? 'dragging' : ''} ${dragOverRoleIndex === index ? 'drag-over' : ''}`}
+                                    >
+                                        <td className="cr-role-order">
+                                            <div className="cr-drag-handle-cell" title="마우스로 끌어서 순서 변경">
+                                                <svg className="cr-drag-grip-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                    <circle cx="9" cy="5" r="1.2"/>
+                                                    <circle cx="9" cy="12" r="1.2"/>
+                                                    <circle cx="9" cy="19" r="1.2"/>
+                                                    <circle cx="15" cy="5" r="1.2"/>
+                                                    <circle cx="15" cy="12" r="1.2"/>
+                                                    <circle cx="15" cy="19" r="1.2"/>
+                                                </svg>
+                                                <span className="cr-order-num">{index + 1}</span>
+                                            </div>
+                                        </td>
                                         <td className="cr-role-name">{role.name}</td>
                                         <td className="cr-role-desc">{role.description || <span className="cr-empty-desc">-</span>}</td>
                                         <td className="cr-role-count">
-                                            <span className={`cr-count-badge ${isFull ? 'full' : ''}`}>
-                                                {filled}/{role.count}
+                                            <span className={`cr-count-text ${isFull ? 'full' : ''}`}>
+                                                {filled}/{role.count}명
                                             </span>
                                         </td>
                                         <td className="cr-role-students">
                                             {assigned.length === 0 ? (
-                                                <span className="cr-unassigned">미배정</span>
+                                                <span className="cr-unassigned">-</span>
                                             ) : (
-                                                <div className="cr-student-chips">
-                                                    {assigned.map(s => (
-                                                        <span key={s.id} className={`cr-chip cr-chip-${s.gender}`}>
-                                                            {s.attendanceNumber}번 {s.name}
+                                                <div className="cr-student-cards">
+                                                    {assigned.map((s) => (
+                                                        <div key={s.id} className={`cr-student-card cr-card-gender-${s.gender}`}>
+                                                            <span className="cr-card-num">{s.attendanceNumber}번</span>
+                                                            <span className="cr-card-name">{s.name}</span>
                                                             <button
-                                                                className="cr-chip-remove"
+                                                                type="button"
+                                                                className="cr-card-remove"
                                                                 onClick={() => handleRemoveAssigned(index, s.id)}
                                                                 title="배정 해제"
                                                             >×</button>
-                                                        </span>
+                                                        </div>
                                                     ))}
                                                 </div>
                                             )}
@@ -314,7 +386,12 @@ const ClassRole = () => {
                     <div className="cr-modal" onClick={e => e.stopPropagation()}>
                         <div className="cr-modal-header">
                             <h2>{editingRole !== null ? '역할 수정' : '역할 추가'}</h2>
-                            <button className="cr-modal-close" onClick={() => setShowAddModal(false)}>×</button>
+                            <button className="cr-modal-close" onClick={() => setShowAddModal(false)} aria-label="닫기">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18"/>
+                                    <line x1="6" y1="6" x2="18" y2="18"/>
+                                </svg>
+                            </button>
                         </div>
                         <div className="cr-modal-body">
                             <div className="cr-form-group">
@@ -429,7 +506,12 @@ const ClassRole = () => {
                     <div className="cr-modal cr-assign-modal" onClick={e => e.stopPropagation()}>
                         <div className="cr-modal-header">
                             <h2>학생 배정 — {roles[showAssignModal]?.name}</h2>
-                            <button className="cr-modal-close" onClick={() => setShowAssignModal(null)}>×</button>
+                            <button className="cr-modal-close" onClick={() => setShowAssignModal(null)} aria-label="닫기">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18"/>
+                                    <line x1="6" y1="6" x2="18" y2="18"/>
+                                </svg>
+                            </button>
                         </div>
                         <div className="cr-modal-sub">
                             {selectedStudents.length}/{roles[showAssignModal]?.count}명 선택됨

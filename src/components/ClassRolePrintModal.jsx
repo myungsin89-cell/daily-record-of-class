@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { exportSinglePageA4Pdf, printHtmlElement } from '../utils/pdfExport';
+import { exportSinglePageA4Pdf } from '../utils/pdfExport';
 import './ClassRolePrintModal.css';
 
 const ClassRolePrintModal = ({ isOpen, onClose, currentClass, roles, students }) => {
@@ -40,12 +40,67 @@ const ClassRolePrintModal = ({ isOpen, onClose, currentClass, roles, students })
         }
     };
 
-    const handlePrint = () => {
+    const handlePrint = async () => {
         if (!printSheetRef.current) return;
-        printHtmlElement(printSheetRef.current, {
-            orientation: 'portrait',
-            title: `${classNameText} 1인 1역 배정표`
-        });
+        setIsExporting(true);
+        setExportProgressText('인쇄 준비 중...');
+
+        try {
+            const html2canvas = (await import('html2canvas')).default;
+            const { jsPDF } = await import('jspdf');
+
+            const canvas = await html2canvas(printSheetRef.current, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff'
+            });
+
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const margin = 8;
+            const pageWidth = 210;
+            const pageHeight = 297;
+            const maxPrintWidth = pageWidth - (margin * 2);
+            const maxPrintHeight = pageHeight - (margin * 2);
+
+            const canvasRatio = canvas.width / canvas.height;
+            let printWidth = maxPrintWidth;
+            let printHeight = printWidth / canvasRatio;
+
+            if (printHeight > maxPrintHeight) {
+                printHeight = maxPrintHeight;
+                printWidth = printHeight * canvasRatio;
+            }
+
+            const offsetX = margin + (maxPrintWidth - printWidth) / 2;
+            const offsetY = margin + (maxPrintHeight - printHeight) / 2;
+
+            const imgData = canvas.toDataURL('image/png', 1.0);
+            pdf.addImage(imgData, 'PNG', offsetX, offsetY, printWidth, printHeight);
+
+            // Electron 환경: 임시 파일로 저장 후 시스템 기본 뷰어로 열기
+            if (window.electronAPI?.saveTempAndOpen) {
+                const pdfArrayBuffer = pdf.output('arraybuffer');
+                const pdfUint8 = new Uint8Array(pdfArrayBuffer);
+                await window.electronAPI.saveTempAndOpen(Array.from(pdfUint8), `${classNameText}_1인1역_배정표_인쇄.pdf`);
+            } else {
+                // 웹 환경: Blob URL로 새 탭에서 열기 (브라우저 인쇄 다이얼로그 활용)
+                const pdfBlob = pdf.output('blob');
+                const blobUrl = URL.createObjectURL(pdfBlob);
+                const printWindow = window.open(blobUrl, '_blank');
+                if (printWindow) {
+                    printWindow.addEventListener('load', () => {
+                        printWindow.print();
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('인쇄 실패:', error);
+            alert('인쇄 준비 중 오류가 발생했습니다.');
+        } finally {
+            setIsExporting(false);
+            setExportProgressText('');
+        }
     };
 
     return (
@@ -53,20 +108,7 @@ const ClassRolePrintModal = ({ isOpen, onClose, currentClass, roles, students })
             <div className="cr-modal-print-container" onClick={(e) => e.stopPropagation()}>
                 {/* 모달 상단 헤더 */}
                 <div className="cr-modal-print-header">
-                    <div className="cr-modal-print-title-group">
-                        <div className="cr-modal-print-badge">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                                <line x1="16" y1="2" x2="16" y2="6"/>
-                                <line x1="8" y1="2" x2="8" y2="6"/>
-                                <line x1="3" y1="10" x2="21" y2="10"/>
-                            </svg>
-                            <span>A4 세로 인쇄 & 미리보기</span>
-                        </div>
-                        <h3>1인 1역 배정표 인쇄 미리보기</h3>
-                    </div>
-
-                    {/* 무테 미니멀 ✕ 버튼 */}
+                    <h3>1인 1역 배정표 인쇄 미리보기</h3>
                     <button className="cr-modal-print-close" onClick={onClose} aria-label="닫기">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                             <line x1="18" y1="6" x2="6" y2="18"/>
@@ -75,41 +117,13 @@ const ClassRolePrintModal = ({ isOpen, onClose, currentClass, roles, students })
                     </button>
                 </div>
 
-                {/* 안내 가이드 바 */}
-                <div className="cr-modal-print-guide-bar">
-                    <span>💡 A4 용지 세로 방향에 알맞게 정돈되어 인쇄 및 PDF로 저장됩니다.</span>
-                </div>
-
                 {/* A4 세로 실시간 미리보기 시트 스크롤 영역 */}
                 <div className="cr-modal-print-scroll-area">
                     <div className="cr-a4-portrait-wrapper">
                         <div ref={printSheetRef} className="cr-sheet-content">
                             {/* 헤더 배너 */}
                             <div className="cr-sheet-header">
-                                <div className="cr-sheet-title-row">
-                                    <h2 className="cr-sheet-main-title">{classNameText} 1인 1역 배정표</h2>
-                                    <span className="cr-sheet-class-badge">{classNameText}</span>
-                                </div>
-                                <div className="cr-sheet-meta">
-                                    <span>인쇄일자: {new Date().toLocaleDateString('ko-KR')}</span>
-                                    <span>총 {roles.length}개 역할 · {totalAssigned} / {totalCapacity}명 배정</span>
-                                </div>
-                            </div>
-
-                            {/* 상단 통계 요약 박스 */}
-                            <div className="cr-sheet-stats">
-                                <div className="cr-sheet-stat-box">
-                                    <span className="cr-stat-lbl">전체 역할</span>
-                                    <span className="cr-stat-val">{roles.length}개</span>
-                                </div>
-                                <div className="cr-sheet-stat-box">
-                                    <span className="cr-stat-lbl">정원 / 배정</span>
-                                    <span className="cr-stat-val">{totalAssigned} / {totalCapacity}명</span>
-                                </div>
-                                <div className="cr-sheet-stat-box">
-                                    <span className="cr-stat-lbl">학급 총원</span>
-                                    <span className="cr-stat-val">{students?.length || 0}명</span>
-                                </div>
+                                <h2 className="cr-sheet-main-title">1인 1역 배정표</h2>
                             </div>
 
                             {/* 1인 1역 테이블 */}
@@ -118,9 +132,9 @@ const ClassRolePrintModal = ({ isOpen, onClose, currentClass, roles, students })
                                     <tr>
                                         <th style={{ width: '8%' }}>순번</th>
                                         <th style={{ width: '22%' }}>역할명</th>
-                                        <th style={{ width: '32%' }}>활동 내용</th>
+                                        <th style={{ width: '34%' }}>활동 내용</th>
                                         <th style={{ width: '10%' }}>정원</th>
-                                        <th style={{ width: '28%' }}>담당 학생</th>
+                                        <th style={{ width: '26%' }}>담당 학생</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -134,25 +148,23 @@ const ClassRolePrintModal = ({ isOpen, onClose, currentClass, roles, students })
                                             const studentNames = assigned
                                                 .map(id => {
                                                     const s = getStudentById(id);
-                                                    return s ? `${s.attendanceNumber}번 ${s.name}` : null;
+                                                    return s ? s.name : null;
                                                 })
                                                 .filter(Boolean);
 
                                             return (
                                                 <tr key={role.id || idx}>
-                                                    <td className="text-center">{idx + 1}</td>
+                                                    <td className="text-center cell-num">{idx + 1}</td>
                                                     <td className="cr-sheet-role-name">{role.name}</td>
                                                     <td className="cr-sheet-role-desc">{role.description || '-'}</td>
-                                                    <td className="text-center">{role.count}명</td>
+                                                    <td className="text-center cell-count">{role.count}명</td>
                                                     <td className="cr-sheet-assigned-students">
                                                         {studentNames.length > 0 ? (
-                                                            <div className="cr-student-chips">
-                                                                {studentNames.map((name, sIdx) => (
-                                                                    <span key={sIdx} className="cr-student-chip">{name}</span>
-                                                                ))}
-                                                            </div>
+                                                            <span className="cr-assigned-names-text">
+                                                                {studentNames.join(', ')}
+                                                            </span>
                                                         ) : (
-                                                            <span className="cr-unassigned-text">미배정</span>
+                                                            <span className="cr-unassigned-text">-</span>
                                                         )}
                                                     </td>
                                                 </tr>
@@ -164,8 +176,16 @@ const ClassRolePrintModal = ({ isOpen, onClose, currentClass, roles, students })
 
                             {/* 하단 푸터 */}
                             <div className="cr-sheet-footer">
-                                <span>{classNameText}</span>
-                                <span>학급일지 1인 1역 시스템</span>
+                                <div className="cr-footer-left">
+                                    <span>인쇄일자: {new Date().toLocaleDateString('ko-KR')}</span>
+                                </div>
+                                <div className="cr-footer-right">
+                                    <span>{classNameText}</span>
+                                    <span className="cr-footer-divider">·</span>
+                                    <span>재적: {students?.length || 0}명</span>
+                                    <span className="cr-footer-divider">·</span>
+                                    <span>총 <strong className="cr-point-green">{roles.length}개</strong> 역할 (<strong className="cr-point-green">{totalAssigned}/{totalCapacity}명</strong> 배정)</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -191,7 +211,7 @@ const ClassRolePrintModal = ({ isOpen, onClose, currentClass, roles, students })
                             <polyline points="7 10 12 15 17 10"/>
                             <line x1="12" y1="15" x2="12" y2="3"/>
                         </svg>
-                        {isExporting ? (exportProgressText || 'PDF 생성 중...') : 'A4 PDF 다운로드'}
+                        {isExporting ? (exportProgressText || 'PDF 생성 중...') : 'PDF 다운로드'}
                     </button>
                     <button 
                         type="button"

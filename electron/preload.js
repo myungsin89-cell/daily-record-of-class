@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     setWindowMode: (mode) => ipcRenderer.send('set-window-mode', mode),
     selectFolder: () => ipcRenderer.invoke('select-folder'),
     saveBackupFile: (folderPath, filename, content) => ipcRenderer.invoke('save-backup-file', folderPath, filename, content),
+    saveTempAndOpen: (pdfData, fileName) => ipcRenderer.invoke('save-temp-and-open', pdfData, fileName),
     openWidgetWindow: (noteId) => ipcRenderer.send('open-widget-window', noteId),
     closeWidgetWindow: () => ipcRenderer.send('close-widget-window'),
     setWidgetOpacity: (opacity) => ipcRenderer.send('set-widget-opacity', opacity),

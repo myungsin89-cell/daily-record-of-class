@@ -32,7 +32,18 @@ const JournalEntry = () => {
     const { students, journals, addJournalEntry, updateJournalEntry, deleteJournalEntry, attendance } = useStudentContext();
     
     // 메인 탭: 'scores' (학급보상) | 'journals' (누가기록)
-    const [activeTab, setActiveTab] = useState('scores');
+    const [defaultTab, setDefaultTab] = useState(() => {
+        return localStorage.getItem('journal_default_tab') || 'scores';
+    });
+    const [activeTab, setActiveTab] = useState(() => {
+        return localStorage.getItem('journal_default_tab') || 'scores';
+    });
+
+    const handleSetDefaultTab = (tabKey) => {
+        setDefaultTab(tabKey);
+        localStorage.setItem('journal_default_tab', tabKey);
+        setActiveTab(tabKey);
+    };
     const [selectedStudentId, setSelectedStudentId] = useState(null);
 
     // ==========================================
@@ -822,6 +833,19 @@ const JournalEntry = () => {
                         >
                             누가기록
                         </button>
+                    </div>
+
+                    {/* 기본 시작 화면 설정 */}
+                    <div className="default-tab-setting-badge" title="학생 기록에 들어올 때 처음 열릴 기본 화면을 설정합니다 (자동 저장)">
+                        <span className="default-tab-text">기본 시작:</span>
+                        <select 
+                            value={defaultTab} 
+                            onChange={(e) => handleSetDefaultTab(e.target.value)}
+                            className="default-tab-select"
+                        >
+                            <option value="journals">누가기록</option>
+                            <option value="scores">학급보상</option>
+                        </select>
                     </div>
                 </div>
 

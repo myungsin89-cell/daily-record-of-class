@@ -1,14 +1,16 @@
 import React, { useState, useRef } from 'react';
-import { exportSinglePageA4Pdf, printHtmlElement } from '../utils/pdfExport';
+import { exportSinglePageA4Pdf } from '../utils/pdfExport';
 import './SeatingPrintModal.css';
 
-const SeatingPrintModal = ({ isOpen, onClose, currentClass, students, grid }) => {
-    const [previewMode, setPreviewMode] = useState('student'); // 'student' | 'teacher' | 'parent'
+const SeatingPrintModal = ({ isOpen, onClose, currentClass, students, grid, gridConfig }) => {
+    const [previewMode, setPreviewMode] = useState('student'); // 'student' | 'teacher'
     const [isExporting, setIsExporting] = useState(false);
     const [exportProgressText, setExportProgressText] = useState('');
     const printSheetRef = useRef(null);
 
     if (!isOpen || !grid || grid.length === 0) return null;
+
+    const pairSize = gridConfig?.pairSize || 2;
 
     const classNameText = currentClass 
         ? `${currentClass.grade || ''}학년 ${currentClass.classNumber || ''}반` 
@@ -16,7 +18,7 @@ const SeatingPrintModal = ({ isOpen, onClose, currentClass, students, grid }) =>
 
     const handleDownloadPdf = async () => {
         if (!printSheetRef.current) return;
-        const modeLabel = previewMode === 'teacher' ? '교사용' : (previewMode === 'parent' ? '학부모용' : '학생용');
+        const modeLabel = previewMode === 'teacher' ? '교사용' : '학생용';
         const fileName = `${classNameText}_자리배치표_${modeLabel}.pdf`;
 
         setIsExporting(true);
@@ -37,13 +39,68 @@ const SeatingPrintModal = ({ isOpen, onClose, currentClass, students, grid }) =>
         }
     };
 
-    const handlePrint = () => {
+    const handlePrint = async () => {
         if (!printSheetRef.current) return;
-        const modeLabel = previewMode === 'teacher' ? '교사용' : (previewMode === 'parent' ? '학부모용' : '학생용');
-        printHtmlElement(printSheetRef.current, {
-            orientation: 'landscape',
-            title: `${classNameText} 자리배치표 (${modeLabel})`
-        });
+        const modeLabel = previewMode === 'teacher' ? '교사용' : '학생용';
+        setIsExporting(true);
+        setExportProgressText('인쇄 준비 중...');
+
+        try {
+            const html2canvas = (await import('html2canvas')).default;
+            const { jsPDF } = await import('jspdf');
+
+            const canvas = await html2canvas(printSheetRef.current, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff'
+            });
+
+            const pdf = new jsPDF('l', 'mm', 'a4');
+            const margin = 8;
+            const pageWidth = 297;
+            const pageHeight = 210;
+            const maxPrintWidth = pageWidth - (margin * 2);
+            const maxPrintHeight = pageHeight - (margin * 2);
+
+            const canvasRatio = canvas.width / canvas.height;
+            let printWidth = maxPrintWidth;
+            let printHeight = printWidth / canvasRatio;
+
+            if (printHeight > maxPrintHeight) {
+                printHeight = maxPrintHeight;
+                printWidth = printHeight * canvasRatio;
+            }
+
+            const offsetX = margin + (maxPrintWidth - printWidth) / 2;
+            const offsetY = margin + (maxPrintHeight - printHeight) / 2;
+
+            const imgData = canvas.toDataURL('image/png', 1.0);
+            pdf.addImage(imgData, 'PNG', offsetX, offsetY, printWidth, printHeight);
+
+            // Electron 환경: 임시 파일로 저장 후 시스템 기본 뷰어로 열기
+            if (window.electronAPI?.saveTempAndOpen) {
+                const pdfArrayBuffer = pdf.output('arraybuffer');
+                const pdfUint8 = new Uint8Array(pdfArrayBuffer);
+                await window.electronAPI.saveTempAndOpen(Array.from(pdfUint8), `${classNameText}_자리배치표_${modeLabel}_인쇄.pdf`);
+            } else {
+                // 웹 환경: Blob URL로 새 탭에서 열기
+                const pdfBlob = pdf.output('blob');
+                const blobUrl = URL.createObjectURL(pdfBlob);
+                const printWindow = window.open(blobUrl, '_blank');
+                if (printWindow) {
+                    printWindow.addEventListener('load', () => {
+                        printWindow.print();
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('인쇄 실패:', error);
+            alert('인쇄 준비 중 오류가 발생했습니다.');
+        } finally {
+            setIsExporting(false);
+            setExportProgressText('');
+        }
     };
 
     // 그리드 렌더링 데이터 계산 (교사용일 때는 상하/좌우 반전)
@@ -56,14 +113,6 @@ const SeatingPrintModal = ({ isOpen, onClose, currentClass, students, grid }) =>
                 {/* 모달 상단 헤더 */}
                 <div className="seating-modal-header">
                     <div className="seating-modal-title-group">
-                        <div className="seating-modal-badge">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                                <line x1="3" y1="9" x2="21" y2="9"/>
-                                <line x1="9" y1="21" x2="9" y2="9"/>
-                            </svg>
-                            <span>A4 가로 인쇄 & 미리보기</span>
-                        </div>
                         <h3>자리배치표 인쇄 미리보기</h3>
                     </div>
 
@@ -76,7 +125,7 @@ const SeatingPrintModal = ({ isOpen, onClose, currentClass, students, grid }) =>
                     </button>
                 </div>
 
-                {/* 인쇄 옵션 탭 바 */}
+                {/* 인쇄 옵션 탭 바 (학생용 / 교사용) */}
                 <div className="seating-modal-controls">
                     <div className="seating-mode-tabs">
                         <button 
@@ -102,23 +151,6 @@ const SeatingPrintModal = ({ isOpen, onClose, currentClass, students, grid }) =>
                             </svg>
                             교사용 (칠판 아래)
                         </button>
-                        <button 
-                            type="button"
-                            className={`seating-tab-btn ${previewMode === 'parent' ? 'active' : ''}`}
-                            onClick={() => setPreviewMode('parent')}
-                        >
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                                <circle cx="9" cy="7" r="4"/>
-                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                            </svg>
-                            학부모용 (간결 배포용)
-                        </button>
-                    </div>
-
-                    <div className="seating-preview-guide">
-                        <span>💡 A4 용지 가로 방향으로 정가운데에 알맞게 인쇄됩니다.</span>
                     </div>
                 </div>
 
@@ -129,21 +161,7 @@ const SeatingPrintModal = ({ isOpen, onClose, currentClass, students, grid }) =>
                             ref={printSheetRef}
                             className={`seating-print-sheet-content mode-${previewMode}`}
                         >
-                            {/* 상단 타이틀 바 */}
-                            <div className="sp-sheet-header">
-                                <div className="sp-title-area">
-                                    <h2 className="sp-main-title">{classNameText} 자리배치표</h2>
-                                    <span className="sp-mode-tag">
-                                        {previewMode === 'teacher' ? '교사용 (교탁 시점)' : (previewMode === 'parent' ? '학부모 안내용' : '학생용 (칠판 앞)')}
-                                    </span>
-                                </div>
-                                <div className="sp-meta-info">
-                                    <span>인쇄일자: {new Date().toLocaleDateString('ko-KR')}</span>
-                                    <span>재적: {students?.length || 0}명</span>
-                                </div>
-                            </div>
-
-                            {/* 칠판 영역 (학생용/학부모용일 때 상단 표시) */}
+                            {/* 칠판 영역 (학생용일 때 상단 표시) */}
                             {previewMode !== 'teacher' && (
                                 <div className="sp-blackboard top">
                                     <span>칠 판 (앞 쪽)</span>
@@ -163,17 +181,16 @@ const SeatingPrintModal = ({ isOpen, onClose, currentClass, students, grid }) =>
                                                 const actualSeat = grid[actualR][actualC];
                                                 const student = students?.find(s => s.id === actualSeat.studentId);
                                                 const isBlocked = actualSeat.genderPreference === 'blocked';
-
-                                                const isParent = previewMode === 'parent';
-                                                const genderClass = !isParent && student ? (student.gender === '남' ? 'male' : 'female') : '';
+                                                const genderClass = student ? (student.gender === '남' ? 'male' : 'female') : '';
+                                                const isGroupGap = pairSize > 0 && ((cIdx + 1) % pairSize === 0) && (cIdx + 1 < cols.length);
 
                                                 return (
                                                     <div 
                                                         key={cIdx} 
-                                                        className={`sp-seat-box ${isBlocked ? 'blocked' : ''} ${genderClass} ${student ? 'occupied' : 'empty'} ${isParent ? 'parent-style' : ''}`}
+                                                        className={`sp-seat-box ${isGroupGap ? 'has-group-gap' : ''} ${isBlocked ? 'blocked' : ''} ${genderClass} ${student ? 'occupied' : 'empty'}`}
                                                     >
                                                         {isBlocked ? (
-                                                            <span className="sp-text-blocked">통로</span>
+                                                             <span className="sp-text-blocked">통로</span>
                                                         ) : student ? (
                                                             <>
                                                                 <span className="sp-seat-num">{student.attendanceNumber}번</span>
@@ -197,10 +214,10 @@ const SeatingPrintModal = ({ isOpen, onClose, currentClass, students, grid }) =>
                                 </div>
                             )}
 
-                            {/* 하단 푸터 */}
+                            {/* 하단 푸터 (인쇄일자 및 재적 정보) */}
                             <div className="sp-sheet-footer">
-                                <span>{classNameText}</span>
-                                <span>학급일지 스마트 자리배치</span>
+                                <span className="sp-footer-meta">인쇄일자: {new Date().toLocaleDateString('ko-KR')}</span>
+                                <span className="sp-footer-meta">재적: {students?.length || 0}명</span>
                             </div>
                         </div>
                     </div>
@@ -226,7 +243,7 @@ const SeatingPrintModal = ({ isOpen, onClose, currentClass, students, grid }) =>
                             <polyline points="7 10 12 15 17 10"/>
                             <line x1="12" y1="15" x2="12" y2="3"/>
                         </svg>
-                        {isExporting ? (exportProgressText || 'PDF 생성 중...') : 'A4 PDF 다운로드'}
+                        {isExporting ? (exportProgressText || 'PDF 생성 중...') : 'PDF 다운로드'}
                     </button>
                     <button 
                         type="button"

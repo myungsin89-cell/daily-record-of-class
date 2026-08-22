@@ -50,10 +50,25 @@
     justify-content: center !important;
 }
 
+.sidebar-top-bar {
+    display: flex !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+    padding: 0.35rem 0.65rem 0 0.65rem !important;
+    min-height: 24px !important;
+    box-sizing: border-box !important;
+    flex-shrink: 0 !important;
+}
+
+.sidebar.collapsed .sidebar-top-bar {
+    justify-content: center !important;
+    padding: 0.35rem 0 0 0 !important;
+}
+
 .collapse-sidebar-btn {
-    position: absolute !important;
-    top: 13px !important;
-    right: 12px !important;
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
     background: transparent !important;
     border: none !important;
     color: #94a3b8 !important;
@@ -61,27 +76,21 @@
     font-size: 0.95rem !important;
     font-weight: 500 !important;
     cursor: pointer !important;
-    padding: 0.1rem 0.3rem !important;
-    border-radius: 6px !important;
+    padding: 0.1rem 0.35rem !important;
+    border-radius: 4px !important;
     box-shadow: none !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
     transition: all 0.15s ease !important;
-    z-index: 1000 !important;
+    line-height: 1 !important;
 }
 
 .collapse-sidebar-btn:hover {
     background: rgba(0, 0, 0, 0.04) !important;
     color: #64748b !important;
     -webkit-text-fill-color: #64748b !important;
-}
-
-.sidebar.collapsed .collapse-sidebar-btn {
-    position: relative !important;
-    top: auto !important;
-    right: auto !important;
-    margin: 0.6rem auto 0.2rem auto !important;
+    box-shadow: none !important;
 }
 
 .nav-item-icon {
@@ -168,8 +177,8 @@ html, body {
     flex-shrink: 0 !important;
 }
 
-.glass-app-wrapper.is-desktop,
-.layout.is-desktop,
+.glass-app-wrapper,
+.layout,
 .create-class-container,
 .class-select-container {
     padding-top: 38px !important;
@@ -386,12 +395,16 @@ button, a, .pill-thumb, .green-toggle-pill {
 }
 
 .glass-sidebar .nav-links {
-    padding: 1rem 0 0.5rem 0;
+    padding: 0.35rem 0 0.5rem 0 !important;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     flex: 1;
     overflow-y: auto;
+}
+
+.sidebar.glass-sidebar.collapsed .nav-links {
+    padding: 0.35rem 0 0.5rem 0 !important;
 }
 
 /* 메뉴 글자: 뚜렷하고 또렷한 짙은 슬레이트 컬러 */
