@@ -97,9 +97,38 @@ git tag -a v${version} -m "Release v${version}"
 
 ---
 
-### 6단계: GitHub Release 배포 및 라이브 검증
-1. **GitHub Releases 등록 안내**:
-   * 릴리즈 태그(`v${version}`), 타이틀, 마크다운 기호가 정돈된 본문 제공.
-   * `Setup.exe`, `latest.yml`, `.blockmap` 3종 에셋 첨부 안내.
-2. **라이브 API 검증**:
-   * 배포 후 `https://api.github.com/repos/myungsin89-cell/daily-record-of-class/releases`를 조회하여 `latest.yml`과 바이너리가 정상 활성화되었는지 사용자에게 최종 확인 보고합니다.
+### 6단계: GitHub Release 배포 안내 및 라이브 검증
+
+1. **GitHub 릴리즈 주소 링크 및 태그 자동 제공**:
+   * 버전 자동 계산: `package.json`의 최신 버전(예: `v2.0.3`) 자동 반영
+   * 원클릭 릴리즈 생성 링크 제공:
+     `[👉 GitHub 릴리즈 즉시 생성하기](https://github.com/myungsin89-cell/daily-record-of-class/releases/new)`
+
+2. **릴리즈 본문(Release Description) 작성 엄격 규칙 (Clean Text Rules)**:
+   * 🛑 **`##`, `###`, `####` 등의 마크다운 헤더 기호 절대 사용 금지!**
+   * 🛑 **`**` 볼드 기호 절대 사용 금지!**
+   * 편안하고 단정하게 읽히는 플레인 텍스트 서식 엄수:
+     ```text
+     안녕하세요, 선생님! 학급일지 v[버전] 업데이트를 안내해 드립니다. 🌿
+
+     [주요 업데이트 및 개선 사항]
+     1. [기능명]
+     - 상세 내용
+     - 개선된 점
+
+     2. [기능명]
+     - 상세 내용
+
+     [첨부 파일 안내]
+     - 신규 설치: ClassDiary_Setup_v[버전].exe
+     - 기존 사용자: 앱 실행 시 자동 업데이트 알림창 지원
+     ```
+
+3. **업로드할 3종 바이너리 파일 경로 명확 안내**:
+   * `C:\Users\소미네\Desktop\학급일지_설치파일_출력\`
+     1. `ClassDiary_Setup_v[버전].exe`
+     2. `latest.yml`
+     3. `ClassDiary_Setup_v[버전].exe.blockmap`
+
+4. **라이브 API 검증**:
+   * 사용자가 배포를 완료하면 `https://api.github.com/repos/myungsin89-cell/daily-record-of-class/releases`를 조회하여 `latest.yml`과 바이너리가 전 세계에 정상 노출되었는지 최종 확인 보고합니다.
