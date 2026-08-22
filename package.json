@@ -1,7 +1,7 @@
 {
   "name": "class-diary",
   "private": true,
-  "version": "2.0.2",
+  "version": "2.0.3",
   "main": "electron/main.js",
   "scripts": {
     "dev": "vite",
@@ -61,7 +61,7 @@
     "nsis": {
       "oneClick": true,
       "allowToChangeInstallationDirectory": false,
-      "createDesktopShortcut": "always",
+      "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "학급일지",
       "artifactName": "ClassDiary_Setup_v${version}.${ext}",

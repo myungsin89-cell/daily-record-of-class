@@ -58,6 +58,7 @@ const JournalEntry = () => {
     const [newCardPoints, setNewCardPoints] = useState(1);
     const [showClassScoreModal, setShowClassScoreModal] = useState(false);
     const [detailStudentId, setDetailStudentId] = useState(null);
+    const [manageRewardStudentId, setManageRewardStudentId] = useState(null);
 
     // 자리배치 레이아웃 State
     const [seatingLayout, setSeatingLayout] = useState(null);
@@ -289,6 +290,34 @@ const JournalEntry = () => {
         showAlert(`${addedCount}명에게 [${targetTitle}] 카드가 부여되었습니다.`, '카드 부여 완료', '확인', 'success');
 
         setSelectedStudentIdsForScoring([]);
+    };
+
+    // 개별 학생의 특정 보상 카드 1건 취소(삭제)
+    const handleDeleteStudentScoreItem = async (studentId, scoreItemId, scoreReason) => {
+        const student = sortedStudents.find(s => s.id === studentId);
+        const studentName = student ? `${student.name} 학생의 ` : '';
+        const confirmed = await showConfirm(
+            `${studentName}[${scoreReason || '선택한'}] 카드를 취소(삭제)하시겠습니까?`,
+            '카드 부여 취소',
+            '취소 실행',
+            '닫기'
+        );
+        if (confirmed) {
+            const currentList = studentScores[studentId] || [];
+            let updated = currentList.filter(item => item.id !== scoreItemId);
+            // 만약 id가 불일치하거나 레거시 데이터인 경우 매칭되는 첫 번째 항목 제거
+            if (updated.length === currentList.length) {
+                const idx = currentList.findIndex(item => item.id === scoreItemId || item.reason === scoreReason);
+                if (idx !== -1) {
+                    const copy = [...currentList];
+                    copy.splice(idx, 1);
+                    updated = copy;
+                }
+            }
+            const newAllScores = { ...studentScores, [studentId]: updated };
+            saveScores(newAllScores);
+            showAlert(`[${scoreReason || '보상'}] 카드가 취소되었습니다.`, '취소 완료', '확인', 'success');
+        }
     };
 
     // ==========================================
@@ -1000,11 +1029,22 @@ const JournalEntry = () => {
                                                             key={seat.id || student.id}
                                                             className={`seating-matrix-desk assigned-desk ${isSelected ? 'selected-desk' : ''}`}
                                                             onClick={() => toggleStudentSelectionForScoring(student.id)}
-                                                            title={`클릭하여 ${student.name} 학생 선택 / 해제`}
+                                                            onDoubleClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setManageRewardStudentId(student.id);
+                                                            }}
+                                                            title={`클릭하여 선택/해제 | 점수 뱃지 클릭 또는 더블클릭 시 [${student.name}] 카드 관리/취소`}
                                                         >
                                                             <div className="desk-header-row">
                                                                 <span className="desk-student-no">{student.attendanceNumber}번</span>
-                                                                <span className={`desk-score-tag ${stTotal > 0 ? 'plus' : stTotal < 0 ? 'minus' : 'zero'}`}>
+                                                                <span
+                                                                    className={`desk-score-tag ${stTotal > 0 ? 'plus' : stTotal < 0 ? 'minus' : 'zero'}`}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setManageRewardStudentId(student.id);
+                                                                    }}
+                                                                    title="클릭하여 받은 카드 내역 보기 및 취소(삭제)"
+                                                                >
                                                                     {stTotal > 0 ? `+${stTotal}` : stTotal}
                                                                 </span>
                                                             </div>
@@ -1044,10 +1084,22 @@ const JournalEntry = () => {
                                                 key={st.id}
                                                 className={`seating-desk-card ${isStudentSelected ? 'selected-desk' : ''}`}
                                                 onClick={() => toggleStudentSelectionForScoring(st.id)}
+                                                onDoubleClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setManageRewardStudentId(st.id);
+                                                }}
+                                                title={`클릭하여 선택/해제 | 점수 뱃지 클릭 또는 더블클릭 시 [${st.name}] 카드 관리/취소`}
                                             >
                                                 <div className="card-top-row">
                                                     <span className="student-num-badge">{st.attendanceNumber}번</span>
-                                                    <span className={`total-score-badge ${stTotal > 0 ? 'plus' : stTotal < 0 ? 'minus' : 'zero'}`}>
+                                                    <span
+                                                        className={`total-score-badge ${stTotal > 0 ? 'plus' : stTotal < 0 ? 'minus' : 'zero'}`}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setManageRewardStudentId(st.id);
+                                                        }}
+                                                        title="클릭하여 받은 카드 내역 보기 및 취소(삭제)"
+                                                    >
                                                         {stTotal > 0 ? `+${stTotal}` : stTotal}점
                                                     </span>
                                                 </div>
@@ -1487,11 +1539,14 @@ const JournalEntry = () => {
                                                 ))}
                                             </div>
 
-                                            {/* 2. 최근 발급 타임라인 내역 (최신 8건) */}
+                                            {/* 2. 최근 발급 타임라인 내역 (최신 10건) */}
                                             <div className="reward-history-timeline-wrap">
-                                                <h4 className="reward-history-sub-title">최근 발급 이력</h4>
+                                                <div className="reward-history-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <h4 className="reward-history-sub-title">최근 발급 이력</h4>
+                                                    <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>우측 × 버튼을 눌러 잘못 부여된 카드를 취소할 수 있습니다</span>
+                                                </div>
                                                 <div className="reward-history-list">
-                                                    {selectedStudentRewardData.historyList.slice(0, 8).map((h, idx) => (
+                                                    {selectedStudentRewardData.historyList.slice(0, 10).map((h, idx) => (
                                                         <div key={h.id || idx} className="reward-history-item">
                                                             <span className="reward-history-date">
                                                                 {h.date ? new Date(h.date).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '일자 미기록'}
@@ -1501,6 +1556,17 @@ const JournalEntry = () => {
                                                                 <span className={`reward-history-badge ${Number(h.points) > 0 ? 'merit' : 'demerit'}`}>
                                                                     {Number(h.points) > 0 ? `+${h.points}점` : `${h.points}점`}
                                                                 </span>
+                                                                <button
+                                                                    type="button"
+                                                                    className="reward-item-cancel-btn"
+                                                                    onClick={() => handleDeleteStudentScoreItem(selectedStudent.id, h.id, h.reason)}
+                                                                    title="이 카드 부여 취소 (삭제)"
+                                                                >
+                                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                                                    </svg>
+                                                                </button>
                                                             </div>
                                                         </div>
                                                     ))}
@@ -1720,6 +1786,125 @@ const JournalEntry = () => {
                     </div>
                 </div>
             )}
+
+            {/* 3. 학생 개별 학급보상 카드 관리/취소 모달 (자리표에서 더블클릭 또는 점수 클릭 시) */}
+            {manageRewardStudentId && (() => {
+                const targetStudent = sortedStudents.find(s => s.id === manageRewardStudentId);
+                if (!targetStudent) return null;
+
+                const studentCardList = studentScores[manageRewardStudentId] || [];
+                let meritSum = 0;
+                let demeritSum = 0;
+                studentCardList.forEach(item => {
+                    const pts = Number(item.points) || 0;
+                    if (pts > 0) meritSum += pts;
+                    else demeritSum += Math.abs(pts);
+                });
+                const totalPoints = meritSum - demeritSum;
+                const sortedHistory = [...studentCardList].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+
+                return (
+                    <div className="custom-modal-overlay" onClick={() => setManageRewardStudentId(null)}>
+                        <div className="custom-modal-card student-reward-manage-modal" onClick={(e) => e.stopPropagation()}>
+                            <div className="reward-manage-modal-header">
+                                <div className="student-info-headline">
+                                    <div className="student-badge-title">
+                                        <span className="student-no-pill">{targetStudent.attendanceNumber}번</span>
+                                        <h3 className="student-name-heading">{targetStudent.name} 학생 카드 관리</h3>
+                                    </div>
+                                    <p className="student-sub-desc">잘못 부여된 카드를 선택하여 취소(삭제)할 수 있습니다.</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    className="minimal-close-btn"
+                                    onClick={() => setManageRewardStudentId(null)}
+                                    title="닫기"
+                                >
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            {/* 총점 요약 바 */}
+                            <div className="reward-manage-score-summary-bar">
+                                <div className="score-sum-box merit">
+                                    <span className="sum-label">상점 합계</span>
+                                    <strong className="sum-value">+{meritSum}점</strong>
+                                </div>
+                                <div className="score-sum-box demerit">
+                                    <span className="sum-label">벌점 합계</span>
+                                    <strong className="sum-value">-{demeritSum}점</strong>
+                                </div>
+                                <div className="score-sum-box total">
+                                    <span className="sum-label">최종 총점</span>
+                                    <strong className={`sum-value ${totalPoints > 0 ? 'plus' : totalPoints < 0 ? 'minus' : 'zero'}`}>
+                                        {totalPoints > 0 ? `+${totalPoints}` : totalPoints}점
+                                    </strong>
+                                </div>
+                            </div>
+
+                            {/* 카드 발급 내역 리스트 */}
+                            <div className="reward-manage-list-wrap">
+                                <div className="reward-manage-list-title-row">
+                                    <span className="list-title">발급된 카드 내역 ({sortedHistory.length}건)</span>
+                                </div>
+                                {sortedHistory.length > 0 ? (
+                                    <div className="reward-manage-items-list">
+                                        {sortedHistory.map((item, idx) => (
+                                            <div key={item.id || idx} className="reward-manage-item-row">
+                                                <div className="item-left-info">
+                                                    <span className="item-date">
+                                                        {item.date ? new Date(item.date).toLocaleDateString('ko-KR', {
+                                                            month: 'numeric',
+                                                            day: 'numeric',
+                                                            hour: '2-digit',
+                                                            minute: '2-digit'
+                                                        }) : '일자 미기록'}
+                                                    </span>
+                                                    <span className="item-reason">{item.reason}</span>
+                                                </div>
+                                                <div className="item-right-actions">
+                                                    <span className={`item-score-badge ${Number(item.points) > 0 ? 'merit' : 'demerit'}`}>
+                                                        {Number(item.points) > 0 ? `+${item.points}점` : `${item.points}점`}
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        className="item-cancel-action-btn"
+                                                        onClick={() => handleDeleteStudentScoreItem(targetStudent.id, item.id, item.reason)}
+                                                        title="이 카드 취소(삭제)"
+                                                    >
+                                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px' }}>
+                                                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                                                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                                                        </svg>
+                                                        취소
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="reward-manage-empty-state">
+                                        <span>부여된 학급보상 카드가 없습니다.</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="custom-modal-btn-row center-aligned">
+                                <button
+                                    type="button"
+                                    className="custom-modal-btn confirm"
+                                    onClick={() => setManageRewardStudentId(null)}
+                                >
+                                    닫기
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
         </div>
     );
 };

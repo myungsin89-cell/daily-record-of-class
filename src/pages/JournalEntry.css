@@ -4783,3 +4783,297 @@
     color: #be123c;
     border: 1px solid #fecdd3;
 }
+
+/* 누가기록 탭 최근 발급 이력 개별 취소(삭제) 버튼 */
+.reward-item-cancel-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid transparent;
+    color: #94a3b8;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.15s ease;
+    margin-left: 2px;
+}
+
+.reward-item-cancel-btn:hover {
+    background: #fee2e2;
+    color: #e11d48;
+    border-color: #fecdd3;
+}
+
+/* 학급보상 자리표 점수 뱃지 호버 효과 (클릭 시 모달 유도) */
+.desk-score-tag {
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.desk-score-tag:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.12);
+}
+
+.total-score-badge {
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.total-score-badge:hover {
+    transform: scale(1.08);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.12);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   [학생 개별 학급보상 카드 관리 모달 스타일]
+   ───────────────────────────────────────────────────────────── */
+.student-reward-manage-modal {
+    max-width: 540px;
+    width: 92%;
+    border-radius: 20px;
+    background: #ffffff;
+    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.15);
+    padding: 1.5rem 1.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.15rem;
+}
+
+.reward-manage-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 0.85rem;
+}
+
+.student-info-headline {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.student-badge-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.student-no-pill {
+    background: #e2e8f0;
+    color: #475569;
+    font-size: 0.8rem;
+    font-weight: 800;
+    padding: 0.15rem 0.5rem;
+    border-radius: 6px;
+}
+
+.student-name-heading {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #1e293b;
+}
+
+.student-sub-desc {
+    margin: 0;
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+.minimal-close-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.minimal-close-btn:hover {
+    color: #334155;
+    background: #f1f5f9;
+}
+
+/* 총점 요약 바 */
+.reward-manage-score-summary-bar {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0.75rem 0.9rem;
+}
+
+.score-sum-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15rem;
+}
+
+.score-sum-box .sum-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+}
+
+.score-sum-box .sum-value {
+    font-size: 1.1rem;
+    font-weight: 900;
+}
+
+.score-sum-box.merit .sum-value {
+    color: #15803d;
+}
+
+.score-sum-box.demerit .sum-value {
+    color: #be123c;
+}
+
+.score-sum-box.total .sum-value.plus {
+    color: #15803d;
+}
+
+.score-sum-box.total .sum-value.minus {
+    color: #be123c;
+}
+
+.score-sum-box.total .sum-value.zero {
+    color: #64748b;
+}
+
+/* 카드 목록 */
+.reward-manage-list-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.reward-manage-list-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.reward-manage-list-title-row .list-title {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #334155;
+}
+
+.reward-manage-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 260px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.reward-manage-item-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.6rem 0.85rem;
+    transition: all 0.15s ease;
+}
+
+.reward-manage-item-row:hover {
+    border-color: #cbd5e1;
+    background: #fdfdfd;
+}
+
+.item-left-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.item-left-info .item-date {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    font-weight: 600;
+}
+
+.item-left-info .item-reason {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: #1e293b;
+}
+
+.item-right-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.item-score-badge {
+    font-size: 0.82rem;
+    font-weight: 900;
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+}
+
+.item-score-badge.merit {
+    background: #f0fdf4;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+}
+
+.item-score-badge.demerit {
+    background: #fff1f2;
+    color: #be123c;
+    border: 1px solid #fecdd3;
+}
+
+.item-cancel-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    color: #64748b;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 0.3rem 0.65rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.item-cancel-action-btn:hover {
+    background: #fee2e2;
+    border-color: #fca5a5;
+    color: #dc2626;
+}
+
+.reward-manage-empty-state {
+    text-align: center;
+    padding: 2rem 1rem;
+    background: #f8fafc;
+    border-radius: 10px;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.custom-modal-btn-row.center-aligned {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 0.5rem;
+}

@@ -112,6 +112,8 @@ const SeatingChart = () => {
         };
     };
 
+    const lastSavedGridSnapshotRef = useRef(null);
+
     // Initialize Grid and Load Saved Config
     useEffect(() => {
         const loadConfig = async () => {
@@ -121,12 +123,15 @@ const SeatingChart = () => {
             }
             
             try {
+                lastSavedGridSnapshotRef.current = null;
                 const saved = await getData(STORES.SEATING_CONFIGS, currentClass.id);
                 if (saved) {
                     setGridConfig(saved.gridConfig || { rows: 5, cols: 6, pairSize: 2 });
                     setConstraints(migrateConstraints(saved.constraints));
                     setUseFemaleSeats(saved.useFemaleSeats !== undefined ? saved.useFemaleSeats : true);
-                    setGrid(saved.grid || generateEmptyGrid(5, 6, 2));
+                    const targetGrid = saved.grid || generateEmptyGrid(5, 6, 2);
+                    setGrid(targetGrid);
+                    lastSavedGridSnapshotRef.current = JSON.stringify(targetGrid);
                     if (saved.youtubeUrl) setYoutubeUrl(saved.youtubeUrl);
                 } else {
                     // Fallback to localStorage seating layout if available
@@ -136,13 +141,16 @@ const SeatingChart = () => {
                             const parsedGrid = JSON.parse(localSaved);
                             if (Array.isArray(parsedGrid) && parsedGrid.length > 0) {
                                 setGrid(parsedGrid);
+                                lastSavedGridSnapshotRef.current = JSON.stringify(parsedGrid);
                                 setIsConfigLoaded(true);
                                 setHasChanges(false);
                                 return;
                             }
                         } catch (e) {}
                     }
-                    setGrid(generateEmptyGrid(5, 6, 2));
+                    const emptyGrid = generateEmptyGrid(5, 6, 2);
+                    setGrid(emptyGrid);
+                    lastSavedGridSnapshotRef.current = JSON.stringify(emptyGrid);
                 }
             } catch (e) {
                 console.error("Failed to load seating config:", e);
@@ -152,13 +160,16 @@ const SeatingChart = () => {
                         const parsedGrid = JSON.parse(localSaved);
                         if (Array.isArray(parsedGrid) && parsedGrid.length > 0) {
                             setGrid(parsedGrid);
+                            lastSavedGridSnapshotRef.current = JSON.stringify(parsedGrid);
                             setIsConfigLoaded(true);
                             setHasChanges(false);
                             return;
                         }
                     } catch (err) {}
                 }
-                setGrid(generateEmptyGrid(5, 6, 2));
+                const emptyGrid = generateEmptyGrid(5, 6, 2);
+                setGrid(emptyGrid);
+                lastSavedGridSnapshotRef.current = JSON.stringify(emptyGrid);
             } finally {
                 setIsConfigLoaded(true);
                 setHasChanges(false);
@@ -197,12 +208,22 @@ const SeatingChart = () => {
     useEffect(() => {
         if (!isConfigLoaded || !currentClass?.id || !grid || grid.length === 0) return;
 
-        setHasChanges(true); // 변동 감지 -> 저장 버튼 주황색 활성화
+        const currentGridStr = JSON.stringify(grid);
+
+        // 스냅샷과 비교하여 실제 자리 배치가 바뀌었을 때만 변동 상태(hasChanges)를 true로 설정
+        if (lastSavedGridSnapshotRef.current === null) {
+            lastSavedGridSnapshotRef.current = currentGridStr;
+            setHasChanges(false);
+        } else if (lastSavedGridSnapshotRef.current !== currentGridStr) {
+            setHasChanges(true); // 실제 사용자가 자리를 변경했을 때만 주황색 활성화
+        } else {
+            setHasChanges(false);
+        }
 
         // LocalStorage 동기화 (자리표 연동)
         try {
-            localStorage.setItem(`seating_layout_${currentClass.id}`, JSON.stringify(grid));
-            localStorage.setItem(`seating_layout_default`, JSON.stringify(grid));
+            localStorage.setItem(`seating_layout_${currentClass.id}`, currentGridStr);
+            localStorage.setItem(`seating_layout_default`, currentGridStr);
         } catch (e) {
             console.error('LocalStorage seating sync failed:', e);
         }
@@ -318,6 +339,7 @@ const SeatingChart = () => {
         const updated = await getAllDataByIndex(STORES.SEATING_HISTORY, 'classId', currentClass.id);
         setSeatingHistory([...updated].sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt)));
 
+        lastSavedGridSnapshotRef.current = JSON.stringify(grid);
         setHasChanges(false); // 저장 완료 -> 주황색 해제
         setShowSaveModal(false);
         showAlert(`'${name}' 이름으로 자리배치가 기록되었습니다.`, '저장 완료', '확인', 'success');
@@ -330,6 +352,7 @@ const SeatingChart = () => {
         setGrid(record.grid);
         setGridConfig(record.gridConfig);
         syncLocalStorageSeating(record.grid);
+        lastSavedGridSnapshotRef.current = JSON.stringify(record.grid);
         await saveData(STORES.SEATING_CONFIGS, {
             classId: currentClass.id,
             gridConfig: record.gridConfig,
@@ -977,7 +1000,12 @@ const SeatingChart = () => {
             {isShuffling && (
                 <div className="shuffle-overlay">
                     <div className="shuffle-content">
-                        <div className="shuffle-dice">🎲</div>
+                        <div className="shuffle-dice">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                                <path d="M16 8h.01M8 8h.01M8 16h.01M16 16h.01M12 12h.01"></path>
+                            </svg>
+                        </div>
                         <div className="shuffle-text">
                             <h2>학생들을 공정하게 랜덤 배치 중입니다...</h2>
                             <p>잠시만 기다려 주세요!</p>
@@ -1015,13 +1043,47 @@ const SeatingChart = () => {
             {mode === 'teacher' && (
                 <header className="seating-top-header">
                     <div className="header-title">
-                        <h1>🪑 자리 배치</h1>
+                        <h1 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#16a34a' }}>
+                                <path d="M4 18v3M20 18v3M4 11h16M4 11V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v5M4 11v7h16v-7"/>
+                            </svg>
+                            자리 배치
+                        </h1>
                         <span className="grid-size-badge">{gridConfig.rows}행 {gridConfig.cols}열</span>
-                        {isExpandedWorkspace && <span className="grid-size-badge expanded-badge">🖥️ 전체창 배치 작업 모드</span>}
+                        {isExpandedWorkspace && (
+                            <span className="grid-size-badge expanded-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                                    <line x1="8" y1="21" x2="16" y2="21"></line>
+                                    <line x1="12" y1="17" x2="12" y2="21"></line>
+                                </svg>
+                                전체창 배치 작업 모드
+                            </span>
+                        )}
                     </div>
                     <div className="mode-toggle">
-                        <button className={`expand-view-btn ${isExpandedWorkspace ? 'active' : ''}`} onClick={toggleExpandWorkspace}>
-                            {isExpandedWorkspace ? '🗗 기본창(확인/인쇄 전용)으로 축소' : '🖥️ 자리배치 작업하기(전체창)'}
+                        <button className={`expand-view-btn ${isExpandedWorkspace ? 'active' : ''}`} onClick={toggleExpandWorkspace} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                            {isExpandedWorkspace ? (
+                                <>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="4 14 10 14 10 20"></polyline>
+                                        <polyline points="20 10 14 10 14 4"></polyline>
+                                        <line x1="14" y1="10" x2="21" y2="3"></line>
+                                        <line x1="3" y1="21" x2="10" y2="14"></line>
+                                    </svg>
+                                    기본창으로 축소
+                                </>
+                            ) : (
+                                <>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="15 3 21 3 21 9"></polyline>
+                                        <polyline points="9 21 3 21 3 15"></polyline>
+                                        <line x1="21" y1="3" x2="14" y2="10"></line>
+                                        <line x1="3" y1="21" x2="10" y2="14"></line>
+                                    </svg>
+                                    자리배치 작업하기 (전체창)
+                                </>
+                            )}
                         </button>
                         <button className={`mode-btn ${mode === 'teacher' ? 'active' : ''}`} onClick={() => setMode('teacher')}>교사용 View</button>
                         <button className={`mode-btn ${mode === 'student' ? 'active' : ''}`} onClick={() => setMode('student')}>학생 공개용</button>
@@ -1033,8 +1095,12 @@ const SeatingChart = () => {
                 <div className="setup-bar">
                     {/* 배치 설정 모달 카드 버튼 */}
                     <div className="setup-group config-section">
-                        <button className="base-btn text-card-btn initial-setup-card-btn" onClick={() => setShowInitialSetupModal(true)}>
-                            ⚙️ 배치 설정
+                        <button className="base-btn text-card-btn initial-setup-card-btn" onClick={() => setShowInitialSetupModal(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                            </svg>
+                            배치 설정
                         </button>
                     </div>
 
@@ -1054,26 +1120,42 @@ const SeatingChart = () => {
                             <button 
                                 className={`base-btn text-card-btn ${hasChanges ? 'save-btn-dirty' : ''}`} 
                                 onClick={handleSaveClick} 
-                                title={hasChanges ? "자리 변동 사항이 있습니다. 클릭하여 배치 기록 저장" : "배치 저장"}
+                                title={hasChanges ? "자리 변동 사항이 있습니다. 클릭하여 기록 저장" : "저장"}
                                 style={hasChanges ? {
                                     backgroundColor: '#ea580c',
                                     background: '#ea580c',
                                     color: '#ffffff',
                                     borderColor: '#c2410c',
                                     fontWeight: '800',
-                                    boxShadow: '0 4px 12px rgba(234, 88, 12, 0.4)'
-                                } : {}}
+                                    boxShadow: '0 4px 12px rgba(234, 88, 12, 0.4)',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px'
+                                } : { display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                             >
-                                {hasChanges ? '💾 배치 저장 (변동됨)' : '💾 배치 저장'}
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                    <polyline points="7 3 7 8 15 8"></polyline>
+                                </svg>
+                                {hasChanges ? '저장 (변동됨)' : '저장'}
                             </button>
-                            <button className="base-btn text-card-btn" onClick={() => setShowLoadModal(true)} title="기록 불러오기">
-                                📂 기록 불러오기
+                            <button className="base-btn text-card-btn" onClick={() => setShowLoadModal(true)} title="기록 불러오기" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                                </svg>
+                                기록 불러오기
                             </button>
                         </div>
 
                         <div className="btn-group print">
-                            <button className="base-btn text-card-btn print-open-btn" onClick={() => setShowPrintModal(true)} title="자리배치표 A4 가로 인쇄 및 미리보기">
-                                🖨️ 자리배치표 인쇄 / 미리보기
+                            <button className="base-btn text-card-btn print-open-btn" onClick={() => setShowPrintModal(true)} title="자리배치표 A4 가로 인쇄 및 미리보기" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="6 9 6 2 18 2 18 9"/>
+                                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                                    <rect x="6" y="14" width="12" height="8"/>
+                                </svg>
+                                자리배치표 인쇄 / 미리보기
                             </button>
                         </div>
                     </div>
@@ -1082,17 +1164,31 @@ const SeatingChart = () => {
 
             {mode === 'student' && (
                 <div className="student-unified-header">
-                    <div className="student-main-title">
-                        🌱 우리 반 자리 배치
+                    <div className="student-main-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 10v12M12 10c0-3.3-2.7-6-6-6 0 3.3 2.7 6 6 6zM12 14c0-3.3 2.7-6 6-6 0 3.3-2.7 6-6 6z"/>
+                        </svg>
+                        우리 반 자리 배치
                     </div>
 
                     <div className="student-actions-group">
-                        <button className="green-action-pill" onClick={() => setShowMusicSettings(true)}>
-                            ⚙️ 설정
+                        <button className="green-action-pill" onClick={() => setShowMusicSettings(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                            </svg>
+                            설정
                         </button>
 
                         <div className="music-switch-wrapper" title="배경음악 토글">
-                            <span className="switch-label">🎵 배경음악</span>
+                            <span className="switch-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M9 18V5l12-2v13"></path>
+                                    <circle cx="6" cy="18" r="3"></circle>
+                                    <circle cx="18" cy="16" r="3"></circle>
+                                </svg>
+                                배경음악
+                            </span>
                             <div 
                                 className={`green-toggle-pill ${isMusicEnabled ? 'active' : ''}`}
                                 onClick={() => {
@@ -1110,20 +1206,26 @@ const SeatingChart = () => {
                             </span>
                         </div>
 
-                        <button className="green-action-pill dark" onClick={toggleFullscreen} title="전체화면">
-                            📺 전체화면
+                        <button className="green-action-pill dark" onClick={toggleFullscreen} title="전체화면" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                            </svg>
+                            전체화면
                         </button>
 
                         {isRevealing && (
                             <button 
                                 className="green-gradient-main-btn" 
-                                style={{ background: '#f59e0b', borderColor: '#d97706' }}
+                                style={{ background: '#f59e0b', borderColor: '#d97706', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                                 onClick={() => {
                                     setRevealedCount(revealOrder.length);
                                     setIsRevealing(false);
                                 }}
                             >
-                                ⚡ 한번에 전체 공개
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                </svg>
+                                한번에 전체 공개
                             </button>
                         )}
 
@@ -1136,8 +1238,13 @@ const SeatingChart = () => {
                                         startReveal(false);
                                     }}
                                     title="현재 배치된 자리 그대로 다시 공개 애니메이션 시작"
+                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}
                                 >
-                                    🔄 다시 공개하기
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="1 4 1 10 7 10"></polyline>
+                                        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                                    </svg>
+                                    다시 공개하기
                                 </button>
                                 <button 
                                     className="green-gradient-main-btn" 
@@ -1146,8 +1253,13 @@ const SeatingChart = () => {
                                         startReveal(true);
                                     }}
                                     title="자리를 새로 섞고 공개 시작"
+                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                                 >
-                                    🎲 새로 섞고 공개
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                                        <path d="M16 8h.01M8 8h.01M8 16h.01M16 16h.01M12 12h.01"></path>
+                                    </svg>
+                                    새로 섞고 공개
                                 </button>
                             </>
                         )}
@@ -1157,8 +1269,12 @@ const SeatingChart = () => {
                                 className="green-gradient-main-btn" 
                                 onClick={() => startReveal(shouldRerandomOnReveal || !isGridAssigned)} 
                                 disabled={isShuffling}
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                             >
-                                {isShuffling ? '자리 배치 중...' : '🎉 자리 공개 시작'}
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                                </svg>
+                                {isShuffling ? '자리 배치 중...' : '자리 공개 시작'}
                             </button>
                         )}
                     </div>
@@ -1370,8 +1486,24 @@ const SeatingChart = () => {
                     {mode === 'teacher' && (
                         <div className="classroom-bottom-status-wrap">
                             <div className={`validation-status-pill ${validation.isValid ? 'valid' : 'invalid'}`} title={validation.errors.join(' / ') || '모든 학생 배정 준비가 완료되었습니다.'}>
-                                <span className="status-main-badge">
-                                    {validation.isValid ? '🟢 배치 준비 완료' : '⚠️ 좌석 조정 필요'}
+                                <span className="status-main-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                                    {validation.isValid ? (
+                                        <>
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                <polyline points="20 6 9 17 4 12"></polyline>
+                                            </svg>
+                                            배치 준비 완료
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                                                <line x1="12" y1="9" x2="12" y2="13"></line>
+                                                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                                            </svg>
+                                            좌석 조정 필요
+                                        </>
+                                    )}
                                 </span>
                                 <span className="status-sub-text">
                                     {validation.isValid 
@@ -1379,8 +1511,13 @@ const SeatingChart = () => {
                                         : (validation.errors[0] || '좌석 수를 확인해 주세요')}
                                 </span>
                             </div>
-                            <p className="faded-seat-click-hint">
-                                💡 빈 좌석을 클릭할 때마다 [남학생 ➔ 여학생 ➔ 사용 불가 ➔ 남학생] 순으로 전환됩니다.
+                            <p className="faded-seat-click-hint" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="9" y1="18" x2="15" y2="18"></line>
+                                    <line x1="10" y1="22" x2="14" y2="22"></line>
+                                    <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"></path>
+                                </svg>
+                                빈 좌석을 클릭할 때마다 [남학생 ➔ 여학생 ➔ 사용 불가 ➔ 남학생] 순으로 전환됩니다.
                             </p>
                         </div>
                     )}
@@ -1390,8 +1527,12 @@ const SeatingChart = () => {
                     <aside className="student-pool-panel">
                         <div className="pool-header">
                             <h3>미배정 학생 ({unassignedStudents.length})</h3>
-                            <button className="green-gradient-main-btn pool-auto-btn" onClick={handleRandomize}>
-                                🎲 자동 배치
+                            <button className="green-gradient-main-btn pool-auto-btn" onClick={handleRandomize} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                                    <path d="M16 8h.01M8 8h.01M8 16h.01M16 16h.01M12 12h.01"></path>
+                                </svg>
+                                자동 배치
                             </button>
                         </div>
                         <div className="pool-list">
@@ -1420,7 +1561,13 @@ const SeatingChart = () => {
                 <div className="teacher-bottom-settings-grid">
                     <div className="constraints-panel">
                         <div className="constraints-header">
-                            <h2>⚙️ 배치 제약 조건 설정</h2>
+                            <h2 style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                                </svg>
+                                배치 제약 조건 설정
+                            </h2>
                             <p>자동 랜덤 배치 시 고려할 핵심 규칙을 설정하세요.</p>
                         </div>
                         
@@ -1428,7 +1575,12 @@ const SeatingChart = () => {
                             {/* 1. Front Preference */}
                             <div className="constraint-card front-card">
                                 <div className="card-title">
-                                    <span className="icon">📍</span>
+                                    <span className="icon" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                            <circle cx="12" cy="10" r="3"></circle>
+                                        </svg>
+                                    </span>
                                     <h3>앞자리 선호 학생</h3>
                                     <button className="mini-add-btn" onClick={() => openConstraintModal('front')}>+ 추가</button>
                                 </div>
@@ -1451,7 +1603,12 @@ const SeatingChart = () => {
                             {/* 2. Pair Avoidance */}
                             <div className="constraint-card avoidance-card">
                                 <div className="card-title">
-                                    <span className="icon">🚫</span>
+                                    <span className="icon" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                                        </svg>
+                                    </span>
                                     <h3>짝꿍 금지 설정</h3>
                                     <button className="mini-add-btn" onClick={() => openConstraintModal('avoidance')}>+ 추가</button>
                                 </div>
@@ -1474,7 +1631,14 @@ const SeatingChart = () => {
                             {/* 3. Mandatory Pairs */}
                             <div className="constraint-card pairing-card">
                                 <div className="card-title">
-                                    <span className="icon">🤝</span>
+                                    <span className="icon" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                            <circle cx="9" cy="7" r="4"></circle>
+                                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                        </svg>
+                                    </span>
                                     <h3>필수 짝꿍 설정</h3>
                                     <button className="mini-add-btn" onClick={() => openConstraintModal('pairing')}>+ 추가</button>
                                 </div>
@@ -1498,7 +1662,12 @@ const SeatingChart = () => {
 
                     <div className="seating-history-panel">
                         <div className="history-header">
-                            <h2>📁 자리배치 기록</h2>
+                            <h2 style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                                </svg>
+                                자리배치 기록
+                            </h2>
                             <p>저장된 자리배치 기록입니다. 향후 짝 배정 시 이전 짝 정보가 활용됩니다.</p>
                         </div>
                         {seatingHistory.length === 0 ? (
@@ -1532,7 +1701,35 @@ const SeatingChart = () => {
                 <div className="chart-modal-overlay">
                     <div className="chart-modal">
                         <div className="modal-header">
-                            <h2>{modalTarget === 'front' ? '📍 앞자리 선호 학생 선택' : (modalTarget === 'avoidance' ? '🚫 짝꿍 금지 그룹 선택' : '🤝 필수 짝꿍 그룹 선택')}</h2>
+                            <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                {modalTarget === 'front' ? (
+                                    <>
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                            <circle cx="12" cy="10" r="3"></circle>
+                                        </svg>
+                                        앞자리 선호 학생 선택
+                                    </>
+                                ) : modalTarget === 'avoidance' ? (
+                                    <>
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                                        </svg>
+                                        짝꿍 금지 그룹 선택
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                            <circle cx="9" cy="7" r="4"></circle>
+                                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                        </svg>
+                                        필수 짝꿍 그룹 선택
+                                    </>
+                                )}
+                            </h2>
                             <button className="close-btn" onClick={() => setIsModalOpen(false)}>×</button>
                         </div>
                         <div className="modal-body">
@@ -1692,10 +1889,22 @@ const SeatingChart = () => {
                 <div className="music-help-overlay" onClick={() => setAvoidanceWarningModal({ isOpen: false, student1: null, student2: null, pendingGrid: null })}>
                     <div className="initial-setup-modal warning-modal-card" onClick={e => e.stopPropagation()}>
                         <div className="setup-modal-header warning-header">
-                            <h3>⚠️ 짝꿍 금지 학생 근접 경고</h3>
+                            <h3 style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                                </svg>
+                                짝꿍 금지 학생 근접 경고
+                            </h3>
                         </div>
                         <div className="warning-modal-body">
-                            <div className="warning-icon-badge">🚫</div>
+                            <div className="warning-icon-badge">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                                </svg>
+                            </div>
                             <p className="warning-main-msg">
                                 <strong>
                                     {avoidanceWarningModal.student1?.attendanceNumber ? `${avoidanceWarningModal.student1.attendanceNumber}번 ` : ''}{avoidanceWarningModal.student1?.name}
@@ -1728,10 +1937,24 @@ const SeatingChart = () => {
                 <div className="music-help-overlay" onClick={() => setGenderWarningModal({ isOpen: false, student: null, requiredGender: '', pendingGrid: null })}>
                     <div className="initial-setup-modal warning-modal-card gender-warning-card" onClick={e => e.stopPropagation()}>
                         <div className="setup-modal-header warning-header gender-warning-header">
-                            <h3>⚠️ 좌석 성별 불일치 배치 경고</h3>
+                            <h3 style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ea580c" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                                </svg>
+                                좌석 성별 불일치 배치 경고
+                            </h3>
                         </div>
                         <div className="warning-modal-body">
-                            <div className="warning-icon-badge gender-icon-badge">🚻</div>
+                            <div className="warning-icon-badge gender-icon-badge">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ea580c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="9" cy="7" r="4"></circle>
+                                    <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                </svg>
+                            </div>
                             <p className="warning-main-msg">
                                 <strong>
                                     {genderWarningModal.student?.attendanceNumber ? `${genderWarningModal.student.attendanceNumber}번 ` : ''}{genderWarningModal.student?.name}
@@ -1785,7 +2008,14 @@ const SeatingChart = () => {
                 <div className="seating-dialog-overlay" onClick={() => setShowSaveModal(false)}>
                     <div className="seating-dialog-card" style={{ maxWidth: '440px', width: '92%' }} onClick={e => e.stopPropagation()}>
                         <div className="seating-dialog-header">
-                            <h3>💾 자리배치 기록 저장</h3>
+                            <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                    <polyline points="7 3 7 8 15 8"></polyline>
+                                </svg>
+                                자리배치 기록 저장
+                            </h3>
                             <button className="seating-dialog-close-btn" onClick={() => setShowSaveModal(false)}>✕</button>
                         </div>
                         <div className="seating-dialog-body">
@@ -1860,15 +2090,24 @@ const SeatingChart = () => {
                 <div className="seating-dialog-overlay" onClick={() => setShowLoadModal(false)}>
                     <div className="seating-dialog-card" style={{ maxWidth: '640px', width: '92%' }} onClick={e => e.stopPropagation()}>
                         <div className="seating-dialog-header">
-                            <h3>📂 자리배치 기록 보관함</h3>
+                            <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                                </svg>
+                                자리배치 기록 보관함
+                            </h3>
                             <button className="seating-dialog-close-btn" onClick={() => setShowLoadModal(false)}>✕</button>
                         </div>
                         <div className="seating-dialog-body" style={{ maxHeight: '480px', overflowY: 'auto' }}>
                             {seatingHistory.length === 0 ? (
                                 <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8' }}>
-                                    <div style={{ fontSize: '36px', marginBottom: '8px' }}>📂</div>
+                                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }}>
+                                        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                                        </svg>
+                                    </div>
                                     <p style={{ margin: 0, fontSize: '15px', fontWeight: '700', color: '#64748b' }}>저장된 자리배치 기록이 없습니다.</p>
-                                    <p style={{ margin: '6px 0 0 0', fontSize: '12.5px' }}>상단의 [배치 저장] 버튼을 눌러 현재 자리를 저장해 보세요.</p>
+                                    <p style={{ margin: '6px 0 0 0', fontSize: '12.5px' }}>상단의 [저장] 버튼을 눌러 현재 자리를 저장해 보세요.</p>
                                 </div>
                             ) : (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -1880,7 +2119,7 @@ const SeatingChart = () => {
 
                                         return (
                                             <div 
-                                                key={record.id}
+                                                key={record.id} 
                                                 style={{
                                                     display: 'flex',
                                                     alignItems: 'center',
@@ -1898,7 +2137,15 @@ const SeatingChart = () => {
                                                         {record.name}
                                                     </h4>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#64748b', flexWrap: 'wrap' }}>
-                                                        <span>📅 {dateStr}</span>
+                                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                                                            </svg>
+                                                            {dateStr}
+                                                        </span>
                                                         <span>•</span>
                                                         <span style={{ color: '#15803d', fontWeight: '800', background: '#dcfce7', padding: '1px 6px', borderRadius: '4px' }}>
                                                             {assignedCount}명 배치됨

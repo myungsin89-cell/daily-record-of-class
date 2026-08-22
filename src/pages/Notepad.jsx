@@ -121,6 +121,172 @@ const Notepad = () => {
         setNotes(prev => prev.filter(note => note.id !== id));
     };
 
+    // 체크리스트 ([ ] ) 추가 핸들러 - 상단 체크 버튼 클릭 시 현재 메모 끝에 새 체크박스 줄 생성 & 포커스
+    const handleInsertChecklist = (id) => {
+        let targetLineIdx = 0;
+        setNotes(prev => prev.map(note => {
+            if (note.id === id) {
+                const content = note.content || '';
+                const lines = content ? content.split('\n') : [];
+                lines.push('[ ] ');
+                targetLineIdx = lines.length - 1;
+                const newContent = lines.join('\n');
+                const updated = { ...note, content: newContent, updatedAt: new Date().toISOString() };
+                if (window.electronAPI) {
+                    window.electronAPI.syncMemoUpdate(updated);
+                }
+                return updated;
+            }
+            return note;
+        }));
+        setTimeout(() => {
+            const nextInput = document.querySelector(`input[data-note-line="${id}_${targetLineIdx}"]`);
+            if (nextInput) nextInput.focus();
+        }, 30);
+    };
+
+    // 줄 텍스트 수정 (체크리스트 줄 / 일반 텍스트 줄 공통)
+    const handleMixedLineChange = (noteId, lineIndex, isChecklist, newText) => {
+        setNotes(prev => prev.map(note => {
+            if (note.id === noteId) {
+                const lines = (note.content || '').split('\n');
+                const line = lines[lineIndex] || '';
+                if (isChecklist) {
+                    const match = line.match(/^(\s*)\[([ xXvV])\]/);
+                    const mark = match ? match[2] : ' ';
+                    const indent = match ? match[1] || '' : '';
+                    lines[lineIndex] = `${indent}[${mark}] ${newText}`;
+                } else {
+                    lines[lineIndex] = newText;
+                }
+                const updatedContent = lines.join('\n');
+                const updated = { ...note, content: updatedContent, updatedAt: new Date().toISOString() };
+                if (window.electronAPI) {
+                    window.electronAPI.syncMemoUpdate(updated);
+                }
+                return updated;
+            }
+            return note;
+        }));
+    };
+
+    // 체크리스트 항목 완료/미완료 토글 ([ ] <-> [x])
+    const handleToggleChecklistItem = (id, lineIndex, e) => {
+        if (e) e.stopPropagation();
+        setNotes(prev => prev.map(note => {
+            if (note.id === id) {
+                const lines = (note.content || '').split('\n');
+                if (lines[lineIndex] !== undefined) {
+                    const line = lines[lineIndex];
+                    if (/^\s*\[ \]/.test(line)) {
+                        lines[lineIndex] = line.replace(/^(\s*)\[ \]/, '$1[x]');
+                    } else if (/^\s*\[[xXvV]\]/.test(line)) {
+                        lines[lineIndex] = line.replace(/^(\s*)\[[xXvV]\]/, '$1[ ]');
+                    }
+                }
+                const updatedContent = lines.join('\n');
+                const updated = { ...note, content: updatedContent, updatedAt: new Date().toISOString() };
+                if (window.electronAPI) {
+                    window.electronAPI.syncMemoUpdate(updated);
+                }
+                return updated;
+            }
+            return note;
+        }));
+    };
+
+    // 체크리스트 특정 줄 삭제
+    const handleDeleteChecklistLine = (noteId, lineIndex, e) => {
+        if (e) e.stopPropagation();
+        setNotes(prev => prev.map(note => {
+            if (note.id === noteId) {
+                const lines = (note.content || '').split('\n');
+                lines.splice(lineIndex, 1);
+                const updatedContent = lines.join('\n');
+                const updated = { ...note, content: updatedContent, updatedAt: new Date().toISOString() };
+                if (window.electronAPI) {
+                    window.electronAPI.syncMemoUpdate(updated);
+                }
+                return updated;
+            }
+            return note;
+        }));
+    };
+
+    // 줄 키보드 이벤트 (Enter: 다음 줄 생성, Backspace: 줄 삭제 또는 체크박스 해제, 화살표 이동)
+    const handleMixedLineKeyDown = (noteId, lineIndex, isChecklist, e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            setNotes(prev => prev.map(note => {
+                if (note.id === noteId) {
+                    const lines = (note.content || '').split('\n');
+                    // 만약 빈 체크박스에서 Enter를 치면 -> 체크박스를 벗어나 일반 텍스트 줄로 변환
+                    if (isChecklist && e.target.value.trim() === '') {
+                        lines[lineIndex] = '';
+                    } else {
+                        // 체크박스 줄이면 다음 줄도 체크박스, 일반 줄이면 다음 줄은 일반 줄
+                        const newLine = isChecklist ? '[ ] ' : '';
+                        lines.splice(lineIndex + 1, 0, newLine);
+                    }
+                    const updatedContent = lines.join('\n');
+                    const updated = { ...note, content: updatedContent, updatedAt: new Date().toISOString() };
+                    if (window.electronAPI) {
+                        window.electronAPI.syncMemoUpdate(updated);
+                    }
+                    return updated;
+                }
+                return note;
+            }));
+            setTimeout(() => {
+                const nextIdx = (isChecklist && e.target.value.trim() === '') ? lineIndex : lineIndex + 1;
+                const nextInput = document.querySelector(`input[data-note-line="${noteId}_${nextIdx}"]`);
+                if (nextInput) nextInput.focus();
+            }, 20);
+        } else if (e.key === 'Backspace' && e.target.value === '') {
+            e.preventDefault();
+            setNotes(prev => prev.map(note => {
+                if (note.id === noteId) {
+                    const lines = (note.content || '').split('\n');
+                    // 만약 빈 체크박스 줄이면 일반 텍스트 줄로 변환
+                    if (isChecklist) {
+                        lines[lineIndex] = '';
+                    } else if (lines.length > 1) {
+                        lines.splice(lineIndex, 1);
+                    } else {
+                        lines[0] = '';
+                    }
+                    const updatedContent = lines.join('\n');
+                    const updated = { ...note, content: updatedContent, updatedAt: new Date().toISOString() };
+                    if (window.electronAPI) {
+                        window.electronAPI.syncMemoUpdate(updated);
+                    }
+                    return updated;
+                }
+                return note;
+            }));
+            setTimeout(() => {
+                const prevIdx = isChecklist ? lineIndex : Math.max(0, lineIndex - 1);
+                const targetInput = document.querySelector(`input[data-note-line="${noteId}_${prevIdx}"]`);
+                if (targetInput) {
+                    targetInput.focus();
+                    targetInput.setSelectionRange(targetInput.value.length, targetInput.value.length);
+                }
+            }, 20);
+        } else if (e.key === 'ArrowUp') {
+            if (lineIndex > 0) {
+                e.preventDefault();
+                const prevInput = document.querySelector(`input[data-note-line="${noteId}_${lineIndex - 1}"]`);
+                if (prevInput) prevInput.focus();
+            }
+        } else if (e.key === 'ArrowDown') {
+            const nextInput = document.querySelector(`input[data-note-line="${noteId}_${lineIndex + 1}"]`);
+            if (nextInput) {
+                e.preventDefault();
+                nextInput.focus();
+            }
+        }
+    };
+
     // Filter + Sort by Pin state & Date
     const filteredNotes = notes.filter(n => {
         const q = searchQuery.toLowerCase().trim();
@@ -244,9 +410,8 @@ const Notepad = () => {
                                         className="postit-pin-btn active"
                                         onClick={(e) => handleTogglePin(note.id, e)}
                                         title="상단 고정 해제"
-                                        style={{ color: colorScheme.text }}
                                     >
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                                             <line x1="12" y1="17" x2="12" y2="22"></line>
                                             <path d="M5 17h14l-1.5-6h-11z"></path>
                                             <path d="M9 11V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v7"></path>
@@ -257,10 +422,10 @@ const Notepad = () => {
                                     <button
                                         className="postit-pin-btn"
                                         onClick={(e) => handleTogglePin(note.id, e)}
-                                        title="상단 고정"
-                                        style={{ color: colorScheme.text, opacity: 0.4 }}
+                                        title="상단 고정하기"
+                                        style={{ color: colorScheme.text }}
                                     >
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                             <line x1="12" y1="17" x2="12" y2="22"></line>
                                             <path d="M5 17h14l-1.5-6h-11z"></path>
                                             <path d="M9 11V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v7"></path>
@@ -269,6 +434,22 @@ const Notepad = () => {
                                 )}
 
                                 <div className="postit-actions" style={{ position: 'relative' }}>
+                                    {/* 체크리스트 추가 버튼 */}
+                                    <button
+                                        className="postit-action-btn checklist-btn"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleInsertChecklist(note.id);
+                                        }}
+                                        title="체크리스트(할 일 체크박스) 추가"
+                                        style={{ color: colorScheme.text }}
+                                    >
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="9 11 12 14 22 4"></polyline>
+                                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                                        </svg>
+                                    </button>
+
                                     {/* 색상 팝오버 토글 버튼 */}
                                     <button
                                         className={`postit-action-btn palette-btn ${activePaletteNoteId === note.id ? 'active' : ''}`}
@@ -304,23 +485,25 @@ const Notepad = () => {
                                         </div>
                                     )}
 
-                                    {window.electronAPI && (
-                                        <button
-                                            className="postit-action-btn sticker-btn"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
+                                    <button
+                                        className="postit-action-btn sticker-btn"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (window.electronAPI && window.electronAPI.openWidgetWindow) {
                                                 window.electronAPI.openWidgetWindow(note.id);
-                                            }}
-                                            title="이 포스트잇을 바탕화면 스티커로 띄우기"
-                                            style={{ color: colorScheme.text }}
-                                        >
-                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                                                <line x1="8" y1="21" x2="16" y2="21"></line>
-                                                <line x1="12" y1="17" x2="12" y2="21"></line>
-                                            </svg>
-                                        </button>
-                                    )}
+                                            } else {
+                                                alert('바탕화면 스티커 띄우기는 학급일지 PC 데스크톱 앱(Electron)에서 지원되는 기능입니다.');
+                                            }
+                                        }}
+                                        title="이 포스트잇을 바탕화면 스티커로 띄우기"
+                                        style={{ color: colorScheme.text }}
+                                    >
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                                            <line x1="8" y1="21" x2="16" y2="21"></line>
+                                            <line x1="12" y1="17" x2="12" y2="21"></line>
+                                        </svg>
+                                    </button>
                                     <button
                                         className="postit-action-btn delete-btn"
                                         onClick={(e) => handleDeleteNote(note.id, e)}
@@ -342,25 +525,78 @@ const Notepad = () => {
                                 style={{ color: colorScheme.text }}
                             />
 
-                            {/* 카드 내부 직접 자유 편집 본문 텍스트에어리어 (내용 길이에 맞춰 높이 자동 수직 확장) */}
-                            <textarea
-                                className="inline-postit-content-input"
-                                placeholder="메모 내용을 자유롭게 입력하세요..."
-                                value={note.content || ''}
-                                onChange={(e) => {
-                                    e.target.style.height = 'auto';
-                                    e.target.style.height = `${e.target.scrollHeight}px`;
-                                    handleInlineNoteChange(note.id, 'content', e.target.value);
-                                }}
-                                ref={(el) => {
-                                    if (el) {
-                                        el.style.height = 'auto';
-                                        el.style.height = `${el.scrollHeight}px`;
-                                    }
-                                }}
-                                style={{ color: colorScheme.text }}
-                                rows={3}
-                            />
+                            {/* 카드 내부 직접 자유 편집 본문 영역: 체크리스트 & 텍스트 혼합 일체형 에디터 */}
+                            {(() => {
+                                const lines = (note.content !== undefined && note.content !== null ? note.content : '').split('\n');
+                                const hasChecklist = lines.some(l => /^\s*\[[ xXvV]\]/.test(l));
+
+                                if (hasChecklist) {
+                                    return (
+                                        <div className="postit-direct-checklist-editor">
+                                            {lines.map((line, idx) => {
+                                                const match = line.match(/^(\s*)\[([ xXvV])\]\s*(.*)$/);
+                                                const isChecklistLine = !!match;
+                                                const isChecked = match ? (match[2].toLowerCase() === 'x' || match[2].toLowerCase() === 'v') : false;
+                                                const text = match ? match[3] : line;
+
+                                                return (
+                                                    <div key={idx} className={`direct-checklist-row ${isChecklistLine ? 'is-checklist' : 'is-plain-text'} ${isChecked ? 'completed' : ''}`}>
+                                                        {isChecklistLine && (
+                                                            <button
+                                                                type="button"
+                                                                className={`direct-checkbox-btn ${isChecked ? 'checked' : ''}`}
+                                                                onClick={(e) => handleToggleChecklistItem(note.id, idx, e)}
+                                                                title={isChecked ? '완료 취소' : '할 일 완료'}
+                                                            >
+                                                                {isChecked ? (
+                                                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                                                    </svg>
+                                                                ) : (
+                                                                    <span className="direct-empty-square" />
+                                                                )}
+                                                            </button>
+                                                        )}
+
+                                                        <input
+                                                            type="text"
+                                                            className={`direct-checklist-text-input ${isChecklistLine ? 'is-check-input' : 'is-plain-input'} ${isChecked ? 'completed' : ''}`}
+                                                            placeholder={isChecklistLine ? '할 일 입력... (Enter로 다음 항목)' : '메모 내용 입력...'}
+                                                            value={text}
+                                                            data-note-line={`${note.id}_${idx}`}
+                                                            onChange={(e) => handleMixedLineChange(note.id, idx, isChecklistLine, e.target.value)}
+                                                            onKeyDown={(e) => handleMixedLineKeyDown(note.id, idx, isChecklistLine, e)}
+                                                            style={{ color: colorScheme.text }}
+                                                        />
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    );
+                                }
+
+                                // 일반 텍스트 모드
+                                return (
+                                    <textarea
+                                        className="inline-postit-content-input"
+                                        placeholder="메모 내용을 자유롭게 입력하세요... (상단 체크 버튼으로 체크박스 생성)"
+                                        value={note.content || ''}
+                                        onChange={(e) => {
+                                            e.target.style.height = 'auto';
+                                            e.target.style.height = `${e.target.scrollHeight}px`;
+                                            handleInlineNoteChange(note.id, 'content', e.target.value);
+                                        }}
+                                        ref={(el) => {
+                                            if (el) {
+                                                el.style.height = 'auto';
+                                                el.style.height = `${el.scrollHeight}px`;
+                                            }
+                                        }}
+                                        style={{ color: colorScheme.text }}
+                                        rows={3}
+                                    />
+                                );
+                            })()}
 
                             {/* 하단 툴바: 날짜 표시 (하단 색선택 제거로 극도의 깔끔함 확보) */}
                             <div className="postit-footer" style={{ borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '0.4rem', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
