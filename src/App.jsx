@@ -16,6 +16,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import ClassRequiredRoute from './components/ClassRequiredRoute';
 import Layout from './components/Layout';
 import DesktopTitlebar from './components/DesktopTitlebar';
+import AppUpdateModal from './components/AppUpdateModal';
 
 // Pages
 import Login from './pages/Login';
@@ -73,6 +74,7 @@ function App() {
                             <Route path="/*" element={
                               <>
                                 <DesktopTitlebar />
+                                <AppUpdateModal />
                                 <Routes>
                                   <Route path="/login" element={<Login />} />
 

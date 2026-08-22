@@ -18,5 +18,28 @@ contextBridge.exposeInMainWorld('electronAPI', {
         ipcRenderer.on('memo-synced', handler);
         return () => ipcRenderer.removeListener('memo-synced', handler);
     },
+    // In-App AutoUpdater IPC APIs
+    onUpdateAvailable: (callback) => {
+        const handler = (event, info) => callback(info);
+        ipcRenderer.on('update-available', handler);
+        return () => ipcRenderer.removeListener('update-available', handler);
+    },
+    onUpdateDownloadProgress: (callback) => {
+        const handler = (event, progress) => callback(progress);
+        ipcRenderer.on('update-download-progress', handler);
+        return () => ipcRenderer.removeListener('update-download-progress', handler);
+    },
+    onUpdateDownloaded: (callback) => {
+        const handler = (event, info) => callback(info);
+        ipcRenderer.on('update-downloaded', handler);
+        return () => ipcRenderer.removeListener('update-downloaded', handler);
+    },
+    onUpdateError: (callback) => {
+        const handler = (event, error) => callback(error);
+        ipcRenderer.on('update-error', handler);
+        return () => ipcRenderer.removeListener('update-error', handler);
+    },
+    startUpdateDownload: () => ipcRenderer.invoke('start-update-download'),
+    quitAndInstallUpdate: () => ipcRenderer.invoke('quit-and-install-update'),
     isElectron: true
 });
