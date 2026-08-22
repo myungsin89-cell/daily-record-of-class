@@ -84,5 +84,6 @@ export const CHANGELOG = [
     },
 ];
 
-// 현재 버전
-export const APP_VERSION = '2.0.2';
+// 현재 버전 (CHANGELOG 최상단 버전 자동 연동)
+export const APP_VERSION = CHANGELOG[0]?.version || '2.0.3';
+
