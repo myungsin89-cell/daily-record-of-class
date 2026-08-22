@@ -1,7 +1,7 @@
 {
   "name": "class-diary",
   "private": true,
-  "version": "2.0.3",
+  "version": "2.0.4",
   "main": "electron/main.js",
   "scripts": {
     "dev": "vite",
@@ -50,7 +50,7 @@
       "repo": "daily-record-of-class"
     },
     "directories": {
-      "output": "release-build"
+      "output": "C:/Users/소미네/Desktop/학급일지_설치파일_출력"
     },
     "win": {
       "target": [
