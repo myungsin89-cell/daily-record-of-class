@@ -19,7 +19,7 @@
     box-shadow: none;
     padding: 1rem 1.5rem;
     width: 100%;
-    max-width: 320px;
+    max-width: 360px;
     box-sizing: border-box;
     animation: fadeIn 0.3s ease-out;
 }
@@ -133,6 +133,203 @@
 
 .login-button:active {
     transform: translateY(0);
+}
+
+/* ===== Saved Accounts Section ===== */
+.saved-accounts-section {
+    margin-bottom: 1.25rem;
+}
+
+.saved-accounts-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    color: #16a34a;
+    font-size: 0.88rem;
+    font-weight: 700;
+}
+
+.saved-accounts-desc {
+    font-size: 0.8rem;
+    color: #64748b;
+    text-align: center;
+    margin: 0.25rem 0 0.9rem 0;
+}
+
+.account-cards-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 2px 2px 4px 2px;
+}
+
+/* Custom minimal scrollbar */
+.account-cards-list::-webkit-scrollbar {
+    width: 4px;
+}
+.account-cards-list::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.account-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.7rem 0.85rem;
+    background: #f8fafc;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+}
+
+.account-card:hover {
+    background: #f0fdf4;
+    border-color: #86efac;
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.08);
+    transform: translateY(-1px);
+}
+
+.account-card:hover .account-enter-icon {
+    color: #16a34a;
+    transform: translateX(2px);
+}
+
+.account-card:active {
+    transform: translateY(0);
+}
+
+.account-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: #dcfce7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.account-info {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+}
+
+.account-name-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.account-name-text {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #0f172a;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.account-role-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #15803d;
+    background: #dcfce7;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.account-class-summary {
+    font-size: 0.78rem;
+    color: #64748b;
+    margin-top: 0.15rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.account-card-right {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-shrink: 0;
+}
+
+.account-enter-icon {
+    color: #94a3b8;
+    transition: all 0.2s ease;
+}
+
+.account-remove-btn {
+    background: transparent;
+    border: none;
+    color: #cbd5e1;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.4rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    line-height: 1;
+}
+
+.account-remove-btn:hover {
+    background: #fee2e2;
+    color: #ef4444;
+}
+
+.switch-new-account-btn {
+    width: 100%;
+    margin-top: 0.8rem;
+    padding: 0.65rem 0.8rem;
+    background: transparent;
+    border: 1.5px dashed #cbd5e1;
+    border-radius: 12px;
+    color: #475569;
+    font-size: 0.84rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.switch-new-account-btn:hover {
+    border-color: #16a34a;
+    color: #16a34a;
+    background: #f0fdf4;
+}
+
+.back-to-accounts-btn {
+    width: 100%;
+    margin-bottom: 0.9rem;
+    padding: 0.5rem 0.8rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    color: #475569;
+    font-size: 0.82rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.back-to-accounts-btn:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+    border-color: #cbd5e1;
 }
 
 .login-footer {
