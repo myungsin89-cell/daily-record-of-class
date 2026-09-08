@@ -15,77 +15,174 @@ const Login = () => {
             window.electronAPI.setWindowMode('login');
         }
 
-        // 브라우저에 저장된 계정 목록 자동 스캔
-        try {
-            const userSet = new Set();
+        // 브라우저에 저장된 모든 계정 정보 정밀 스캔
+        const scanSavedAccounts = async () => {
+            try {
+                const userSet = new Set();
 
-            // 1) _classes 키에서 사용자 이름 추출
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key && key.endsWith('_classes')) {
-                    const uName = key.replace('_classes', '').trim();
-                    if (uName) userSet.add(uName);
+                // 1) localStorage 전체 키 패턴 분석
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (!key) continue;
+
+                    // (1) _classes 키 (예: 홍길동_classes)
+                    if (key.endsWith('_classes')) {
+                        const uName = key.replace(/_classes$/, '').trim();
+                        if (uName) userSet.add(uName);
+                    }
+                    // (2) _currentClass 키 (예: 홍길동_currentClass)
+                    else if (key.endsWith('_currentClass')) {
+                        const uName = key.replace(/_currentClass$/, '').trim();
+                        if (uName) userSet.add(uName);
+                    }
+                    // (3) 과제/예산/역할/성적 키 (예: assignments_홍길동_..., grade_v4_홍길동_...)
+                    else {
+                        const prefixMatch = key.match(/^(?:assignments|budgets|roles|grade_data|grade_v4|grade_criteria|grade_groups)_([^_]+)_/);
+                        if (prefixMatch && prefixMatch[1]) {
+                            const uName = prefixMatch[1].trim();
+                            if (uName) userSet.add(uName);
+                        } else {
+                            // (4) 홍길동_12345_todos, 홍길동_12345_notes, 홍길동_12345_notepad
+                            const taskMatch = key.match(/^([^_]+)_[0-9]+_(?:todos|notes|notepad|announcements)$/);
+                            if (taskMatch && taskMatch[1]) {
+                                const uName = taskMatch[1].trim();
+                                if (uName) userSet.add(uName);
+                            }
+                        }
+                    }
                 }
-            }
 
-            // 2) saved_usernames 목록 확인
-            const savedList = JSON.parse(localStorage.getItem('saved_usernames') || '[]');
-            if (Array.isArray(savedList)) {
-                savedList.forEach(u => {
-                    if (u && typeof u === 'string' && u.trim()) {
-                        userSet.add(u.trim());
-                    }
-                });
-            }
+                // 2) 체험학습/결석계에 입력된 선생님 성함
+                const ftTeacher = localStorage.getItem('fieldtrip_teacherName');
+                if (ftTeacher && typeof ftTeacher === 'string' && ftTeacher.trim()) {
+                    userSet.add(ftTeacher.trim());
+                }
 
-            // 3) currentUser 확인
-            const currentUserStr = localStorage.getItem('currentUser');
-            if (currentUserStr) {
+                // 3) 구글 연동 사용자
                 try {
-                    const parsed = JSON.parse(currentUserStr);
-                    if (parsed && parsed.username && parsed.username.trim()) {
-                        userSet.add(parsed.username.trim());
-                    }
-                } catch (e) {}
-            }
-
-            // 계정별 학급 정보 매핑
-            const accounts = Array.from(userSet).map(name => {
-                let classes = [];
-                try {
-                    const classesRaw = localStorage.getItem(`${name}_classes`);
-                    if (classesRaw) {
-                        classes = JSON.parse(classesRaw) || [];
+                    const gUser = JSON.parse(localStorage.getItem('google_connected_user') || 'null');
+                    if (gUser && gUser.name && typeof gUser.name === 'string') {
+                        userSet.add(gUser.name.trim());
                     }
                 } catch (e) {}
 
-                let classSummary = '등록된 학급 없음';
-                if (classes.length > 0) {
-                    const first = classes[0];
-                    const className = `${first.year ? first.year + '학년도 ' : ''}${first.name || ''}`;
-                    if (classes.length > 1) {
-                        classSummary = `${className} 외 ${classes.length - 1}개 학급`;
+                // 4) saved_usernames 목록 확인
+                try {
+                    const savedList = JSON.parse(localStorage.getItem('saved_usernames') || '[]');
+                    if (Array.isArray(savedList)) {
+                        savedList.forEach(u => {
+                            if (u && typeof u === 'string' && u.trim()) {
+                                userSet.add(u.trim());
+                            }
+                        });
+                    }
+                } catch (e) {}
+
+                // 5) currentUser 확인
+                try {
+                    const currentUserStr = localStorage.getItem('currentUser');
+                    if (currentUserStr) {
+                        const parsed = JSON.parse(currentUserStr);
+                        if (parsed && parsed.username && parsed.username.trim()) {
+                            userSet.add(parsed.username.trim());
+                        }
+                    }
+                } catch (e) {}
+
+                // 6) IndexedDB(ClassDiaryDB) 키 검사 (비동기 안전 검사)
+                if (typeof window !== 'undefined' && window.indexedDB) {
+                    try {
+                        await new Promise((resolve) => {
+                            const req = window.indexedDB.open('ClassDiaryDB');
+                            req.onsuccess = (e) => {
+                                try {
+                                    const db = e.target.result;
+                                    if (db.objectStoreNames && db.objectStoreNames.contains('students')) {
+                                        const tx = db.transaction('students', 'readonly');
+                                        const store = tx.objectStore('students');
+                                        const keysReq = store.getAllKeys();
+                                        keysReq.onsuccess = () => {
+                                            const keys = keysReq.result || [];
+                                            keys.forEach(k => {
+                                                if (typeof k === 'string' && k.includes('_')) {
+                                                    const uName = k.split('_')[0].trim();
+                                                    if (uName && isNaN(uName)) {
+                                                        userSet.add(uName);
+                                                    }
+                                                }
+                                            });
+                                            resolve();
+                                        };
+                                        keysReq.onerror = () => resolve();
+                                    } else {
+                                        resolve();
+                                    }
+                                } catch (inner) {
+                                    resolve();
+                                }
+                            };
+                            req.onerror = () => resolve();
+                            setTimeout(resolve, 300);
+                        });
+                    } catch (dbErr) {}
+                }
+
+                // 제외할 시스템 키/불필요 문자열 필터링
+                const ignoredNames = new Set(['default', 'true', 'false', 'null', 'undefined', 'currentclass', 'classes']);
+                const validUsers = Array.from(userSet).filter(u => u && !ignoredNames.has(u.toLowerCase()));
+
+                // 계정별 학급 정보 매핑
+                const accounts = validUsers.map(name => {
+                    let classes = [];
+                    try {
+                        const classesRaw = localStorage.getItem(`${name}_classes`);
+                        if (classesRaw) {
+                            classes = JSON.parse(classesRaw) || [];
+                        }
+                    } catch (e) {}
+
+                    let classSummary = '';
+                    if (classes.length > 0) {
+                        const first = classes[0];
+                        const className = `${first.year ? first.year + '학년도 ' : ''}${first.name || ''}`;
+                        if (classes.length > 1) {
+                            classSummary = `${className} 외 ${classes.length - 1}개 학급`;
+                        } else {
+                            classSummary = className;
+                        }
                     } else {
-                        classSummary = className;
+                        // 만약 _classes가 없어도 legacy currentClass가 있는지 확인
+                        try {
+                            const legacyClass = JSON.parse(localStorage.getItem('currentClass') || 'null');
+                            if (legacyClass && legacyClass.name) {
+                                classSummary = `${legacyClass.year ? legacyClass.year + '학년도 ' : ''}${legacyClass.name}`;
+                            }
+                        } catch (e) {}
                     }
+
+                    if (!classSummary) {
+                        classSummary = '저장된 학급일지 데이터 있음';
+                    }
+
+                    return {
+                        username: name,
+                        classesCount: classes.length,
+                        classSummary
+                    };
+                });
+
+                setSavedAccounts(accounts);
+                // 저장된 계정이 없으면 바로 신규 입력창 표시
+                if (accounts.length === 0) {
+                    setShowNewInput(true);
                 }
-
-                return {
-                    username: name,
-                    classesCount: classes.length,
-                    classSummary
-                };
-            });
-
-            setSavedAccounts(accounts);
-            // 저장된 계정이 없으면 바로 신규 입력창 표시
-            if (accounts.length === 0) {
+            } catch (err) {
+                console.error('계정 탐색 실패:', err);
                 setShowNewInput(true);
             }
-        } catch (err) {
-            console.error('계정 탐색 실패:', err);
-            setShowNewInput(true);
-        }
+        };
+
+        scanSavedAccounts();
     }, []);
 
     const performLogin = (nameToLogin) => {
