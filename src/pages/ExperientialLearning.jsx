@@ -98,6 +98,18 @@ const ExperientialLearning = () => {
                     }
                     const affiliation = `${grade}-${classNumber}-${student.attendanceNumber}`;
 
+                    // 출결 체크에서 입력된 체험학습 장소 fallback 자동 조회
+                    let attLocation = '';
+                    if (Array.isArray(group.allDates)) {
+                        for (const d of group.allDates) {
+                            const attData = attendance[d]?.[student.id];
+                            if (attData && typeof attData === 'object' && (attData.location || attData.reason)) {
+                                attLocation = attData.location || attData.reason;
+                                break;
+                            }
+                        }
+                    }
+
                     trips.push({
                         id: tripId,
                         studentId: student.id,
@@ -113,7 +125,7 @@ const ExperientialLearning = () => {
                         schoolDays: schoolDays,
                         applicationDate: metadata.applicationDate || group.startDate,
                         activityName: metadata.activityName || '교외체험학습',
-                        location: metadata.location || '',
+                        location: metadata.location || attLocation || '',
                         content: metadata.content || '가족동반여행',
                         isSubmitted: metadata.isSubmitted || false
                     });

@@ -100,14 +100,49 @@ export const StudentProvider = ({ children }) => {
         });
     };
 
+    // 누가기록 로드 시 id 누락 항목 자동 마이그레이션 (REQ-12 버그 방지)
+    useEffect(() => {
+        if (isLoadingJournals || !journals || typeof journals !== 'object') return;
+        let hasMissingId = false;
+        const sanitizedJournals = {};
+
+        Object.keys(journals).forEach(studentId => {
+            const entries = journals[studentId];
+            if (Array.isArray(entries)) {
+                sanitizedJournals[studentId] = entries.map((entry, idx) => {
+                    if (!entry.id) {
+                        hasMissingId = true;
+                        return {
+                            ...entry,
+                            id: entry.date ? `${entry.date}_${idx}_${Math.random().toString(36).substring(2, 9)}` : crypto.randomUUID()
+                        };
+                    }
+                    return entry;
+                });
+            } else {
+                sanitizedJournals[studentId] = entries;
+            }
+        });
+
+        if (hasMissingId) {
+            setJournals(sanitizedJournals);
+        }
+    }, [isLoadingJournals, journals, setJournals]);
+
     const addJournalEntry = (studentId, entry) => {
+        if (!studentId) return;
+        const safeEntry = {
+            ...entry,
+            id: entry.id || crypto.randomUUID(),
+        };
         setJournals((prev) => ({
             ...prev,
-            [studentId]: [...(prev[studentId] || []), entry],
+            [studentId]: [...(prev[studentId] || []), safeEntry],
         }));
     };
 
     const updateJournalEntry = (studentId, entryId, updatedEntry) => {
+        if (!studentId || !entryId) return;
         setJournals((prev) => {
             const studentEntries = prev[studentId] || [];
             const updatedEntries = studentEntries.map(entry => 
@@ -121,6 +156,7 @@ export const StudentProvider = ({ children }) => {
     };
 
     const deleteJournalEntry = (studentId, entryId) => {
+        if (!studentId || !entryId) return;
         setJournals((prev) => {
             const studentEntries = prev[studentId] || [];
             const updatedEntries = studentEntries.filter(entry => entry.id !== entryId);

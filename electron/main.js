@@ -88,6 +88,13 @@ function createMainWindow() {
         }
     }
 
+    mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+        if (url && /^https?:\/\//i.test(url)) {
+            shell.openExternal(url);
+        }
+        return { action: 'deny' };
+    });
+
     mainWindow.once('ready-to-show', () => {
         console.log('[Main] ready-to-show fired');
         mainWindow.show();
@@ -153,6 +160,13 @@ function createWidgetWindow(noteId) {
     });
 
     widgetWindowsMap.set(noteId, win);
+
+    win.webContents.setWindowOpenHandler(({ url }) => {
+        if (url && /^https?:\/\//i.test(url)) {
+            shell.openExternal(url);
+        }
+        return { action: 'deny' };
+    });
 
     win.webContents.on('console-message', (event, level, message, line, sourceId) => {
         console.log(`[Widget Console] ${message} (${sourceId}:${line})`);
@@ -363,6 +377,13 @@ ipcMain.on('set-always-on-top', (event, isAlwaysOnTop) => {
     const senderWin = BrowserWindow.fromWebContents(event.sender);
     if (senderWin) {
         senderWin.setAlwaysOnTop(isAlwaysOnTop);
+    }
+});
+
+// Open external link in default web browser
+ipcMain.on('open-external', (event, url) => {
+    if (url && /^https?:\/\//i.test(url)) {
+        shell.openExternal(url);
     }
 });
 

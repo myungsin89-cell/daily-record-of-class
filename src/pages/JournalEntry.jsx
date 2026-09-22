@@ -6,6 +6,8 @@ import { useAuth } from '../context/AuthContext';
 import { useModal } from '../context/ModalContext';
 import { getData, STORES } from '../db/indexedDB';
 import { trackEvent } from '../utils/analytics';
+import { formatDateToString } from '../utils/dateUtils';
+import { renderTextWithLinks } from '../utils/linkUtils';
 import './JournalEntry.css';
 
 const TAG_OPTIONS = [
@@ -91,7 +93,7 @@ const JournalEntry = () => {
     const [studentSearch, setStudentSearch] = useState('');
     const [selectedTag, setSelectedTag] = useState('수업태도');
     const [entryContent, setEntryContent] = useState('');
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [selectedDate, setSelectedDate] = useState(() => formatDateToString(new Date()));
     const [filterTag, setFilterTag] = useState('all');
     const [showTagFilter, setShowTagFilter] = useState(false);
     const [editingId, setEditingId] = useState(null);
@@ -402,7 +404,11 @@ const JournalEntry = () => {
     const groupedJournals = useMemo(() => {
         const sorted = [...filteredJournals].sort((a, b) => new Date(b.date) - new Date(a.date));
         const groups = {};
-        sorted.forEach(entry => {
+        sorted.forEach((entry, idx) => {
+            // 과거 데이터 중 id가 없는 경우 화면 렌더링 및 식별용 fallback 부여
+            if (!entry.id) {
+                entry.id = `legacy_${entry.date || 'unknown'}_${idx}`;
+            }
             const dateKey = entry.date ? entry.date.split('T')[0] : '기타 일자';
             if (!groups[dateKey]) groups[dateKey] = [];
             groups[dateKey].push(entry);
@@ -420,8 +426,13 @@ const JournalEntry = () => {
             return;
         }
 
+        const dateStr = selectedDate || formatDateToString(new Date());
+        // YYYY-MM-DD에 T12:00:00(정오)을 붙여 ISO 변환 시 UTC 시차로 날짜가 전날로 밀리는 문제 원천 차단
+        const isoDate = new Date(`${dateStr}T12:00:00`).toISOString();
+
         addJournalEntry(selectedStudentId, {
-            date: selectedDate ? new Date(selectedDate).toISOString() : new Date().toISOString(),
+            id: crypto.randomUUID(),
+            date: isoDate,
             tag: selectedTag,
             content: entryContent.trim()
         });
@@ -431,12 +442,17 @@ const JournalEntry = () => {
     };
 
     const handleStartEdit = (entry) => {
+        if (!entry || !entry.id) return;
         setEditingId(entry.id);
-        setEditContent(entry.content);
+        setEditContent(entry.content || '');
         setEditTag(entry.tag || '수업태도');
     };
 
     const handleSaveEdit = (entryId) => {
+        if (!entryId) {
+            showAlert('수정 대상 기록 ID를 찾을 수 없습니다.', '수정 불가', '확인', 'error');
+            return;
+        }
         if (!editContent.trim()) {
             showAlert('내용을 입력해 주세요.', '내용 필요', '확인', 'alert');
             return;
@@ -450,6 +466,10 @@ const JournalEntry = () => {
     };
 
     const handleDeleteJournal = async (entryId) => {
+        if (!entryId) {
+            showAlert('삭제 대상 기록 ID를 찾을 수 없습니다.', '삭제 불가', '확인', 'error');
+            return;
+        }
         const confirmed = await showConfirm('이 누가기록을 삭제하시겠습니까?', '기록 삭제', '삭제', '취소');
         if (confirmed) {
             deleteJournalEntry(selectedStudentId, entryId);
@@ -747,11 +767,11 @@ const JournalEntry = () => {
                 const note = dayData.reason || '';
 
                 if (st === 'present') present += 1;
-                else if (st.includes('absent')) absent += 1;
-                else if (st.includes('late')) late += 1;
-                else if (st.includes('early')) early += 1;
-                else if (st.includes('result')) result += 1;
-                else if (st === 'fieldtrip') fieldtrip += 1;
+                else if (st === 'sick' || st === 'other' || st.includes('absent') || st === '병결' || st === '기타' || st === '결석') absent += 1;
+                else if (st.includes('late') || st === '지각') late += 1;
+                else if (st.includes('early') || st === '조퇴') early += 1;
+                else if (st.includes('result') || st === '결과') result += 1;
+                else if (st === 'fieldtrip' || st === '체험학습') fieldtrip += 1;
 
                 if (st !== 'present') {
                     records.push({
@@ -831,11 +851,14 @@ const JournalEntry = () => {
 
     // 상태 라벨 헬퍼
     const getStatusBadgeLabel = (status) => {
-        if (status.includes('absent')) return '결석';
-        if (status.includes('late')) return '지각';
-        if (status.includes('early')) return '조퇴';
-        if (status.includes('result')) return '결과';
-        if (status === 'fieldtrip') return '체험학습';
+        if (!status) return '';
+        if (status === 'sick' || status === '병결' || status.includes('병결')) return '병결';
+        if (status === 'other' || status === '기타' || status.includes('기타')) return '기타결';
+        if (status.includes('absent') || status === '결석') return '결석';
+        if (status.includes('late') || status === '지각') return '지각';
+        if (status.includes('early') || status === '조퇴') return '조퇴';
+        if (status.includes('result') || status === '결과') return '결과';
+        if (status === 'fieldtrip' || status === '체험학습') return '체험학습';
         return status;
     };
 
@@ -1269,7 +1292,7 @@ const JournalEntry = () => {
                                                 type="date"
                                                 value={selectedDate}
                                                 onChange={(e) => setSelectedDate(e.target.value)}
-                                                max={new Date().toISOString().split('T')[0]}
+                                                max={formatDateToString(new Date())}
                                                 className="date-picker-input"
                                             />
                                         </div>
@@ -1416,7 +1439,7 @@ const JournalEntry = () => {
                                                                             />
                                                                         </div>
                                                                     ) : (
-                                                                        <p className="entry-body-text">{entry.content}</p>
+                                                                        <p className="entry-body-text">{renderTextWithLinks(entry.content)}</p>
                                                                     )}
                                                                 </div>
                                                             );
@@ -1489,7 +1512,7 @@ const JournalEntry = () => {
                                                             {getStatusBadgeLabel(r.status)}
                                                         </span>
                                                         {r.note && (
-                                                            <span className="clean-note-text">{r.note}</span>
+                                                            <span className="clean-note-text">{renderTextWithLinks(r.note)}</span>
                                                         )}
                                                     </div>
                                                 </div>

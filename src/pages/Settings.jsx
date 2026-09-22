@@ -31,6 +31,24 @@ import FeedbackModal from '../components/FeedbackModal';
 import { trackEvent } from '../utils/analytics';
 import './Settings.css';
 
+const COMMON_SUBJECTS = ['국어', '수학', '사회', '과학', '영어', '음악', '미술', '체육', '도덕', '실과', '창체', '안전', '동아리', '자치'];
+
+const BASE_TT_DAYS = [
+    { key: 1, label: '월요일', short: '월' },
+    { key: 2, label: '화요일', short: '화' },
+    { key: 3, label: '수요일', short: '수' },
+    { key: 4, label: '목요일', short: '목' },
+    { key: 5, label: '금요일', short: '금' },
+];
+
+const DEFAULT_BASE_TIMETABLE = {
+    1: { 1: '', 2: '', 3: '', 4: '', 5: '', 6: '' },
+    2: { 1: '', 2: '', 3: '', 4: '', 5: '', 6: '' },
+    3: { 1: '', 2: '', 3: '', 4: '', 5: '', 6: '' },
+    4: { 1: '', 2: '', 3: '', 4: '', 5: '', 6: '' },
+    5: { 1: '', 2: '', 3: '', 4: '', 5: '', 6: '' }
+};
+
 const Settings = () => {
     const { showAlert, showConfirm } = useModal();
     const { apiKey, isConnected, saveAPIKey, deleteAPIKey, testConnection } = useAPIKey();
@@ -65,6 +83,131 @@ const Settings = () => {
         window.addEventListener('autoBackupConfigChanged', updateConfig);
         return () => window.removeEventListener('autoBackupConfigChanged', updateConfig);
     }, []);
+
+    // 기초 시간표(Base Timetable) State & Handlers (REQ-01)
+    const rawClassId = currentClass?.id || 'default';
+    const classId = user ? `${user.username}_${rawClassId}` : rawClassId;
+    const baseTimetableKey = `teacher_base_timetable_${classId}`;
+
+    const [baseTimetable, setBaseTimetable] = useState(DEFAULT_BASE_TIMETABLE);
+    const [focusedCell, setFocusedCell] = useState(null); // { day: 1, period: 1 }
+    const [isBaseTtExpanded, setIsBaseTtExpanded] = useState(false); // 기본값 접힘
+
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem(baseTimetableKey);
+            if (saved) {
+                setBaseTimetable(JSON.parse(saved));
+            } else {
+                setBaseTimetable(DEFAULT_BASE_TIMETABLE);
+            }
+        } catch (e) {
+            console.error('Failed to load base timetable:', e);
+            setBaseTimetable(DEFAULT_BASE_TIMETABLE);
+        }
+    }, [baseTimetableKey]);
+
+    const handleBaseTimetableChange = (day, period, value) => {
+        setBaseTimetable(prev => ({
+            ...prev,
+            [day]: {
+                ...(prev[day] || {}),
+                [period]: value
+            }
+        }));
+    };
+
+    const handleApplySubjectChip = (subject) => {
+        if (focusedCell) {
+            handleBaseTimetableChange(focusedCell.day, focusedCell.period, subject);
+            // 입력 후 다음 교시로 자동 포커스 이동 (교사 편의)
+            if (focusedCell.period < 6) {
+                const nextPeriod = focusedCell.period + 1;
+                setFocusedCell({ day: focusedCell.day, period: nextPeriod });
+                const nextEl = document.getElementById(`base-tt-${focusedCell.day}-${nextPeriod}`);
+                if (nextEl) nextEl.focus();
+            } else if (focusedCell.day < 5) {
+                const nextDay = focusedCell.day + 1;
+                setFocusedCell({ day: nextDay, period: 1 });
+                const nextEl = document.getElementById(`base-tt-${nextDay}-1`);
+                if (nextEl) nextEl.focus();
+            }
+        } else {
+            showAlert('과목을 입력할 시간표 칸을 먼저 클릭해 주세요.', '칸 선택 필요', '확인', 'alert');
+        }
+    };
+
+    const handleBaseTimetableKeyDown = (e, day, period) => {
+        if (e.key === 'Enter' || e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (period < 6) {
+                const nextEl = document.getElementById(`base-tt-${day}-${period + 1}`);
+                if (nextEl) nextEl.focus();
+            } else if (day < 5) {
+                const nextEl = document.getElementById(`base-tt-${day + 1}-1`);
+                if (nextEl) nextEl.focus();
+            }
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (period > 1) {
+                const prevEl = document.getElementById(`base-tt-${day}-${period - 1}`);
+                if (prevEl) prevEl.focus();
+            }
+        } else if (e.key === 'ArrowRight') {
+            if (day < 5) {
+                const nextEl = document.getElementById(`base-tt-${day + 1}-${period}`);
+                if (nextEl) nextEl.focus();
+            }
+        } else if (e.key === 'ArrowLeft') {
+            if (day > 1) {
+                const prevEl = document.getElementById(`base-tt-${day - 1}-${period}`);
+                if (prevEl) prevEl.focus();
+            }
+        }
+    };
+
+    const handleSaveBaseTimetable = () => {
+        try {
+            localStorage.setItem(baseTimetableKey, JSON.stringify(baseTimetable));
+            window.dispatchEvent(new CustomEvent('baseTimetableUpdated', { detail: { baseTimetable } }));
+            showAlert('학급 기초 시간표가 저장되었습니다!\n다이어리 시간표에 매주 자동으로 기본 과목이 채워집니다.', '저장 완료', '확인', 'success');
+        } catch (e) {
+            showAlert('저장 중 오류가 발생했습니다: ' + e.message, '오류', '확인', 'error');
+        }
+    };
+
+    const handleResetBaseTimetable = async () => {
+        const confirmed = await showConfirm('기초 시간표의 모든 과목 입력을 비우시겠습니까?', '기초 시간표 초기화', '초기화', '취소');
+        if (confirmed) {
+            setBaseTimetable(DEFAULT_BASE_TIMETABLE);
+            localStorage.removeItem(baseTimetableKey);
+            window.dispatchEvent(new CustomEvent('baseTimetableUpdated', { detail: { baseTimetable: null } }));
+            showAlert('기초 시간표가 초기화되었습니다.', '초기화 완료', '확인', 'success');
+        }
+    };
+
+    // 다이어리 하단 메모 모드 ('weekly' | 'daily') (REQ-13)
+    const memoModeKey = `diary_memo_mode_${classId}`;
+    const [diaryMemoMode, setDiaryMemoMode] = useState(() => {
+        return localStorage.getItem(memoModeKey) || 'weekly';
+    });
+
+    useEffect(() => {
+        const saved = localStorage.getItem(memoModeKey);
+        if (saved) setDiaryMemoMode(saved);
+        else setDiaryMemoMode('weekly');
+    }, [memoModeKey]);
+
+    const handleMemoModeChange = (mode) => {
+        setDiaryMemoMode(mode);
+        try {
+            localStorage.setItem(memoModeKey, mode);
+            window.dispatchEvent(new CustomEvent('diaryMemoModeChanged', { detail: mode }));
+            showAlert(mode === 'weekly' ? '다이어리 하단 메모가 [주별 메모]로 설정되었습니다.' : '다이어리 하단 메모가 [일별 메모 / 알림장]으로 설정되었습니다.', '설정 변경', '확인', 'success');
+        } catch (e) {
+            console.error('Failed to save diary memo mode:', e);
+        }
+    };
 
     // 게시판(메뉴) 편집 상태
     const [sidebarMenuItems, setSidebarMenuItems] = useState(() => {
@@ -563,7 +706,215 @@ const Settings = () => {
                 </div>
             </div>
 
-            {/* 2. 공휴일 관리 */}
+            {/* 2. 학급 기초 시간표 설정 (REQ-01) */}
+            <div className={`settings-card base-tt-card ${isBaseTtExpanded ? 'expanded' : 'collapsed'}`}>
+                <div 
+                    className="base-tt-header"
+                    onClick={() => setIsBaseTtExpanded(!isBaseTtExpanded)}
+                >
+                    <div className="base-tt-header-left">
+                        <span className="card-icon-badge">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="12" cy="12" r="10" />
+                                <polyline points="12 6 12 12 16 14" />
+                            </svg>
+                        </span>
+                        <div className="base-tt-title-text-group">
+                            <div className="base-tt-title-row">
+                                <h2>학급 기초 시간표 설정</h2>
+                                <span className={`base-tt-status-pill ${isBaseTtExpanded ? 'active' : ''}`}>
+                                    {isBaseTtExpanded ? '설정 중' : '접힘'}
+                                </span>
+                            </div>
+                            <p className="section-description">
+                                매주 반복되는 정규 수업 시간표를 등록하면, 다이어리 시간표에 매주 자동으로 기본 과목이 채워집니다.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="base-tt-header-actions" onClick={(e) => e.stopPropagation()}>
+                        {isBaseTtExpanded ? (
+                            <>
+                                <button 
+                                    type="button" 
+                                    className="base-tt-btn reset-btn" 
+                                    onClick={handleResetBaseTimetable}
+                                    title="기초 시간표 비우기"
+                                >
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '3px' }}>
+                                        <polyline points="23 4 23 10 17 10" />
+                                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                                    </svg>
+                                    초기화
+                                </button>
+                                <button 
+                                    type="button" 
+                                    className="base-tt-btn save-btn" 
+                                    onClick={handleSaveBaseTimetable}
+                                    title="기초 시간표 저장"
+                                >
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '3px' }}>
+                                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                                        <polyline points="17 21 17 13 7 13 7 21" />
+                                        <polyline points="7 3 7 8 15 8" />
+                                    </svg>
+                                    저장
+                                </button>
+                                <button 
+                                    type="button" 
+                                    className="base-tt-btn toggle-btn"
+                                    onClick={() => setIsBaseTtExpanded(false)}
+                                    title="시간표 설정 접기"
+                                    style={{ display: 'inline-flex', alignItems: 'center' }}
+                                >
+                                    <span>접기</span>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: '4px' }}>
+                                        <polyline points="18 15 12 9 6 15" />
+                                    </svg>
+                                </button>
+                            </>
+                        ) : (
+                            <button 
+                                type="button" 
+                                className="base-tt-btn toggle-btn"
+                                onClick={() => setIsBaseTtExpanded(true)}
+                                title="시간표 설정 펼치기"
+                                style={{ display: 'inline-flex', alignItems: 'center' }}
+                            >
+                                <span>시간표 펼치기</span>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: '4px' }}>
+                                    <polyline points="6 9 12 15 18 9" />
+                                </svg>
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {isBaseTtExpanded && (
+                    <div className="base-tt-card-body">
+                        {/* 과목 추천 칩 바 */}
+                        <div className="base-tt-chips-wrap">
+                            <span className="base-tt-chips-label">원클릭 과목 입력:</span>
+                            <div className="base-tt-chips-list">
+                                {COMMON_SUBJECTS.map(subj => (
+                                    <button
+                                        key={subj}
+                                        type="button"
+                                        className="base-subject-chip"
+                                        onClick={() => handleApplySubjectChip(subj)}
+                                        title={`클릭 시 선택된 칸에 '${subj}' 입력`}
+                                    >
+                                        {subj}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* 시간표 입력 그리드 테이블 */}
+                        <div className="base-tt-grid-container">
+                            <div className="base-tt-grid-table">
+                                <div className="base-tt-row header-row">
+                                    <div className="base-tt-cell period-header-cell">교시</div>
+                                    {BASE_TT_DAYS.map(day => (
+                                        <div key={day.key} className="base-tt-cell day-header-cell">
+                                            <span className="day-full-name">{day.label}</span>
+                                            <span className="day-short-name">{day.short}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                {[1, 2, 3, 4, 5, 6].map(period => (
+                                    <div key={period} className="base-tt-row body-row">
+                                        <div className="base-tt-cell period-label-cell">
+                                            <span className="period-badge">{period}교시</span>
+                                        </div>
+                                        {BASE_TT_DAYS.map(day => {
+                                            const isFocused = focusedCell?.day === day.key && focusedCell?.period === period;
+                                            const val = baseTimetable[day.key]?.[period] || '';
+                                            return (
+                                                <div key={day.key} className={`base-tt-cell input-cell ${isFocused ? 'cell-focused' : ''}`}>
+                                                    <input
+                                                        id={`base-tt-${day.key}-${period}`}
+                                                        type="text"
+                                                        className="base-tt-input"
+                                                        placeholder="과목"
+                                                        value={val}
+                                                        onChange={(e) => handleBaseTimetableChange(day.key, period, e.target.value)}
+                                                        onFocus={() => setFocusedCell({ day: day.key, period })}
+                                                        onKeyDown={(e) => handleBaseTimetableKeyDown(e, day.key, period)}
+                                                    />
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="base-tt-footer-tip">
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="12" y1="16" x2="12" y2="12" />
+                                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                                </svg>
+                                <strong>입력 팁:</strong> 칸을 클릭한 뒤 상단 과목 칩을 누르면 다음 교시로 자동 이동하며 연속 입력됩니다. 키보드 방향키(↑↓←→) 또는 Enter키로도 이동할 수 있습니다.
+                            </span>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* 2-1. 다이어리 하단 메모 모드 설정 (REQ-13) */}
+            <div className="settings-card">
+                <div className="settings-card-header" style={{ marginBottom: 0, flexWrap: 'wrap', gap: '1rem' }}>
+                    <div className="settings-card-title-wrap">
+                        <span className="card-icon-badge">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                <polyline points="14 2 14 8 20 8" />
+                                <line x1="16" y1="13" x2="8" y2="13" />
+                                <line x1="16" y1="17" x2="8" y2="17" />
+                                <polyline points="10 9 9 9 8 9" />
+                            </svg>
+                        </span>
+                        <div>
+                            <h2>다이어리 하단 메모 모드</h2>
+                            <p className="section-description">
+                                다이어리 화면 아래쪽 메모란을 '주별 메모'로 쓸지, 매일 작성하는 '일별 메모 / 알림장'으로 쓸지 선택합니다.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="memo-mode-toggle-group">
+                        <button
+                            type="button"
+                            className={`memo-mode-btn ${diaryMemoMode === 'weekly' ? 'active' : ''}`}
+                            onClick={() => handleMemoModeChange('weekly')}
+                            title="주간 목표 및 한 주간 기억할 내용을 통합 기록합니다."
+                        >
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px' }}>
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                <line x1="16" y1="2" x2="16" y2="6" />
+                                <line x1="8" y1="2" x2="8" y2="6" />
+                                <line x1="3" y1="10" x2="21" y2="10" />
+                            </svg>
+                            주별 메모 (이번 주 메모)
+                        </button>
+                        <button
+                            type="button"
+                            className={`memo-mode-btn ${diaryMemoMode === 'daily' ? 'active' : ''}`}
+                            onClick={() => handleMemoModeChange('daily')}
+                            title="매일매일 종례 전달사항 및 알림장 메모를 날짜별로 각각 기록합니다."
+                        >
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px' }}>
+                                <circle cx="12" cy="12" r="10" />
+                                <polyline points="12 6 12 12 16 14" />
+                            </svg>
+                            일별 메모 (오늘 메모 / 알림장)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* 3. 공휴일 관리 */}
             <div className="settings-card">
                 <div className="settings-card-header">
                     <div className="settings-card-title-wrap">

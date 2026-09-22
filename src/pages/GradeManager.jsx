@@ -11,9 +11,233 @@ import './GradeManager.css';
 const DEFAULT_TEMPLATES = [
     { id: 'template_3_level_shape', name: '수행평가 척도 (◎/◯/△)', evaluationType: 'steps', levels: 3, labels: ['◎', '◯', '△'] },
     { id: 'template_3_level_text', name: '3단계 (상/중/하)', evaluationType: 'steps', levels: 3, labels: ['상', '중', '하'] },
+    { id: 'template_4_level_korean', name: '4단계 (매우잘함/잘함/보통/노력요함)', evaluationType: 'steps', levels: 4, labels: ['매우잘함', '잘함', '보통', '노력요함'] },
+    { id: 'template_5_level_korean', name: '5단계 (매우우수~매우미흡)', evaluationType: 'steps', levels: 5, labels: ['매우우수', '우수', '보통', '미흡', '매우미흡'] },
+    { id: 'template_2_level_reach', name: '2단계 (도달/미도달)', evaluationType: 'steps', levels: 2, labels: ['도달', '미도달'] },
     { id: 'template_score_100', name: '점수제 (100점 만점)', evaluationType: 'score', maxScore: 100, levels: 0, labels: [] },
-    { id: 'template_5_level_korean', name: '5단계 (매우우수~매우미흡)', evaluationType: 'steps', levels: 5, labels: ['매우우수', '우수', '보통', '미흡', '매우미흡'] }
+    { id: 'template_custom', name: '직접 입력 (맞춤 척도)', evaluationType: 'steps', levels: 0, labels: [] }
 ];
+
+const CUSTOM_SCALE_PRESETS = [
+    { label: '도달/미도달 (2단계)', levels: 2, steps: ['도달', '미도달'] },
+    { label: '상/중/하 (3단계)', levels: 3, steps: ['상', '중', '하'] },
+    { label: '◎/◯/△ (3단계)', levels: 3, steps: ['◎', '◯', '△'] },
+    { label: '매우잘함~노력요함 (4단계)', levels: 4, steps: ['매우잘함', '잘함', '보통', '노력요함'] },
+    { label: 'A/B/C/D (4단계)', levels: 4, steps: ['A', 'B', 'C', 'D'] },
+    { label: '매우우수~매우미흡 (5단계)', levels: 5, steps: ['매우우수', '우수', '보통', '미흡', '매우미흡'] }
+];
+
+// ── 카드별 평가 척도(기준) 해석 헬퍼 ──
+const getCardCriteria = (card, templates = DEFAULT_TEMPLATES) => {
+    if (!card) return templates[0];
+    if (card.criteriaId === 'template_custom' || card.templateId === 'template_custom') {
+        const labels = Array.isArray(card.customLabels) && card.customLabels.length > 0 
+            ? card.customLabels 
+            : ['상', '중', '하'];
+        return {
+            id: 'template_custom',
+            name: `직접 입력 (${labels.join('/')})`,
+            evaluationType: 'steps',
+            levels: labels.length,
+            labels: labels
+        };
+    }
+    const targetId = card.criteriaId || card.templateId;
+    return templates.find(t => t.id === targetId) || templates[0];
+};
+
+// ── 공통 맞춤 척도(단계 수 + 단계별 명칭) 설정 컴포넌트 ──
+const CustomScaleEditor = ({
+    levels = 3,
+    stepLabels = ['상', '중', '하'],
+    onLevelsChange,
+    onStepLabelChange,
+    onApplyPreset
+}) => {
+    return (
+        <div style={{
+            background: '#f0fdf4',
+            padding: '14px 16px',
+            borderRadius: '12px',
+            border: '1px solid #86efac',
+            marginTop: '8px'
+        }}>
+            {/* 1. 단계 수 선택 (몇 단계) */}
+            <div style={{ marginBottom: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: '800', color: '#166534', margin: 0 }}>
+                        평가 단계 수 (몇 단계로 평가할까요?)
+                    </label>
+                    <span style={{ fontSize: '11px', color: '#15803d', fontWeight: '700' }}>
+                        현재: {levels}단계
+                    </span>
+                </div>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {[2, 3, 4, 5, 6].map(num => {
+                        const isCur = levels === num;
+                        return (
+                            <button
+                                key={num}
+                                type="button"
+                                onClick={() => onLevelsChange && onLevelsChange(num)}
+                                style={{
+                                    padding: '5px 13px',
+                                    borderRadius: '8px',
+                                    fontSize: '12px',
+                                    fontWeight: isCur ? '800' : '600',
+                                    border: isCur ? '2px solid #16a34a' : '1px solid #cbd5e1',
+                                    background: isCur ? '#16a34a' : '#ffffff',
+                                    color: isCur ? '#ffffff' : '#334155',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease',
+                                    boxShadow: isCur ? '0 2px 4px rgba(22, 163, 74, 0.25)' : 'none'
+                                }}
+                            >
+                                {num}단계
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* 2. 빠른 추천 척도 프리셋 */}
+            <div style={{ marginBottom: '12px' }}>
+                <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#15803d', display: 'block', marginBottom: '6px' }}>
+                    추천 척도 원클릭 적용
+                </span>
+                <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+                    {CUSTOM_SCALE_PRESETS.map(preset => (
+                        <button
+                            key={preset.label}
+                            type="button"
+                            onClick={() => onApplyPreset && onApplyPreset(preset)}
+                            style={{
+                                padding: '4px 9px',
+                                borderRadius: '6px',
+                                fontSize: '11.5px',
+                                fontWeight: '600',
+                                border: '1px solid #bbf7d0',
+                                background: '#ffffff',
+                                color: '#166534',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease'
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = '#dcfce7'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = '#ffffff'; }}
+                        >
+                            {preset.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* 3. 단계별 명칭 직접 입력 */}
+            <div style={{ marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: '800', color: '#166534' }}>
+                        단계별 명칭 입력 (높은 단계 → 낮은 단계 순서)
+                    </span>
+                    <span style={{ fontSize: '11px', color: '#64748b' }}>
+                        자유롭게 수정 가능
+                    </span>
+                </div>
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: levels > 3 ? 'repeat(auto-fit, minmax(130px, 1fr))' : 'repeat(auto-fit, minmax(110px, 1fr))',
+                    gap: '8px'
+                }}>
+                    {Array.from({ length: levels }).map((_, idx) => {
+                        const isHighest = idx === 0;
+                        const isLowest = idx === levels - 1;
+                        const badgeLabel = isHighest ? `${idx + 1}단계(최고)` : (isLowest ? `${idx + 1}단계(최저)` : `${idx + 1}단계`);
+                        const badgeColor = isHighest ? '#15803d' : (isLowest ? '#d97706' : '#475569');
+                        const badgeBg = isHighest ? '#dcfce7' : (isLowest ? '#fef3c7' : '#f1f5f9');
+                        const badgeBorder = isHighest ? '#86efac' : (isLowest ? '#fde68a' : '#e2e8f0');
+
+                        return (
+                            <div
+                                key={idx}
+                                style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '4px',
+                                    background: '#ffffff',
+                                    padding: '8px 10px',
+                                    borderRadius: '8px',
+                                    border: '1px solid #d1fae5'
+                                }}
+                            >
+                                <span style={{
+                                    fontSize: '11px',
+                                    fontWeight: '800',
+                                    color: badgeColor,
+                                    background: badgeBg,
+                                    border: `1px solid ${badgeBorder}`,
+                                    padding: '2px 6px',
+                                    borderRadius: '5px',
+                                    alignSelf: 'flex-start'
+                                }}>
+                                    {badgeLabel}
+                                </span>
+                                <input
+                                    type="text"
+                                    value={stepLabels[idx] || ''}
+                                    onChange={(e) => onStepLabelChange && onStepLabelChange(idx, e.target.value)}
+                                    placeholder={`${idx + 1}단계 명칭`}
+                                    style={{
+                                        width: '100%',
+                                        padding: '6px 8px',
+                                        fontSize: '13px',
+                                        fontWeight: '700',
+                                        color: '#1e293b',
+                                        border: '1px solid #cbd5e1',
+                                        borderRadius: '6px',
+                                        outline: 'none',
+                                        boxSizing: 'border-box'
+                                    }}
+                                />
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* 4. 미리보기 */}
+            {stepLabels.filter(Boolean).length > 0 && (
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    marginTop: '6px',
+                    padding: '6px 10px',
+                    background: '#ffffff',
+                    borderRadius: '8px',
+                    border: '1px solid #bbf7d0',
+                    flexWrap: 'wrap'
+                }}>
+                    <span style={{ fontSize: '11.5px', color: '#15803d', fontWeight: '800' }}>미리보기:</span>
+                    {stepLabels.filter(Boolean).map((lbl, idx, arr) => (
+                        <React.Fragment key={idx}>
+                            <span style={{
+                                background: idx === 0 ? '#16a34a' : (idx === arr.length - 1 ? '#f59e0b' : '#3b82f6'),
+                                color: '#ffffff',
+                                fontSize: '11.5px',
+                                fontWeight: '800',
+                                padding: '2px 8px',
+                                borderRadius: '6px'
+                            }}>
+                                {lbl}
+                            </span>
+                            {idx < arr.length - 1 && (
+                                <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '700' }}>&gt;</span>
+                            )}
+                        </React.Fragment>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
 
 const COLS_PER_PAGE = 5;
 
@@ -49,11 +273,15 @@ const GradeManager = () => {
     const [unitCardName, setUnitCardName] = useState('');
     const [unitCardGroupId, setUnitCardGroupId] = useState('');
     const [unitCardCriteriaId, setUnitCardCriteriaId] = useState('template_score_100'); // 기본 점수제
+    const [unitCustomLevels, setUnitCustomLevels] = useState(3);
+    const [unitCustomStepLabels, setUnitCustomStepLabels] = useState(['상', '중', '하']);
 
     // 일반평가 state
     const [generalCardName, setGeneralCardName] = useState('');
     const [generalCardGroupId, setGeneralCardGroupId] = useState('');
     const [generalCardCriteriaId, setGeneralCardCriteriaId] = useState('template_3_level_text'); // 기본 상/중/하
+    const [generalCustomLevels, setGeneralCustomLevels] = useState(3);
+    const [generalCustomStepLabels, setGeneralCustomStepLabels] = useState(['상', '중', '하']);
 
     // ── 학급 학년군 자동 감지 (1-2 / 3-4 / 5-6) ──
     const classGradeBand = useMemo(() => {
@@ -92,6 +320,123 @@ const GradeManager = () => {
     const [perfEvalElement, setPerfEvalElement] = useState(''); // 직접 작성 평가요소
     const [perfSchedule, setPerfSchedule] = useState(''); // 예정 시기 (선택)
     const [perfEnableAlarm, setPerfEnableAlarm] = useState(false); // 알림 설정 여부 (선택)
+    const [perfCriteriaId, setPerfCriteriaId] = useState('template_3_level_shape'); // 평가 척도 ID
+    const [perfCustomLevels, setPerfCustomLevels] = useState(3); // 직접 입력 단계 수 (2~6)
+    const [perfCustomStepLabels, setPerfCustomStepLabels] = useState(['상', '중', '하']); // 직접 입력 단계별 라벨
+
+    const handlePerfCustomLevelsChange = (newLevel) => {
+        const count = Math.max(2, Math.min(6, newLevel));
+        setPerfCustomLevels(count);
+        setPerfCustomStepLabels(prev => {
+            const next = [...prev];
+            if (next.length < count) {
+                // 추천 기본값 채우기
+                const presets = {
+                    2: ['도달', '미도달'],
+                    3: ['상', '중', '하'],
+                    4: ['매우잘함', '잘함', '보통', '노력요함'],
+                    5: ['매우우수', '우수', '보통', '미흡', '매우미흡'],
+                    6: ['1단계', '2단계', '3단계', '4단계', '5단계', '6단계']
+                };
+                const defaultList = presets[count] || [];
+                while (next.length < count) {
+                    next.push(defaultList[next.length] || `${next.length + 1}단계`);
+                }
+            } else if (next.length > count) {
+                next.length = count;
+            }
+            return next;
+        });
+    };
+
+    const handlePerfCustomStepLabelChange = (idx, text) => {
+        setPerfCustomStepLabels(prev => {
+            const next = [...prev];
+            next[idx] = text;
+            return next;
+        });
+    };
+
+    const handleApplyPerfPreset = (preset) => {
+        setPerfCustomLevels(preset.levels);
+        setPerfCustomStepLabels([...preset.steps]);
+    };
+
+    // ── 단원평가 맞춤 척도 핸들러 ──
+    const handleUnitCustomLevelsChange = (newLevel) => {
+        const count = Math.max(2, Math.min(6, newLevel));
+        setUnitCustomLevels(count);
+        setUnitCustomStepLabels(prev => {
+            const next = [...prev];
+            const presets = {
+                2: ['도달', '미도달'],
+                3: ['상', '중', '하'],
+                4: ['매우잘함', '잘함', '보통', '노력요함'],
+                5: ['매우우수', '우수', '보통', '미흡', '매우미흡'],
+                6: ['1단계', '2단계', '3단계', '4단계', '5단계', '6단계']
+            };
+            const defaultList = presets[count] || [];
+            if (next.length < count) {
+                while (next.length < count) {
+                    next.push(defaultList[next.length] || `${next.length + 1}단계`);
+                }
+            } else if (next.length > count) {
+                next.length = count;
+            }
+            return next;
+        });
+    };
+
+    const handleUnitCustomStepLabelChange = (idx, text) => {
+        setUnitCustomStepLabels(prev => {
+            const next = [...prev];
+            next[idx] = text;
+            return next;
+        });
+    };
+
+    const handleApplyUnitPreset = (preset) => {
+        setUnitCustomLevels(preset.levels);
+        setUnitCustomStepLabels([...preset.steps]);
+    };
+
+    // ── 일반평가 맞춤 척도 핸들러 ──
+    const handleGeneralCustomLevelsChange = (newLevel) => {
+        const count = Math.max(2, Math.min(6, newLevel));
+        setGeneralCustomLevels(count);
+        setGeneralCustomStepLabels(prev => {
+            const next = [...prev];
+            const presets = {
+                2: ['도달', '미도달'],
+                3: ['상', '중', '하'],
+                4: ['매우잘함', '잘함', '보통', '노력요함'],
+                5: ['매우우수', '우수', '보통', '미흡', '매우미흡'],
+                6: ['1단계', '2단계', '3단계', '4단계', '5단계', '6단계']
+            };
+            const defaultList = presets[count] || [];
+            if (next.length < count) {
+                while (next.length < count) {
+                    next.push(defaultList[next.length] || `${next.length + 1}단계`);
+                }
+            } else if (next.length > count) {
+                next.length = count;
+            }
+            return next;
+        });
+    };
+
+    const handleGeneralCustomStepLabelChange = (idx, text) => {
+        setGeneralCustomStepLabels(prev => {
+            const next = [...prev];
+            next[idx] = text;
+            return next;
+        });
+    };
+
+    const handleApplyGeneralPreset = (preset) => {
+        setGeneralCustomLevels(preset.levels);
+        setGeneralCustomStepLabels([...preset.steps]);
+    };
 
     const [showAddColModal, setShowAddColModal] = useState(false);
     const [newColName, setNewColName] = useState('');
@@ -201,8 +546,7 @@ const GradeManager = () => {
     }, [activeCard, groups]);
 
     const activeCriteria = useMemo(() => {
-        if (!activeCard) return DEFAULT_TEMPLATES[0];
-        return criteriaTemplates.find(c => c.id === activeCard.criteriaId) || DEFAULT_TEMPLATES[0];
+        return getCardCriteria(activeCard, criteriaTemplates);
     }, [activeCard, criteriaTemplates]);
 
     // ── 페이징된 컬럼 ──
@@ -323,6 +667,15 @@ const GradeManager = () => {
             }
         }
 
+        const isCustom = perfCriteriaId === 'template_custom';
+        const parsedCustomLabels = isCustom 
+            ? perfCustomStepLabels.map(s => (s || '').trim()).filter(Boolean)
+            : [];
+        const finalCustomLabels = (isCustom && parsedCustomLabels.length > 0) ? parsedCustomLabels : null;
+        const finalCriteriaId = (isCustom && (!finalCustomLabels || finalCustomLabels.length === 0))
+            ? 'template_3_level_shape'
+            : perfCriteriaId;
+
         const newCard = {
             id: `card_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
             groupId: targetGroupId,
@@ -330,7 +683,9 @@ const GradeManager = () => {
             unit: customUnit,
             domain: currentDomain,
             evalElement: evalElem,
-            templateId: 'template_3_level_shape',
+            templateId: finalCriteriaId,
+            criteriaId: finalCriteriaId,
+            customLabels: finalCustomLabels,
             isPerformance: true, // 수행평가 플래그
             evalType: 'performance',
             semester: selectedSemester,
@@ -394,6 +749,10 @@ const GradeManager = () => {
     const handleOpenEditCard = (e, card) => {
         e.stopPropagation();
         setCardMenuOpenId(null);
+        const criteriaId = card.criteriaId || card.templateId || 'template_3_level_shape';
+        const customLabels = Array.isArray(card.customLabels) && card.customLabels.length > 0 
+            ? [...card.customLabels] 
+            : ['상', '중', '하'];
         setEditingCard({
             ...card,
             name: card.unit || card.name || '',
@@ -401,9 +760,65 @@ const GradeManager = () => {
             evalElement: card.evalElement || '',
             scheduleText: card.scheduleText || card.schedule || '',
             scheduleDate: card.scheduleDate || card.columns?.[0]?.date || new Date().toISOString().split('T')[0],
-            hasAlarm: !!card.hasAlarm
+            hasAlarm: !!card.hasAlarm,
+            criteriaId: criteriaId,
+            customLevels: customLabels.length,
+            customStepLabels: customLabels
         });
         setShowEditCardModal(true);
+    };
+
+    const handleEditCardCustomLevelsChange = (newLevel) => {
+        const count = Math.max(2, Math.min(6, newLevel));
+        setEditingCard(prev => {
+            if (!prev) return prev;
+            const curLabels = prev.customStepLabels || ['상', '중', '하'];
+            const next = [...curLabels];
+            const presets = {
+                2: ['도달', '미도달'],
+                3: ['상', '중', '하'],
+                4: ['매우잘함', '잘함', '보통', '노력요함'],
+                5: ['매우우수', '우수', '보통', '미흡', '매우미흡'],
+                6: ['1단계', '2단계', '3단계', '4단계', '5단계', '6단계']
+            };
+            const defaultList = presets[count] || [];
+            if (next.length < count) {
+                while (next.length < count) {
+                    next.push(defaultList[next.length] || `${next.length + 1}단계`);
+                }
+            } else if (next.length > count) {
+                next.length = count;
+            }
+            return {
+                ...prev,
+                customLevels: count,
+                customStepLabels: next
+            };
+        });
+    };
+
+    const handleEditCardCustomStepLabelChange = (idx, text) => {
+        setEditingCard(prev => {
+            if (!prev) return prev;
+            const curLabels = prev.customStepLabels || [];
+            const next = [...curLabels];
+            next[idx] = text;
+            return {
+                ...prev,
+                customStepLabels: next
+            };
+        });
+    };
+
+    const handleApplyEditCardPreset = (preset) => {
+        setEditingCard(prev => {
+            if (!prev) return prev;
+            return {
+                ...prev,
+                customLevels: preset.levels,
+                customStepLabels: [...preset.steps]
+            };
+        });
     };
 
     // ── 카드 수정 모달 저장 ──
@@ -440,6 +855,15 @@ const GradeManager = () => {
 
         const customUnit = editingCard.name?.trim() || editingCard.unit || '평가';
 
+        const isCustom = editingCard.criteriaId === 'template_custom';
+        const parsedCustomLabels = isCustom && Array.isArray(editingCard.customStepLabels)
+            ? editingCard.customStepLabels.map(s => (s || '').trim()).filter(Boolean)
+            : [];
+        const finalCustomLabels = (isCustom && parsedCustomLabels.length > 0) ? parsedCustomLabels : null;
+        const finalCriteriaId = (isCustom && (!finalCustomLabels || finalCustomLabels.length === 0))
+            ? 'template_3_level_shape'
+            : (editingCard.criteriaId || 'template_3_level_shape');
+
         setEvalCards(prev => prev.map(c => {
             if (c.id !== editingCard.id) return c;
             return {
@@ -448,6 +872,9 @@ const GradeManager = () => {
                 unit: customUnit,
                 domain: editingCard.domain || c.domain,
                 evalElement: editingCard.evalElement || c.evalElement,
+                criteriaId: finalCriteriaId,
+                templateId: finalCriteriaId,
+                customLabels: finalCustomLabels,
                 scheduleText: schedStr,
                 scheduleDate: eventDate,
                 schedule: schedStr,
@@ -620,13 +1047,24 @@ const GradeManager = () => {
             { id: `col_${Date.now()}_unit_5`, name: '5단원' }
         ];
 
+        const isCustom = unitCardCriteriaId === 'template_custom';
+        const parsedCustomLabels = isCustom 
+            ? unitCustomStepLabels.map(s => (s || '').trim()).filter(Boolean)
+            : [];
+        const finalCustomLabels = (isCustom && parsedCustomLabels.length > 0) ? parsedCustomLabels : null;
+        const finalCriteriaId = (isCustom && (!finalCustomLabels || finalCustomLabels.length === 0))
+            ? 'template_score_100'
+            : (unitCardCriteriaId || 'template_score_100');
+
         const newCard = {
             id: `eval_unit_${Date.now()}`,
             groupId: targetGroupId,
             name: trimmed,
             evalType: 'unit',
             semester: selectedSemester,
-            criteriaId: unitCardCriteriaId || 'template_score_100',
+            criteriaId: finalCriteriaId,
+            templateId: finalCriteriaId,
+            customLabels: finalCustomLabels,
             columns: defaultCols
         };
         setEvalCards(prev => [...prev, newCard]);
@@ -795,13 +1233,24 @@ const GradeManager = () => {
             name: `${i + 1}회차`
         }));
 
+        const isCustom = generalCardCriteriaId === 'template_custom';
+        const parsedCustomLabels = isCustom 
+            ? generalCustomStepLabels.map(s => (s || '').trim()).filter(Boolean)
+            : [];
+        const finalCustomLabels = (isCustom && parsedCustomLabels.length > 0) ? parsedCustomLabels : null;
+        const finalCriteriaId = (isCustom && (!finalCustomLabels || finalCustomLabels.length === 0))
+            ? 'template_3_level_text'
+            : (generalCardCriteriaId || 'template_3_level_text');
+
         const newCard = {
             id: `eval_gen_${Date.now()}`,
             groupId: targetGroupId,
             name: trimmed,
             evalType: 'general',
             semester: selectedSemester,
-            criteriaId: generalCardCriteriaId || 'template_3_level_text',
+            criteriaId: finalCriteriaId,
+            templateId: finalCriteriaId,
+            customLabels: finalCustomLabels,
             columns: defaultCols
         };
         setEvalCards(prev => [...prev, newCard]);
@@ -1095,6 +1544,15 @@ const GradeManager = () => {
         setUnitCardGroupId(firstGroupId);
         setGeneralCardGroupId(firstGroupId);
         setNewCardGroupId(firstGroupId);
+        setPerfCriteriaId('template_3_level_shape');
+        setPerfCustomLevels(3);
+        setPerfCustomStepLabels(['상', '중', '하']);
+        setUnitCardCriteriaId('template_score_100');
+        setUnitCustomLevels(3);
+        setUnitCustomStepLabels(['상', '중', '하']);
+        setGeneralCardCriteriaId('template_3_level_text');
+        setGeneralCustomLevels(3);
+        setGeneralCustomStepLabels(['상', '중', '하']);
         const validTab = (typeof tab === 'string' && ['unit', 'general', 'performance'].includes(tab)) ? tab : 'unit';
         setCardAddTab(validTab);
         setShowAddCardModal(true);
@@ -1108,7 +1566,7 @@ const GradeManager = () => {
         const currentVal = colScores[studentId];
         if (currentVal === undefined || currentVal === null || currentVal === '') return null;
 
-        const criteria = criteriaTemplates.find(t => t.id === card.criteriaId) || DEFAULT_TEMPLATES[0];
+        const criteria = getCardCriteria(card, criteriaTemplates);
         if (criteria.evaluationType === 'score') {
             return `${currentVal}점`;
         } else {
@@ -1307,15 +1765,19 @@ const GradeManager = () => {
             const studentLabel = getFormattedScore(card, col, studentId);
             const studentRemark = scores[card.id]?.['remarks']?.[studentId];
 
-            // 학급 전체 분포 계산 (◎, ◯, △ 등)
+            // 학급 전체 분포 계산 (선택된 척도 기준)
+            const cardCriteria = getCardCriteria(card, criteriaTemplates);
+            const cardLabels = cardCriteria.labels || ['상', '중', '하'];
             const distribution = {};
             let ratedCount = 0;
             sortedStudents.forEach(s => {
                 const val = scores[card.id]?.[col.id]?.[s.id];
                 if (val !== undefined && val !== '' && val !== 'UNRATED') {
                     const label = getFormattedScore(card, col, s.id);
-                    distribution[label] = (distribution[label] || 0) + 1;
-                    ratedCount++;
+                    if (label) {
+                        distribution[label] = (distribution[label] || 0) + 1;
+                        ratedCount++;
+                    }
                 }
             });
 
@@ -1328,6 +1790,7 @@ const GradeManager = () => {
                 schedule: card.schedule,
                 studentLabel,
                 studentRemark,
+                criteriaLabels: cardLabels,
                 distribution,
                 ratedCount
             };
@@ -1918,30 +2381,34 @@ const GradeManager = () => {
                         {/* 우측: 통합 등급 부여 버튼군 */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                             <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', marginRight: '4px' }}>선택 학생 점수 부여:</span>
-                            <button
-                                type="button"
-                                className="batch-btn batch-high"
-                                style={{ background: '#16a34a', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '8px', fontSize: '12.5px', fontWeight: '800', cursor: 'pointer' }}
-                                onClick={() => handleApplyScoreToSelected(3)}
-                            >
-                                ◎ 매우잘함
-                            </button>
-                            <button
-                                type="button"
-                                className="batch-btn batch-mid"
-                                style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '8px', fontSize: '12.5px', fontWeight: '800', cursor: 'pointer' }}
-                                onClick={() => handleApplyScoreToSelected(2)}
-                            >
-                                ◯ 잘함
-                            </button>
-                            <button
-                                type="button"
-                                className="batch-btn batch-low"
-                                style={{ background: '#eab308', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '8px', fontSize: '12.5px', fontWeight: '800', cursor: 'pointer' }}
-                                onClick={() => handleApplyScoreToSelected(1)}
-                            >
-                                △ 보통
-                            </button>
+                            {(() => {
+                                const labels = activeCriteria.labels || ['상', '중', '하'];
+                                const total = labels.length;
+                                return labels.map((label, idx) => {
+                                    const val = total - idx;
+                                    let btnBg = '#16a34a';
+                                    if (total >= 3) {
+                                        if (idx === 0) btnBg = '#16a34a';
+                                        else if (idx === total - 1) btnBg = '#eab308';
+                                        else if (idx === 1 && total === 3) btnBg = '#22c55e';
+                                        else if (idx === 1) btnBg = '#10b981';
+                                        else btnBg = '#3b82f6';
+                                    } else if (total === 2) {
+                                        btnBg = idx === 0 ? '#16a34a' : '#f97316';
+                                    }
+                                    return (
+                                        <button
+                                            key={label}
+                                            type="button"
+                                            className="batch-btn"
+                                            style={{ background: btnBg, color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '8px', fontSize: '12.5px', fontWeight: '800', cursor: 'pointer' }}
+                                            onClick={() => handleApplyScoreToSelected(val)}
+                                        >
+                                            {label}
+                                        </button>
+                                    );
+                                });
+                            })()}
                             <button
                                 type="button"
                                 className="batch-btn batch-unrated"
@@ -2992,8 +3459,21 @@ className={`student-list-item-btn ${selectedStudentId === student.id ? 'active' 
                                             <option key={c.id} value={c.id}>{c.name}</option>
                                         ))}
                                     </select>
-                                    <p style={{ margin: '6px 0 0 0', fontSize: '12px', color: '#64748b' }}>
-                                        💡 기본 5개 단원(1단원~5단원)이 자동 생성되며, 생성 즉시 명렬표 점수 입력 화면으로 이동합니다.
+
+                                    {/* 직접 입력 선택 시 커스텀 척도 설정 영역 */}
+                                    {unitCardCriteriaId === 'template_custom' && (
+                                        <div style={{ marginTop: '10px' }}>
+                                            <CustomScaleEditor
+                                                levels={unitCustomLevels}
+                                                stepLabels={unitCustomStepLabels}
+                                                onLevelsChange={handleUnitCustomLevelsChange}
+                                                onStepLabelChange={handleUnitCustomStepLabelChange}
+                                                onApplyPreset={handleApplyUnitPreset}
+                                            />
+                                        </div>
+                                    )}
+                                    <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#64748b' }}>
+                                        * 기본 5개 단원(1단원~5단원)이 자동 생성되며, 생성 즉시 명렬표 점수 입력 화면으로 이동합니다.
                                     </p>
                                 </div>
                                 <div className="grade-modal-actions">
@@ -3148,6 +3628,33 @@ className={`student-list-item-btn ${selectedStudentId === student.id ? 'active' 
                                                     </label>
                                                 </div>
                                             </div>
+
+                                            {/* 평가 방식 (입력 척도) 선택 */}
+                                            <div className="grade-form-group">
+                                                <label>평가 방식</label>
+                                                <select
+                                                    className="grade-form-select"
+                                                    value={perfCriteriaId}
+                                                    onChange={(e) => setPerfCriteriaId(e.target.value)}
+                                                >
+                                                    {criteriaTemplates.map(c => (
+                                                        <option key={c.id} value={c.id}>{c.name}</option>
+                                                    ))}
+                                                </select>
+
+                                                {/* 직접 입력 선택 시 커스텀 척도(단계 수 + 단계별 명칭) 설정 영역 */}
+                                                {perfCriteriaId === 'template_custom' && (
+                                                    <div style={{ marginTop: '10px' }}>
+                                                        <CustomScaleEditor
+                                                            levels={perfCustomLevels}
+                                                            stepLabels={perfCustomStepLabels}
+                                                            onLevelsChange={handlePerfCustomLevelsChange}
+                                                            onStepLabelChange={handlePerfCustomStepLabelChange}
+                                                            onApplyPreset={handleApplyPerfPreset}
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
                                         </>
                                     );
                                 })()}
@@ -3204,8 +3711,21 @@ className={`student-list-item-btn ${selectedStudentId === student.id ? 'active' 
                                             <option key={c.id} value={c.id}>{c.name}</option>
                                         ))}
                                     </select>
-                                    <p style={{ margin: '6px 0 0 0', fontSize: '12px', color: '#64748b' }}>
-                                        💡 기본 5개 회차(1회차~5회차)가 자동 생성됩니다.
+
+                                    {/* 직접 입력 선택 시 커스텀 척도 설정 영역 */}
+                                    {generalCardCriteriaId === 'template_custom' && (
+                                        <div style={{ marginTop: '10px' }}>
+                                            <CustomScaleEditor
+                                                levels={generalCustomLevels}
+                                                stepLabels={generalCustomStepLabels}
+                                                onLevelsChange={handleGeneralCustomLevelsChange}
+                                                onStepLabelChange={handleGeneralCustomStepLabelChange}
+                                                onApplyPreset={handleApplyGeneralPreset}
+                                            />
+                                        </div>
+                                    )}
+                                    <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#64748b' }}>
+                                        * 기본 5개 회차(1회차~5회차)가 자동 생성됩니다.
                                     </p>
                                 </div>
                                 <div className="grade-modal-actions">
@@ -3487,13 +4007,9 @@ className={`student-list-item-btn ${selectedStudentId === student.id ? 'active' 
                                     <div className="perf-compare-cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
                                         {analysis.perfAnalyses.map(item => {
                                             const totalRated = item.ratedCount || 1;
-                                            const countVeryGood = item.distribution['◎'] || item.distribution['매우우수'] || 0;
-                                            const countGood = item.distribution['◯'] || item.distribution['보통'] || item.distribution['우수'] || 0;
-                                            const countNeedEffort = item.distribution['△'] || item.distribution['미흡'] || item.distribution['매우미흡'] || 0;
-
-                                            const pctVeryGood = Math.round((countVeryGood / totalRated) * 100);
-                                            const pctGood = Math.round((countGood / totalRated) * 100);
-                                            const pctNeedEffort = Math.round((countNeedEffort / totalRated) * 100);
+                                            const labels = item.criteriaLabels && item.criteriaLabels.length > 0
+                                                ? item.criteriaLabels
+                                                : ['◎', '◯', '△'];
 
                                             return (
                                                 <div key={item.id} className="perf-analysis-card" style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '12px 14px', boxShadow: '0 1px 4px rgba(0, 0, 0, 0.03)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -3532,12 +4048,25 @@ className={`student-list-item-btn ${selectedStudentId === student.id ? 'active' 
                                                     <div style={{ background: '#f8fafc', padding: '6px 8px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10.5px', color: '#64748b', fontWeight: '600', marginBottom: '4px' }}>
                                                             <span>학급 분포 ({totalRated}명)</span>
-                                                            <span>◎ {pctVeryGood}% | ◯ {pctGood}% | △ {pctNeedEffort}%</span>
+                                                            <span>
+                                                                {labels.map(lbl => {
+                                                                    const cnt = item.distribution[lbl] || 0;
+                                                                    const pct = Math.round((cnt / totalRated) * 100);
+                                                                    return `${lbl} ${pct}%`;
+                                                                }).join(' | ')}
+                                                            </span>
                                                         </div>
                                                         <div style={{ display: 'flex', height: '6px', borderRadius: '3px', overflow: 'hidden', gap: '1.5px' }}>
-                                                            <div style={{ width: `${pctVeryGood}%`, background: '#22c55e' }} title={`◎: ${countVeryGood}명 (${pctVeryGood}%)`}></div>
-                                                            <div style={{ width: `${pctGood}%`, background: '#94a3b8' }} title={`◯: ${countGood}명 (${pctGood}%)`}></div>
-                                                            <div style={{ width: `${pctNeedEffort}%`, background: '#f87171' }} title={`△: ${countNeedEffort}명 (${pctNeedEffort}%)`}></div>
+                                                            {labels.map((lbl, lIdx) => {
+                                                                const cnt = item.distribution[lbl] || 0;
+                                                                const pct = Math.round((cnt / totalRated) * 100);
+                                                                if (pct === 0) return null;
+                                                                const barColors = ['#22c55e', '#3b82f6', '#eab308', '#f87171', '#a855f7'];
+                                                                const barColor = barColors[lIdx % barColors.length];
+                                                                return (
+                                                                    <div key={lbl} style={{ width: `${pct}%`, background: barColor }} title={`${lbl}: ${cnt}명 (${pct}%)`}></div>
+                                                                );
+                                                            })}
                                                         </div>
                                                     </div>
 
@@ -3640,6 +4169,32 @@ className={`student-list-item-btn ${selectedStudentId === student.id ? 'active' 
                                     </div>
                                 </>
                             )}
+
+                            {/* 평가 방식 (입력 척도) 변경 */}
+                            <div className="grade-form-group">
+                                <label>평가 방식</label>
+                                <select
+                                    className="grade-form-select"
+                                    value={editingCard.criteriaId}
+                                    onChange={(e) => setEditingCard({ ...editingCard, criteriaId: e.target.value })}
+                                >
+                                    {criteriaTemplates.map(c => (
+                                        <option key={c.id} value={c.id}>{c.name}</option>
+                                    ))}
+                                </select>
+
+                                {editingCard.criteriaId === 'template_custom' && (
+                                    <div style={{ marginTop: '10px' }}>
+                                        <CustomScaleEditor
+                                            levels={editingCard.customLevels || 3}
+                                            stepLabels={editingCard.customStepLabels || ['상', '중', '하']}
+                                            onLevelsChange={handleEditCardCustomLevelsChange}
+                                            onStepLabelChange={handleEditCardCustomStepLabelChange}
+                                            onApplyPreset={handleApplyEditCardPreset}
+                                        />
+                                    </div>
+                                )}
+                            </div>
 
                             <div className="grade-modal-actions">
                                 <button type="button" className="grade-btn-cancel" onClick={() => setShowEditCardModal(false)}>취소</button>

@@ -4,11 +4,18 @@ import Button from '../components/Button';
 import { useStudentContext } from '../context/StudentContext';
 import ExperientialLearning from './ExperientialLearning';
 import AbsenceReport from './AbsenceReport';
-import { formatDateToString } from '../utils/dateUtils';
+import { formatDateToString, groupConsecutiveDates } from '../utils/dateUtils';
 import './AttendanceTracker.css';
 
+const OTHER_SUB_TYPES = [
+    { key: 'other_absent', label: '기타결석', color: '#64748b', placeholder: '기타결석 사유 입력 (예: 개인사정, 경조사)' },
+    { key: 'late', label: '지각', color: '#d97706', placeholder: '지각 사유 입력 (예: 병원 진료, 늦잠)' },
+    { key: 'early', label: '조퇴', color: '#0284c7', placeholder: '조퇴 사유 입력 (예: 발열, 병원 진료)' },
+    { key: 'other', label: '기타/인정', color: '#475569', placeholder: '기타 사유 입력' },
+];
+
 const AttendanceTracker = () => {
-    const { students, attendance, updateAttendance, holidays } = useStudentContext();
+    const { students, attendance, updateAttendance, holidays, fieldTrips, saveFieldTripMetadata } = useStudentContext();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(formatDateToString(new Date()));
     const [reasons, setReasons] = useState({});
@@ -103,15 +110,76 @@ const AttendanceTracker = () => {
         return '';
     };
 
+    const getStatus = (studentId) => {
+        const data = attendance[selectedDate]?.[studentId];
+        if (!data) return '';
+
+        if (typeof data === 'string') {
+            return data === 'absent' ? 'sick' : data;
+        }
+
+        return data.status || '';
+    };
+
+    const getSubType = (studentId) => {
+        const data = attendance[selectedDate]?.[studentId];
+        if (!data || typeof data === 'string') return 'other_absent';
+        return data.subType || 'other_absent';
+    };
+
+    const getLocation = (studentId) => {
+        const data = attendance[selectedDate]?.[studentId];
+        if (!data || typeof data === 'string') return '';
+        return data.location || data.reason || '';
+    };
+
+    const getReason = (studentId) => {
+        const data = attendance[selectedDate]?.[studentId];
+        if (!data || typeof data === 'string') return '';
+        return data.reason || '';
+    };
+
+    // 체험학습 대장 메타데이터와 장소 동기화
+    const syncFieldTripLocation = (studentId, dateKey, location) => {
+        if (!saveFieldTripMetadata) return;
+        try {
+            const studentFieldTripDates = [];
+            Object.keys(attendance).forEach(d => {
+                const att = attendance[d]?.[studentId];
+                const st = typeof att === 'object' ? att?.status : att;
+                if (st === 'fieldtrip' || d === dateKey) {
+                    studentFieldTripDates.push(d);
+                }
+            });
+            if (!studentFieldTripDates.includes(dateKey)) {
+                studentFieldTripDates.push(dateKey);
+            }
+            const grouped = groupConsecutiveDates(studentFieldTripDates, holidays);
+            grouped.forEach(group => {
+                if (group.allDates && group.allDates.includes(dateKey)) {
+                    const tripId = `${studentId}_${group.startDate}_${group.endDate}`;
+                    const prevMeta = fieldTrips?.[studentId]?.[tripId] || {};
+                    saveFieldTripMetadata(studentId, {
+                        [tripId]: {
+                            ...prevMeta,
+                            location: location
+                        }
+                    });
+                }
+            });
+        } catch (e) {
+            console.warn('Field trip metadata sync error:', e);
+        }
+    };
+
     const handleStatusChange = (studentId, status) => {
         const dateKey = selectedDate;
         const tempKey = `${dateKey}_${studentId}`;
         const currentStatus = getStatus(studentId);
 
-        // If clicking the same status again, remove it (toggle off)
+        // 이미 선택된 상태 클릭 시 토글 해제
         if (currentStatus === status) {
             updateAttendance(dateKey, studentId, null);
-            // Clear the reason from temporary state
             setReasons(prev => {
                 const newReasons = { ...prev };
                 delete newReasons[tempKey];
@@ -120,22 +188,73 @@ const AttendanceTracker = () => {
             return;
         }
 
-        // Set new status
+        const existingData = attendance[dateKey]?.[studentId];
+        const existingReason = typeof existingData === 'object' ? existingData.reason : '';
+        const existingLocation = typeof existingData === 'object' ? (existingData.location || existingData.reason) : '';
+        const existingSubType = typeof existingData === 'object' ? (existingData.subType || 'other_absent') : 'other_absent';
+
         let autoReason = '';
         if (status === 'sick' || status === 'other') {
-            const existingData = attendance[dateKey]?.[studentId];
-            const existingReason = typeof existingData === 'object' ? existingData.reason : '';
-
-            // 기존 사유 없으면 이전 출석일 사유 자동 입력
             autoReason = existingReason || getPrevSchoolDayReason(dateKey, studentId, status);
-
             setReasons(prev => ({
                 ...prev,
                 [tempKey]: autoReason
             }));
         }
 
-        updateAttendance(dateKey, studentId, { status, reason: autoReason || reasons[tempKey] || '' });
+        if (status === 'fieldtrip') {
+            const locVal = existingLocation || autoReason || '';
+            updateAttendance(dateKey, studentId, {
+                status: 'fieldtrip',
+                location: locVal,
+                reason: locVal
+            });
+            if (locVal) {
+                syncFieldTripLocation(studentId, dateKey, locVal);
+            }
+        } else if (status === 'other') {
+            updateAttendance(dateKey, studentId, {
+                status: 'other',
+                subType: existingSubType,
+                reason: autoReason || existingReason || reasons[tempKey] || ''
+            });
+        } else {
+            updateAttendance(dateKey, studentId, {
+                status,
+                reason: autoReason || existingReason || reasons[tempKey] || ''
+            });
+        }
+    };
+
+    const handleSubTypeChange = (studentId, subType) => {
+        const dateKey = selectedDate;
+        const tempKey = `${dateKey}_${studentId}`;
+        const existingData = attendance[dateKey]?.[studentId];
+        const existingReason = reasons[tempKey] || (typeof existingData === 'object' ? existingData.reason : '') || '';
+
+        updateAttendance(dateKey, studentId, {
+            status: 'other',
+            subType,
+            reason: existingReason
+        });
+    };
+
+    const handleLocationChange = (studentId, location) => {
+        const dateKey = selectedDate;
+        const tempKey = `${dateKey}_${studentId}`;
+
+        setReasons(prev => ({
+            ...prev,
+            [tempKey]: location
+        }));
+
+        updateAttendance(dateKey, studentId, {
+            status: 'fieldtrip',
+            location,
+            reason: location
+        });
+
+        syncFieldTripLocation(studentId, dateKey, location);
     };
 
     const handleReasonChange = (studentId, reason, currentStatus) => {
@@ -148,28 +267,17 @@ const AttendanceTracker = () => {
         }));
 
         if (currentStatus === 'sick' || currentStatus === 'other') {
-            updateAttendance(dateKey, studentId, { status: currentStatus, reason });
+            const existingData = attendance[dateKey]?.[studentId];
+            const subType = typeof existingData === 'object' ? (existingData.subType || 'other_absent') : 'other_absent';
+            updateAttendance(dateKey, studentId, {
+                status: currentStatus,
+                subType: currentStatus === 'other' ? subType : undefined,
+                reason
+            });
         }
     };
 
-    const getStatus = (studentId) => {
-        const data = attendance[selectedDate]?.[studentId];
-        if (!data) return '';
-
-        if (typeof data === 'string') {
-            return data === 'absent' ? 'sick' : data;
-        }
-
-        return data.status || '';
-    };
-
-    const getReason = (studentId) => {
-        const data = attendance[selectedDate]?.[studentId];
-        if (!data || typeof data === 'string') return '';
-        return data.reason || '';
-    };
-
-    // Get students with special status for a specific date
+    // 달력 날짜 타일에 표시할 학생 출결 특이사항 (지각, 조퇴, 기타결, 병결, 체험)
     const getSpecialStatusStudents = (date) => {
         const dateKey = formatDateToString(date);
         const dayAttendance = attendance[dateKey] || {};
@@ -178,14 +286,59 @@ const AttendanceTracker = () => {
 
         Object.keys(dayAttendance).forEach(studentId => {
             const data = dayAttendance[studentId];
-            const status = typeof data === 'string' ? data : data.status;
+            if (!data) return;
 
-            if (status && status !== 'present' && status !== 'late') {
-                const student = students.find(s => s.id === parseInt(studentId));
-                if (student) {
+            const status = typeof data === 'string' ? data : data.status;
+            if (!status || status === 'present') return;
+
+            const student = students.find(s => String(s.id) === String(studentId));
+            if (!student) return;
+
+            if (status === 'fieldtrip') {
+                const loc = (typeof data === 'object' ? (data.location || data.reason) : '') || '';
+                specialStudents.push({
+                    name: student.name,
+                    status: 'fieldtrip',
+                    label: '체험',
+                    color: '#8b5cf6',
+                    extra: loc ? `(${loc})` : ''
+                });
+            } else if (status === 'sick' || status === 'absent') {
+                specialStudents.push({
+                    name: student.name,
+                    status: 'sick',
+                    label: '병결',
+                    color: '#3b82f6'
+                });
+            } else if (status === 'other') {
+                const subType = typeof data === 'object' ? (data.subType || 'other_absent') : 'other_absent';
+                if (subType === 'late') {
                     specialStudents.push({
                         name: student.name,
-                        status: status
+                        status: 'late',
+                        label: '지각',
+                        color: '#d97706'
+                    });
+                } else if (subType === 'early') {
+                    specialStudents.push({
+                        name: student.name,
+                        status: 'early',
+                        label: '조퇴',
+                        color: '#0284c7'
+                    });
+                } else if (subType === 'other') {
+                    specialStudents.push({
+                        name: student.name,
+                        status: 'other',
+                        label: '기타',
+                        color: '#475569'
+                    });
+                } else {
+                    specialStudents.push({
+                        name: student.name,
+                        status: 'other_absent',
+                        label: '기타',
+                        color: '#64748b'
                     });
                 }
             }
@@ -212,13 +365,22 @@ const AttendanceTracker = () => {
 
                 if (data) {
                     const status = typeof data === 'string' ? data : data.status;
-                    const reason = typeof data === 'object' ? data.reason : '';
+                    const subType = typeof data === 'object' ? data.subType : undefined;
+                    const reason = typeof data === 'object' ? (data.reason || data.location) : '';
 
                     if (status && status !== 'present') {
+                        let effectiveStatus = status;
+                        if (status === 'other') {
+                            if (subType === 'late') effectiveStatus = 'late';
+                            else if (subType === 'early') effectiveStatus = 'early';
+                            else if (subType === 'other') effectiveStatus = 'other';
+                            else effectiveStatus = 'other_absent';
+                        }
+
                         studentRecords.push({
                             date,
                             dateKey,
-                            status,
+                            status: effectiveStatus,
                             reason: reason || ''
                         });
                     }
@@ -338,15 +500,27 @@ const AttendanceTracker = () => {
     const statusOptions = [
         { value: 'fieldtrip', label: '체험학습', color: '#8b5cf6' },
         { value: 'sick', label: '병결', color: '#3b82f6' },
-        { value: 'other', label: '기타', color: '#6b7280', small: true }
+        { value: 'other', label: '기타', color: '#64748b' }
     ];
 
     const getStatusColor = (status) => {
+        if (status === 'fieldtrip') return '#8b5cf6';
+        if (status === 'sick' || status === 'absent') return '#3b82f6';
+        if (status === 'late') return '#d97706';
+        if (status === 'early') return '#0284c7';
+        if (status === 'other_absent') return '#64748b';
+        if (status === 'other') return '#475569';
         const option = statusOptions.find(opt => opt.value === status);
-        return option ? option.color : '#6b7280';
+        return option ? option.color : '#64748b';
     };
 
     const getStatusLabel = (status) => {
+        if (status === 'fieldtrip') return '체험학습';
+        if (status === 'sick' || status === 'absent') return '병결';
+        if (status === 'late') return '지각';
+        if (status === 'early') return '조퇴';
+        if (status === 'other_absent') return '기타';
+        if (status === 'other') return '기타';
         const option = statusOptions.find(opt => opt.value === status);
         return option ? option.label : status;
     };
@@ -430,8 +604,19 @@ const AttendanceTracker = () => {
                                                     <span
                                                         key={idx}
                                                         className="status-name"
-                                                        style={{ color: getStatusColor(s.status) }}
+                                                        style={{ color: s.color }}
+                                                        title={`${s.label}: ${s.name}${s.extra || ''}`}
                                                     >
+                                                        <span
+                                                            className="status-pill-mini"
+                                                            style={{
+                                                                backgroundColor: s.color + '18',
+                                                                color: s.color,
+                                                                borderColor: s.color + '40'
+                                                            }}
+                                                        >
+                                                            {s.label}
+                                                        </span>
                                                         {s.name}
                                                     </span>
                                                 ))}
@@ -494,17 +679,64 @@ const AttendanceTracker = () => {
                                             ))}
                                         </div>
 
-                                        {(currentStatus === 'sick' || currentStatus === 'other') && (
+                                        {/* 1. 체험학습 선택 시: 장소 입력 (체험학습대장 자동 연동) */}
+                                        {currentStatus === 'fieldtrip' && (
+                                            <div className="reason-input-container">
+                                                <div className="fieldtrip-loc-label-row">
+                                                    <span className="fieldtrip-loc-badge">📍 체험 장소</span>
+                                                    <span className="fieldtrip-loc-hint">체험학습대장 자동 반영</span>
+                                                </div>
+                                                <input
+                                                    type="text"
+                                                    className="reason-input-full"
+                                                    placeholder="체험학습 장소 (예: 제주도, 에버랜드, 강원도)"
+                                                    value={getLocation(student.id)}
+                                                    onChange={(e) => handleLocationChange(student.id, e.target.value)}
+                                                />
+                                            </div>
+                                        )}
+
+                                        {/* 2. 병결 선택 시: 병결 사유 입력 */}
+                                        {currentStatus === 'sick' && (
                                             <div className="reason-input-container">
                                                 <input
                                                     type="text"
                                                     className="reason-input-full"
-                                                    placeholder={currentStatus === 'sick' ? '병결 사유 입력' : '기타 사유 입력'}
+                                                    placeholder="병결 사유 입력 (예: 감기, 장염, 발열 진료)"
                                                     value={reasons[tempKey] || reason || ''}
                                                     onChange={(e) => handleReasonChange(student.id, e.target.value, currentStatus)}
                                                 />
                                             </div>
                                         )}
+
+                                        {/* 3. 기타 선택 시: 세부 출결 칩(기타결석, 지각, 조퇴, 기타/인정) 및 사유 입력 */}
+                                        {currentStatus === 'other' && (() => {
+                                            const subType = getSubType(student.id);
+                                            const subOption = OTHER_SUB_TYPES.find(st => st.key === subType) || OTHER_SUB_TYPES[0];
+                                            return (
+                                                <div className="reason-input-container">
+                                                    <div className="sub-type-chips">
+                                                        {OTHER_SUB_TYPES.map(st => (
+                                                            <button
+                                                                key={st.key}
+                                                                type="button"
+                                                                className={`sub-type-chip ${subType === st.key ? `active ${st.key}` : ''}`}
+                                                                onClick={() => handleSubTypeChange(student.id, st.key)}
+                                                            >
+                                                                {st.label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                    <input
+                                                        type="text"
+                                                        className="reason-input-full"
+                                                        placeholder={subOption.placeholder}
+                                                        value={reasons[tempKey] || reason || ''}
+                                                        onChange={(e) => handleReasonChange(student.id, e.target.value, currentStatus)}
+                                                    />
+                                                </div>
+                                            );
+                                        })()}
                                     </Card>
                                 );
                             })}

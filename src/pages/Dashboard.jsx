@@ -7,6 +7,8 @@ import { useSaveStatus } from '../context/SaveStatusContext';
 import { useClass } from '../context/ClassContext';
 import { useAuth } from '../context/AuthContext';
 import { useStudentContext } from '../context/StudentContext';
+import { useModal } from '../context/ModalContext';
+import { openLink, extractUrls, formatUrlDisplay, renderTextWithLinks } from '../utils/linkUtils';
 
 // TodoItem Component with Style Editor
 const TodoItem = ({ todo, index, dateStr, toggleTodo, deleteTodo, updateTodoStyle, updateTodoText, onDragStart, onDragOver, onDrop }) => {
@@ -121,7 +123,7 @@ const TodoItem = ({ todo, index, dateStr, toggleTodo, deleteTodo, updateTodoStyl
                     }}
                     title="더블클릭하여 수정"
                 >
-                    {todo.text}
+                    {renderTextWithLinks(todo.text)}
                 </span>
             )}
 
@@ -185,13 +187,67 @@ const Dashboard = () => {
     const { holidays, students = [], attendance = {} } = useStudentContext();
     const rawClassId = currentClass?.id || 'default';
     const classId = user ? `${user.username}_${rawClassId}` : rawClassId;
+    const { showAlert } = useModal();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [todos, setTodos] = useState({});
     const [timetable, setTimetable] = useState({});
     const [timetableDate, setTimetableDate] = useState(new Date());
+    const [baseTimetable, setBaseTimetable] = useState(null);
     const [weeklyNotes, setWeeklyNotes] = useState({});
+    const [dailyNotes, setDailyNotes] = useState({});
+    const [diaryMemoMode, setDiaryMemoMode] = useState(() => {
+        return localStorage.getItem(`diary_memo_mode_${classId}`) || 'weekly';
+    });
     const { updateSaveStatus } = useSaveStatus();
+
+    // 다이어리 메모 모드 (주별 vs 일별) 실시간 동기화
+    useEffect(() => {
+        const updateMemoMode = () => {
+            const mode = localStorage.getItem(`diary_memo_mode_${classId}`) || 'weekly';
+            setDiaryMemoMode(mode);
+        };
+        updateMemoMode();
+
+        window.addEventListener('diaryMemoModeChanged', updateMemoMode);
+        window.addEventListener('storage', updateMemoMode);
+        return () => {
+            window.removeEventListener('diaryMemoModeChanged', updateMemoMode);
+            window.removeEventListener('storage', updateMemoMode);
+        };
+    }, [classId]);
+
+    // 기초 시간표 로드 및 실시간 동기화 (REQ-01)
+    const loadBaseTimetable = () => {
+        try {
+            const baseKey = `teacher_base_timetable_${classId}`;
+            const savedBase = localStorage.getItem(baseKey);
+            if (savedBase) {
+                setBaseTimetable(JSON.parse(savedBase));
+            } else {
+                setBaseTimetable(null);
+            }
+        } catch (e) {
+            console.error('Failed to load base timetable in Dashboard:', e);
+            setBaseTimetable(null);
+        }
+    };
+
+    useEffect(() => {
+        loadBaseTimetable();
+
+        const handleBaseUpdate = () => {
+            loadBaseTimetable();
+        };
+
+        window.addEventListener('baseTimetableUpdated', handleBaseUpdate);
+        window.addEventListener('storage', handleBaseUpdate);
+        return () => {
+            window.removeEventListener('baseTimetableUpdated', handleBaseUpdate);
+            window.removeEventListener('storage', handleBaseUpdate);
+        };
+    }, [classId]);
     const [isLoaded, setIsLoaded] = useState(false);
+    const [isEditingNotes, setIsEditingNotes] = useState(false);
     const [showMiniCalendar, setShowMiniCalendar] = useState(false);
     const [perfCards, setPerfCards] = useState([]);
 
@@ -239,10 +295,12 @@ const Dashboard = () => {
         const todosKey = `teacher_diary_todos_${classId}`;
         const timetableKey = `teacher_diary_timetable_${classId}`;
         const notesKey = `teacher_diary_notes_${classId}`;
+        const dailyNotesKey = `teacher_diary_daily_notes_${classId}`;
 
         const savedTodos = localStorage.getItem(todosKey);
         const savedTimetable = localStorage.getItem(timetableKey);
         const savedNotes = localStorage.getItem(notesKey);
+        const savedDailyNotes = localStorage.getItem(dailyNotesKey);
 
         if (savedTodos) setTodos(JSON.parse(savedTodos));
         else setTodos({});
@@ -252,6 +310,9 @@ const Dashboard = () => {
 
         if (savedNotes) setWeeklyNotes(JSON.parse(savedNotes));
         else setWeeklyNotes({});
+
+        if (savedDailyNotes) setDailyNotes(JSON.parse(savedDailyNotes));
+        else setDailyNotes({});
 
         setIsLoaded(true);
     }, [classId]);
@@ -268,12 +329,15 @@ const Dashboard = () => {
         if (!isLoaded) return;
         const notesKey = `teacher_diary_notes_${classId}`;
         localStorage.setItem(notesKey, JSON.stringify(weeklyNotes));
+
+        const dailyNotesKey = `teacher_diary_daily_notes_${classId}`;
+        localStorage.setItem(dailyNotesKey, JSON.stringify(dailyNotes));
         
         const timetableKey = `teacher_diary_timetable_${classId}`;
         localStorage.setItem(timetableKey, JSON.stringify(timetable));
         
         updateSaveStatus();
-    }, [weeklyNotes, timetable, updateSaveStatus, isLoaded, classId]);
+    }, [weeklyNotes, dailyNotes, timetable, updateSaveStatus, isLoaded, classId]);
 
     // Helper to get the start of the week (Monday)
     const getStartOfWeek = (date) => {
@@ -491,10 +555,18 @@ const Dashboard = () => {
 
     // Notes & Timetable Handler
     const handleNoteChange = (text) => {
-        setWeeklyNotes(prev => ({
-            ...prev,
-            [weekKey]: text
-        }));
+        if (diaryMemoMode === 'daily') {
+            const dayKey = formatDateLocal(timetableDate);
+            setDailyNotes(prev => ({
+                ...prev,
+                [dayKey]: text
+            }));
+        } else {
+            setWeeklyNotes(prev => ({
+                ...prev,
+                [weekKey]: text
+            }));
+        }
     };
 
     const handleTimetableChange = (dateStr, period, field, value) => {
@@ -518,9 +590,23 @@ const Dashboard = () => {
 
     const getPeriodSubject = (dateStr, period) => {
         const data = timetable[dateStr]?.[period];
-        if (typeof data === 'object' && data !== null) return data.subject || '';
-        return '';
+        // 1. 해당 날짜에 교사가 직접 입력/수정한 과목이 있으면 최우선 반환
+        if (typeof data === 'object' && data !== null && data.subject) {
+            return data.subject;
+        }
+        // 2. 입력된 과목이 없으면, 설정된 기초 시간표에서 해당 요일의 과목을 자동 기본값으로 반환
+        if (baseTimetable && dateStr) {
+            const [y, m, d] = dateStr.split('-').map(Number);
+            const dayOfWeek = new Date(y, m - 1, d).getDay(); // 1(월) ~ 5(금)
+            const baseSubj = baseTimetable[dayOfWeek]?.[period];
+            if (baseSubj && (!data || data.subject === undefined || data.subject === '')) {
+                return baseSubj;
+            }
+        }
+        return (typeof data === 'object' && data !== null) ? (data.subject || '') : '';
     };
+
+
 
     const getPeriodContent = (dateStr, period) => {
         const data = timetable[dateStr]?.[period];
@@ -565,12 +651,15 @@ const Dashboard = () => {
         setCurrentDate(today);
     };
 
-    // Attendance Summary Helper for Day Column
+    // Attendance Summary Helper for Day Column (지각/조퇴/기타결/병결/체험 완벽 분리)
     const getAttendanceSummaryForDay = (dateStr) => {
         const dayAttendance = attendance[dateStr] || {};
         const result = {
             absent: [],
-            fieldtrip: []
+            other: [],
+            fieldtrip: [],
+            late: [],
+            early: []
         };
 
         Object.keys(dayAttendance).forEach(studentIdStr => {
@@ -581,9 +670,18 @@ const Dashboard = () => {
             const student = students.find(s => String(s.id) === String(studentIdStr) || String(s.attendanceNumber) === String(studentIdStr));
             const studentName = student ? student.name : `학생${studentIdStr}`;
 
-            if (status === 'sick' || status === 'absent' || status === 'other') {
+            if (status === 'other' || status === '기타' || status === '기타결' || (typeof status === 'string' && status.includes('기타'))) {
+                const subType = typeof data === 'object' ? data?.subType : undefined;
+                if (subType === 'late') {
+                    result.late.push(studentName);
+                } else if (subType === 'early') {
+                    result.early.push(studentName);
+                } else {
+                    result.other.push(studentName);
+                }
+            } else if (status === 'sick' || status === 'absent' || status === '병결' || status === '결석' || (typeof status === 'string' && (status.includes('absent') || status.includes('병결')))) {
                 result.absent.push(studentName);
-            } else if (status === 'fieldtrip') {
+            } else if (status === 'fieldtrip' || status === '체험학습' || status === '체험' || (typeof status === 'string' && status.includes('fieldtrip'))) {
                 result.fieldtrip.push(studentName);
             }
         });
@@ -714,9 +812,12 @@ const Dashboard = () => {
                             {(() => {
                                 const att = getAttendanceSummaryForDay(dateStr);
                                 const hasAbsent = att.absent.length > 0;
+                                const hasOther = att.other.length > 0;
                                 const hasFieldtrip = att.fieldtrip.length > 0;
+                                const hasLate = att.late.length > 0;
+                                const hasEarly = att.early.length > 0;
 
-                                if (!hasAbsent && !hasFieldtrip) return null;
+                                if (!hasAbsent && !hasOther && !hasFieldtrip && !hasLate && !hasEarly) return null;
 
                                 return (
                                     <div className="day-attendance-summary" style={{
@@ -733,6 +834,24 @@ const Dashboard = () => {
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexWrap: 'wrap' }}>
                                                 <span style={{ fontSize: '0.7rem', fontWeight: 800, background: '#fee2e2', color: '#dc2626', padding: '0.05rem 0.35rem', borderRadius: '4px' }}>결석</span>
                                                 <span style={{ color: '#334155', fontWeight: 600 }}>{att.absent.join(', ')}</span>
+                                            </div>
+                                        )}
+                                        {hasLate && (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexWrap: 'wrap' }}>
+                                                <span style={{ fontSize: '0.7rem', fontWeight: 800, background: '#fef3c7', color: '#b45309', border: '1px solid #fde68a', padding: '0.05rem 0.35rem', borderRadius: '4px' }}>지각</span>
+                                                <span style={{ color: '#334155', fontWeight: 600 }}>{att.late.join(', ')}</span>
+                                            </div>
+                                        )}
+                                        {hasEarly && (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexWrap: 'wrap' }}>
+                                                <span style={{ fontSize: '0.7rem', fontWeight: 800, background: '#e0f2fe', color: '#0369a1', border: '1px solid #bae6fd', padding: '0.05rem 0.35rem', borderRadius: '4px' }}>조퇴</span>
+                                                <span style={{ color: '#334155', fontWeight: 600 }}>{att.early.join(', ')}</span>
+                                            </div>
+                                        )}
+                                        {hasOther && (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexWrap: 'wrap' }}>
+                                                <span style={{ fontSize: '0.7rem', fontWeight: 800, background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', padding: '0.05rem 0.35rem', borderRadius: '4px' }}>기타</span>
+                                                <span style={{ color: '#334155', fontWeight: 600 }}>{att.other.join(', ')}</span>
                                             </div>
                                         )}
                                         {hasFieldtrip && (
@@ -763,8 +882,12 @@ const Dashboard = () => {
 
                 {/* Today's Timetable (Replaces Weekend in Maximize Mode) */}
                 <div className="day-column weekend-column desktop-sidebar-timetable">
-                    <div className="day-header weekend-header" style={{ justifyContent: 'center' }}>
-                        <span className="day-name" style={{ color: '#15803d' }}>🌿 오늘의 시간표</span>
+                    <div className="day-header weekend-header" style={{ justifyContent: 'center', gap: '0.4rem', alignItems: 'center' }}>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#15803d" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                            <circle cx="12" cy="12" r="10" />
+                            <polyline points="12 6 12 12 16 14" />
+                        </svg>
+                        <span className="day-name" style={{ color: '#15803d', fontWeight: 700 }}>오늘의 시간표</span>
                     </div>
 
                     <div className="weekend-content" style={{ padding: '0.6rem 0.4rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', boxSizing: 'border-box' }}>
@@ -785,15 +908,18 @@ const Dashboard = () => {
                                     border: '1px solid var(--color-border)',
                                     background: '#f8fafc',
                                     borderRadius: '4px',
-                                    padding: '0.15rem 0.45rem',
+                                    padding: '0.2rem 0.45rem',
                                     cursor: 'pointer',
-                                    fontWeight: 'bold',
                                     color: '#475569',
-                                    fontSize: '0.75rem'
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
                                 }}
                                 title="어제 시간표"
                             >
-                                ◀
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="15 18 9 12 15 6" />
+                                </svg>
                             </button>
                             <span 
                                 onClick={handleTodayTimetableDay}
@@ -814,15 +940,18 @@ const Dashboard = () => {
                                     border: '1px solid var(--color-border)',
                                     background: '#f8fafc',
                                     borderRadius: '4px',
-                                    padding: '0.15rem 0.45rem',
+                                    padding: '0.2rem 0.45rem',
                                     cursor: 'pointer',
-                                    fontWeight: 'bold',
                                     color: '#475569',
-                                    fontSize: '0.75rem'
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
                                 }}
                                 title="내일 시간표"
                             >
-                                ▶
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="9 18 15 12 9 6" />
+                                </svg>
                             </button>
                         </div>
 
@@ -867,31 +996,53 @@ const Dashboard = () => {
                                         onBlur={(e) => e.target.style.borderColor = 'var(--color-border)'}
                                     />
                                 </div>
-                                <input
-                                    id={`vert-tt-content-${period}`}
-                                    type="text"
-                                    placeholder="수업내용메모"
-                                    value={getPeriodContent(formatDateLocal(timetableDate), period)}
-                                    onChange={(e) => handleTimetableChange(formatDateLocal(timetableDate), period, 'content', e.target.value)}
-                                    onKeyDown={(e) => handleTimetableKeyDown(e, period, 'content', false)}
-                                    style={{
-                                        width: '100%',
-                                        padding: '0.28rem 0.45rem',
-                                        border: '1px solid var(--color-border)',
-                                        borderRadius: '4px',
-                                        fontSize: '0.88rem',
-                                        lineHeight: 1.45,
-                                        outline: 'none',
-                                        transition: 'border-color 0.2s',
-                                        background: '#ffffff',
-                                        boxSizing: 'border-box',
-                                        fontFamily: 'inherit',
-                                        color: '#334155',
-                                        textAlign: 'center'
-                                    }}
-                                    onFocus={(e) => e.target.style.borderColor = '#16a34a'}
-                                    onBlur={(e) => e.target.style.borderColor = 'var(--color-border)'}
-                                />
+                                {(() => {
+                                    const vContent = getPeriodContent(formatDateLocal(timetableDate), period);
+                                    const vUrls = extractUrls(vContent);
+                                    return (
+                                        <div style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center' }}>
+                                            <input
+                                                id={`vert-tt-content-${period}`}
+                                                type="text"
+                                                placeholder="수업내용메모"
+                                                value={vContent}
+                                                onChange={(e) => handleTimetableChange(formatDateLocal(timetableDate), period, 'content', e.target.value)}
+                                                onKeyDown={(e) => handleTimetableKeyDown(e, period, 'content', false)}
+                                                style={{
+                                                    width: '100%',
+                                                    padding: vUrls.length > 0 ? '0.28rem 1.6rem 0.28rem 0.45rem' : '0.28rem 0.45rem',
+                                                    border: '1px solid var(--color-border)',
+                                                    borderRadius: '4px',
+                                                    fontSize: '0.88rem',
+                                                    lineHeight: 1.45,
+                                                    outline: 'none',
+                                                    transition: 'border-color 0.2s',
+                                                    background: '#ffffff',
+                                                    boxSizing: 'border-box',
+                                                    fontFamily: 'inherit',
+                                                    color: '#334155',
+                                                    textAlign: 'center'
+                                                }}
+                                                onFocus={(e) => e.target.style.borderColor = '#16a34a'}
+                                                onBlur={(e) => e.target.style.borderColor = 'var(--color-border)'}
+                                            />
+                                            {vUrls.length > 0 && (
+                                                <button
+                                                    type="button"
+                                                    className="tt-inline-link-btn"
+                                                    onClick={(e) => openLink(vUrls[0], e)}
+                                                    title={`링크 열기: ${vUrls[0]}`}
+                                                >
+                                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                                        <polyline points="15 3 21 3 21 9"></polyline>
+                                                        <line x1="10" y1="14" x2="21" y2="3"></line>
+                                                    </svg>
+                                                </button>
+                                            )}
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         ))}
                     </div>
@@ -902,13 +1053,29 @@ const Dashboard = () => {
             <div className="horizontal-bottom-timetable">
                 <div className="horizontal-timetable-card">
                     <div className="horizontal-timetable-header">
-                        <span className="timetable-title-badge">🌿 오늘의 시간표</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                            <span className="timetable-title-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <polyline points="12 6 12 12 16 14" />
+                                </svg>
+                                오늘의 시간표
+                            </span>
+                        </div>
                         <div className="timetable-header-nav">
-                            <button onClick={handlePrevTimetableDay} title="어제 시간표">◀</button>
+                            <button onClick={handlePrevTimetableDay} title="어제 시간표" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="15 18 9 12 15 6" />
+                                </svg>
+                            </button>
                             <span onClick={handleTodayTimetableDay} title="클릭하여 오늘 날짜로 이동" style={{ cursor: 'pointer' }}>
                                 {timetableDate.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' })}
                             </span>
-                            <button onClick={handleNextTimetableDay} title="내일 시간표">▶</button>
+                            <button onClick={handleNextTimetableDay} title="내일 시간표" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="9 18 15 12 9 6" />
+                                </svg>
+                            </button>
                         </div>
                     </div>
                     <div className="horizontal-timetable-grid">
@@ -926,74 +1093,208 @@ const Dashboard = () => {
                                         className="period-subject-input"
                                     />
                                 </div>
-                                <input
-                                    id={`horiz-tt-content-${period}`}
-                                    type="text"
-                                    placeholder="수업내용메모"
-                                    value={getPeriodContent(formatDateLocal(timetableDate), period)}
-                                    onChange={(e) => handleTimetableChange(formatDateLocal(timetableDate), period, 'content', e.target.value)}
-                                    onKeyDown={(e) => handleTimetableKeyDown(e, period, 'content', true)}
-                                    className="period-content-input"
-                                />
+                                {(() => {
+                                    const hContent = getPeriodContent(formatDateLocal(timetableDate), period);
+                                    const hUrls = extractUrls(hContent);
+                                    return (
+                                        <div style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center' }}>
+                                            <input
+                                                id={`horiz-tt-content-${period}`}
+                                                type="text"
+                                                placeholder="수업내용메모"
+                                                value={hContent}
+                                                onChange={(e) => handleTimetableChange(formatDateLocal(timetableDate), period, 'content', e.target.value)}
+                                                onKeyDown={(e) => handleTimetableKeyDown(e, period, 'content', true)}
+                                                className="period-content-input"
+                                                style={hUrls.length > 0 ? { paddingRight: '1.6rem' } : undefined}
+                                            />
+                                            {hUrls.length > 0 && (
+                                                <button
+                                                    type="button"
+                                                    className="tt-inline-link-btn"
+                                                    onClick={(e) => openLink(hUrls[0], e)}
+                                                    title={`링크 열기: ${hUrls[0]}`}
+                                                >
+                                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                                        <polyline points="15 3 21 3 21 9"></polyline>
+                                                        <line x1="10" y1="14" x2="21" y2="3"></line>
+                                                    </svg>
+                                                </button>
+                                            )}
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         ))}
                     </div>
                 </div>
             </div>
 
-            {/* Weekly Notes Section */}
-            <div className="weekly-notes-section mt-md">
-                {/* Unmaximized mode toggleable bar */}
-                <div className="weekly-notes-unmaximized-toggle">
-                    <div 
-                        className="weekly-notes-toggle-bar"
-                        onClick={() => setShowWeeklyNotes(!showWeeklyNotes)}
-                    >
-                        <span className="toggle-label">🌱 이번 주 메모 / 목표</span>
-                        <span className="toggle-btn-text">
-                            {showWeeklyNotes ? '접기 ▲' : '펼쳐보기 ▼'}
-                        </span>
-                    </div>
+            {/* Weekly or Daily Notes Section */}
+            {(() => {
+                const isDailyMemo = diaryMemoMode === 'daily';
+                const dailyDateStr = formatDateLocal(timetableDate);
+                const isTodayDaily = dailyDateStr === formatDateLocal(new Date());
+                const dayKorean = ['일', '월', '화', '수', '목', '금', '토'][timetableDate.getDay()];
+                const memoTitle = isDailyMemo
+                    ? (isTodayDaily ? '🌱 오늘의 메모 / 알림장' : `🌱 ${timetableDate.getMonth() + 1}월 ${timetableDate.getDate()}일(${dayKorean}) 메모 / 알림장`)
+                    : '🌱 이번 주 메모 / 목표';
+                const toggleLabel = isDailyMemo
+                    ? (isTodayDaily ? '🌱 오늘의 메모' : `🌱 ${timetableDate.getMonth() + 1}월 ${timetableDate.getDate()}일(${dayKorean}) 메모`)
+                    : '🌱 이번 주 메모 / 목표';
+                const memoValue = isDailyMemo ? (dailyNotes[dailyDateStr] || '') : (weeklyNotes[weekKey] || '');
+                const memoPlaceholder = isDailyMemo
+                    ? '오늘 하루 기억해야 할 내용이나 알림장, 메모를 자유롭게 작성하세요...'
+                    : '이번 주에 기억해야 할 내용이나 목표를 자유롭게 작성하세요...';
 
-                    {showWeeklyNotes && (
-                        <div className="weekly-notes-expanded-content mt-xs">
-                            <Card style={{ padding: '0.75rem' }}>
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.4rem' }}>
+                return (
+                    <div className="weekly-notes-section mt-md">
+                        {/* Unmaximized mode toggleable bar */}
+                        <div className="weekly-notes-unmaximized-toggle">
+                            <div 
+                                className="weekly-notes-toggle-bar"
+                                onClick={() => setShowWeeklyNotes(!showWeeklyNotes)}
+                            >
+                                <span className="toggle-label">{toggleLabel}</span>
+                                <span className="toggle-btn-text">
+                                    {showWeeklyNotes ? '접기 ▲' : '펼쳐보기 ▼'}
+                                </span>
+                            </div>
+
+                            {showWeeklyNotes && (
+                                <div className="weekly-notes-expanded-content mt-xs">
+                                    <Card style={{ padding: '0.75rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                                            {isDailyMemo && (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                                    <button
+                                                        type="button"
+                                                        onClick={handlePrevTimetableDay}
+                                                        className="timetable-nav-btn"
+                                                        style={{ padding: '0.2rem 0.5rem', fontSize: '0.8rem' }}
+                                                        title="이전 날짜"
+                                                    >
+                                                        ◀
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleTodayTimetableDay}
+                                                        className="timetable-nav-btn"
+                                                        style={{ padding: '0.2rem 0.5rem', fontSize: '0.8rem', fontWeight: isTodayDaily ? 800 : 500 }}
+                                                    >
+                                                        오늘
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleNextTimetableDay}
+                                                        className="timetable-nav-btn"
+                                                        style={{ padding: '0.2rem 0.5rem', fontSize: '0.8rem' }}
+                                                        title="다음 날짜"
+                                                    >
+                                                        ▶
+                                                    </button>
+                                                </div>
+                                            )}
+                                            <div style={{ marginLeft: 'auto' }}>
+                                                <Button variant="secondary" onClick={() => { setShowNotesCollection(true); setNotesSearchQuery(''); }}>
+                                                    📋 모아보기
+                                                </Button>
+                                            </div>
+                                        </div>
+                                        {(!isEditingNotes && extractUrls(memoValue).length > 0) ? (
+                                            <div
+                                                className="notes-view-area"
+                                                onClick={() => setIsEditingNotes(true)}
+                                                title="클릭하여 메모 수정 (링크 클릭 시 바로가기)"
+                                            >
+                                                {renderTextWithLinks(memoValue)}
+                                            </div>
+                                        ) : (
+                                            <textarea
+                                                className="notes-textarea"
+                                                placeholder={memoPlaceholder}
+                                                value={memoValue}
+                                                onChange={(e) => handleNoteChange(e.target.value)}
+                                                autoFocus={isEditingNotes}
+                                                onFocus={() => setIsEditingNotes(true)}
+                                                onBlur={() => setIsEditingNotes(false)}
+                                                style={{ width: '100%', minHeight: '80px', boxSizing: 'border-box' }}
+                                            />
+                                        )}
+                                    </Card>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Maximized / Full Screen mode always visible card */}
+                        <div className="weekly-notes-maximized-card">
+                            <Card style={{ padding: '0.85rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                        <h3 style={{ margin: 0, fontSize: '0.95rem', color: '#15803d', fontWeight: 800 }}>
+                                            {memoTitle}
+                                        </h3>
+                                        {isDailyMemo && (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                                <button
+                                                    type="button"
+                                                    onClick={handlePrevTimetableDay}
+                                                    className="timetable-nav-btn"
+                                                    style={{ padding: '0.2rem 0.5rem', fontSize: '0.78rem' }}
+                                                    title="이전 날짜"
+                                                >
+                                                    ◀
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleTodayTimetableDay}
+                                                    className="timetable-nav-btn"
+                                                    style={{ padding: '0.2rem 0.5rem', fontSize: '0.78rem', fontWeight: isTodayDaily ? 800 : 500 }}
+                                                >
+                                                    오늘
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleNextTimetableDay}
+                                                    className="timetable-nav-btn"
+                                                    style={{ padding: '0.2rem 0.5rem', fontSize: '0.78rem' }}
+                                                    title="다음 날짜"
+                                                >
+                                                    ▶
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                     <Button variant="secondary" onClick={() => { setShowNotesCollection(true); setNotesSearchQuery(''); }}>
                                         📋 모아보기
                                     </Button>
                                 </div>
-                                <textarea
-                                    className="notes-textarea"
-                                    placeholder="이번 주에 기억해야 할 내용이나 목표를 자유롭게 작성하세요..."
-                                    value={weeklyNotes[weekKey] || ''}
-                                    onChange={(e) => handleNoteChange(e.target.value)}
-                                    style={{ width: '100%', minHeight: '80px', boxSizing: 'border-box' }}
-                                />
+                                {(!isEditingNotes && extractUrls(memoValue).length > 0) ? (
+                                    <div
+                                        className="notes-view-area"
+                                        onClick={() => setIsEditingNotes(true)}
+                                        title="클릭하여 메모 수정 (링크 클릭 시 바로가기)"
+                                    >
+                                        {renderTextWithLinks(memoValue)}
+                                    </div>
+                                ) : (
+                                    <textarea
+                                        className="notes-textarea"
+                                        placeholder={memoPlaceholder}
+                                        value={memoValue}
+                                        onChange={(e) => handleNoteChange(e.target.value)}
+                                        autoFocus={isEditingNotes}
+                                        onFocus={() => setIsEditingNotes(true)}
+                                        onBlur={() => setIsEditingNotes(false)}
+                                        style={{ width: '100%', minHeight: '80px', boxSizing: 'border-box' }}
+                                    />
+                                )}
                             </Card>
                         </div>
-                    )}
-                </div>
-
-                {/* Maximized / Full Screen mode always visible card */}
-                <div className="weekly-notes-maximized-card">
-                    <Card style={{ padding: '0.85rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <h3 style={{ margin: 0, fontSize: '0.95rem', color: '#15803d', fontWeight: 800 }}>🌱 이번 주 메모 / 목표</h3>
-                            <Button variant="secondary" onClick={() => { setShowNotesCollection(true); setNotesSearchQuery(''); }}>
-                                📋 모아보기
-                            </Button>
-                        </div>
-                        <textarea
-                            className="notes-textarea"
-                            placeholder="이번 주에 기억해야 할 내용이나 목표를 자유롭게 작성하세요..."
-                            value={weeklyNotes[weekKey] || ''}
-                            onChange={(e) => handleNoteChange(e.target.value)}
-                            style={{ width: '100%', minHeight: '80px', boxSizing: 'border-box' }}
-                        />
-                    </Card>
-                </div>
-            </div>
+                    </div>
+                );
+            })()}
 
             {/* Notes Collection Modal */}
             {showNotesCollection && (
@@ -1006,7 +1307,9 @@ const Dashboard = () => {
                         >
                             ×
                         </button>
-                        <h2 className="notes-collection-title">📋 주간 메모 모아보기</h2>
+                        <h2 className="notes-collection-title">
+                            {diaryMemoMode === 'daily' ? '📋 일별 메모 모아보기' : '📋 주간 메모 모아보기'}
+                        </h2>
                         <div className="notes-search-wrap">
                             <input
                                 type="text"
@@ -1019,7 +1322,8 @@ const Dashboard = () => {
                         </div>
                         <div className="notes-collection-list">
                             {(() => {
-                                const allNotes = Object.entries(weeklyNotes)
+                                const sourceNotes = diaryMemoMode === 'daily' ? dailyNotes : weeklyNotes;
+                                const allNotes = Object.entries(sourceNotes)
                                     .filter(([, text]) => text && text.trim())
                                     .sort(([a], [b]) => b.localeCompare(a))
                                     .filter(([, text]) => {
@@ -1035,6 +1339,28 @@ const Dashboard = () => {
                                                 : '아직 작성된 메모가 없습니다.'}
                                         </div>
                                     );
+                                }
+
+                                if (diaryMemoMode === 'daily') {
+                                    const todayStr = formatDateLocal(new Date());
+                                    return allNotes.map(([dateKey, text]) => {
+                                        const [y, m, d] = dateKey.split('-').map(Number);
+                                        const dateObj = new Date(y, m - 1, d);
+                                        const dayKorean = ['일', '월', '화', '수', '목', '금', '토'][dateObj.getDay()];
+                                        const isTodayItem = dateKey === todayStr;
+
+                                        return (
+                                            <div key={dateKey} className={`notes-collection-item ${isTodayItem ? 'current-week' : ''}`}>
+                                                <div className="notes-collection-header">
+                                                    <span className="notes-week-label">
+                                                        📅 {y}년 {m}월 {d}일 ({dayKorean})
+                                                    </span>
+                                                    {isTodayItem && <span className="notes-current-badge">오늘</span>}
+                                                </div>
+                                                <div className="notes-collection-text" style={{ whiteSpace: 'pre-wrap' }}>{renderTextWithLinks(text)}</div>
+                                            </div>
+                                        );
+                                    });
                                 }
 
                                 return allNotes.map(([dateKey, text]) => {
@@ -1053,7 +1379,7 @@ const Dashboard = () => {
                                                 </span>
                                                 {isCurrentWeek && <span className="notes-current-badge">이번 주</span>}
                                             </div>
-                                            <div className="notes-collection-text">{text}</div>
+                                            <div className="notes-collection-text" style={{ whiteSpace: 'pre-wrap' }}>{renderTextWithLinks(text)}</div>
                                         </div>
                                     );
                                 });
@@ -1798,6 +2124,29 @@ const Dashboard = () => {
                     box-shadow: 0 0 0 2px var(--color-primary-light);
                 }
 
+                .notes-view-area {
+                    width: 100%;
+                    min-height: 80px;
+                    padding: 0.65rem 0.8rem;
+                    border: 1px solid var(--color-border);
+                    border-radius: var(--radius-sm);
+                    font-family: inherit;
+                    font-size: 0.92rem;
+                    line-height: 1.5;
+                    box-sizing: border-box;
+                    white-space: pre-wrap;
+                    word-break: break-all;
+                    cursor: text;
+                    user-select: text;
+                    background: #ffffff;
+                    color: var(--color-text);
+                    transition: border-color 0.15s ease;
+                }
+
+                .notes-view-area:hover {
+                    border-color: #cbd5e1;
+                }
+
                 @media (max-width: 1024px) {
                     .weekly-grid {
                         grid-template-columns: repeat(3, 1fr);
@@ -2000,6 +2349,34 @@ const Dashboard = () => {
                     padding: 3rem 1rem;
                     font-size: 0.95rem;
                 }
+
+                /* 시간표 인라인 링크 바로가기 버튼 */
+                .tt-inline-link-btn {
+                    position: absolute;
+                    right: 4px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    background: rgba(240, 253, 244, 0.95);
+                    border: 1px solid #86efac;
+                    border-radius: 4px;
+                    color: #16a34a;
+                    width: 18px;
+                    height: 18px;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    padding: 0;
+                    transition: all 0.15s ease;
+                }
+
+                .tt-inline-link-btn:hover {
+                    background: #16a34a;
+                    color: #ffffff;
+                    transform: translateY(-50%) scale(1.1);
+                }
+
+
 
                 /* ===== Schedule Extraction Modal ===== */
                 .extract-modal-content {

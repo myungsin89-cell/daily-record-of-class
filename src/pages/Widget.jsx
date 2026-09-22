@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { parseNoteContent, serializeNoteContent } from '../utils/noteUtils';
+import { openLink, extractUrls, formatUrlDisplay, renderTextWithLinks } from '../utils/linkUtils';
 import './Widget.css';
 
 const COLOR_OPTIONS = [
@@ -22,6 +24,8 @@ const Widget = () => {
     const [opacity, setOpacity] = useState(1.0);
     const [isAlwaysOnTop, setIsAlwaysOnTop] = useState(true);
     const [showPalette, setShowPalette] = useState(false);
+    const [activeTextareaWidget, setActiveTextareaWidget] = useState(false);
+    const [activeChecklistIdx, setActiveChecklistIdx] = useState(null);
 
     // Load target note from localStorage
     useEffect(() => {
@@ -153,99 +157,120 @@ const Widget = () => {
     // 체크리스트 ([ ] ) 추가 핸들러
     const handleInsertChecklist = () => {
         if (!currentNote) return;
-        const content = currentNote.content || '';
-        const lines = content ? content.split('\n') : [];
-        lines.push('[ ] ');
-        const newContent = lines.join('\n');
+        const { checklist, plainText } = parseNoteContent(currentNote.content || '');
+        checklist.push({ checked: false, text: '' });
+        const newContent = serializeNoteContent(checklist, plainText);
         handleFieldChange('content', newContent);
         setTimeout(() => {
-            const nextInput = document.querySelector(`input[data-widget-line="${lines.length - 1}"]`);
+            const nextInput = document.querySelector(`input[data-widget-check="${checklist.length - 1}"]`);
             if (nextInput) nextInput.focus();
         }, 30);
     };
 
-    // 줄 텍스트 수정 (체크리스트 줄 / 일반 줄 공통)
-    const handleMixedLineChange = (lineIndex, isChecklist, newText) => {
+    // 체크리스트 텍스트 수정
+    const handleChecklistTextChange = (itemIdx, newText) => {
         if (!currentNote) return;
-        const lines = (currentNote.content || '').split('\n');
-        const line = lines[lineIndex] || '';
-        if (isChecklist) {
-            const match = line.match(/^(\s*)\[([ xXvV])\]/);
-            const mark = match ? match[2] : ' ';
-            const indent = match ? match[1] || '' : '';
-            lines[lineIndex] = `${indent}[${mark}] ${newText}`;
-        } else {
-            lines[lineIndex] = newText;
+        const { checklist, plainText } = parseNoteContent(currentNote.content || '');
+        if (checklist[itemIdx]) {
+            checklist[itemIdx].text = newText;
         }
-        handleFieldChange('content', lines.join('\n'));
+        handleFieldChange('content', serializeNoteContent(checklist, plainText));
     };
 
     // 체크리스트 항목 완료/미완료 토글 ([ ] <-> [x])
-    const handleToggleChecklistItem = (lineIndex, e) => {
+    const handleToggleChecklistItem = (itemIdx, e) => {
         if (e) e.stopPropagation();
         if (!currentNote) return;
-        const lines = (currentNote.content || '').split('\n');
-        if (lines[lineIndex] !== undefined) {
-            const line = lines[lineIndex];
-            if (/^\s*\[ \]/.test(line)) {
-                lines[lineIndex] = line.replace(/^(\s*)\[ \]/, '$1[x]');
-            } else if (/^\s*\[[xXvV]\]/.test(line)) {
-                lines[lineIndex] = line.replace(/^(\s*)\[[xXvV]\]/, '$1[ ]');
-            }
-            handleFieldChange('content', lines.join('\n'));
+        const { checklist, plainText } = parseNoteContent(currentNote.content || '');
+        if (checklist[itemIdx]) {
+            checklist[itemIdx].checked = !checklist[itemIdx].checked;
         }
+        handleFieldChange('content', serializeNoteContent(checklist, plainText));
     };
 
-    // 줄 키보드 이벤트 (Enter / Backspace / ArrowUp / ArrowDown)
-    const handleMixedLineKeyDown = (lineIndex, isChecklist, e) => {
+    // 체크리스트 항목 개별 삭제
+    const handleDeleteChecklistItem = (itemIdx, e) => {
+        if (e) e.stopPropagation();
         if (!currentNote) return;
+        const { checklist, plainText } = parseNoteContent(currentNote.content || '');
+        checklist.splice(itemIdx, 1);
+        handleFieldChange('content', serializeNoteContent(checklist, plainText));
+    };
+
+    // 체크리스트 키보드 이벤트 (Enter: 다음 항목 / 빈칸 시 일반모드로 전환, Backspace, ArrowUp/Down)
+    const handleChecklistKeyDown = (itemIdx, e) => {
+        if (!currentNote) return;
+        const { checklist, plainText } = parseNoteContent(currentNote.content || '');
+
         if (e.key === 'Enter') {
             e.preventDefault();
-            const lines = (currentNote.content || '').split('\n');
-            if (isChecklist && e.target.value.trim() === '') {
-                lines[lineIndex] = '';
+            const currentItem = checklist[itemIdx];
+            if (currentItem && currentItem.text.trim() === '') {
+                // 빈 체크박스에서 Enter -> 체크박스 삭제 후 일반 작성모드(textarea) 진입!
+                checklist.splice(itemIdx, 1);
+                handleFieldChange('content', serializeNoteContent(checklist, plainText));
+                setTimeout(() => {
+                    const textarea = document.querySelector('.widget-content-input');
+                    if (textarea) {
+                        textarea.focus();
+                        textarea.setSelectionRange(0, 0);
+                    }
+                }, 20);
             } else {
-                const newLine = isChecklist ? '[ ] ' : '';
-                lines.splice(lineIndex + 1, 0, newLine);
+                // 내용이 있으면 -> 다음 체크박스 줄 생성
+                checklist.splice(itemIdx + 1, 0, { checked: false, text: '' });
+                handleFieldChange('content', serializeNoteContent(checklist, plainText));
+                setTimeout(() => {
+                    const nextInput = document.querySelector(`input[data-widget-check="${itemIdx + 1}"]`);
+                    if (nextInput) nextInput.focus();
+                }, 20);
             }
-            handleFieldChange('content', lines.join('\n'));
-            setTimeout(() => {
-                const nextIdx = (isChecklist && e.target.value.trim() === '') ? lineIndex : lineIndex + 1;
-                const nextInput = document.querySelector(`input[data-widget-line="${nextIdx}"]`);
-                if (nextInput) nextInput.focus();
-            }, 20);
         } else if (e.key === 'Backspace' && e.target.value === '') {
             e.preventDefault();
-            const lines = (currentNote.content || '').split('\n');
-            if (isChecklist) {
-                lines[lineIndex] = '';
-            } else if (lines.length > 1) {
-                lines.splice(lineIndex, 1);
-            } else {
-                lines[0] = '';
-            }
-            handleFieldChange('content', lines.join('\n'));
+            checklist.splice(itemIdx, 1);
+            handleFieldChange('content', serializeNoteContent(checklist, plainText));
             setTimeout(() => {
-                const prevIdx = isChecklist ? lineIndex : Math.max(0, lineIndex - 1);
-                const prevInput = document.querySelector(`input[data-widget-line="${prevIdx}"]`);
-                if (prevInput) {
-                    prevInput.focus();
-                    prevInput.setSelectionRange(prevInput.value.length, prevInput.value.length);
+                if (itemIdx > 0) {
+                    const prevInput = document.querySelector(`input[data-widget-check="${itemIdx - 1}"]`);
+                    if (prevInput) {
+                        prevInput.focus();
+                        prevInput.setSelectionRange(prevInput.value.length, prevInput.value.length);
+                    }
+                } else {
+                    const titleInput = document.querySelector('.widget-title-input');
+                    if (titleInput) titleInput.focus();
                 }
             }, 20);
         } else if (e.key === 'ArrowUp') {
-            if (lineIndex > 0) {
+            if (itemIdx > 0) {
                 e.preventDefault();
-                const prevInput = document.querySelector(`input[data-widget-line="${lineIndex - 1}"]`);
+                const prevInput = document.querySelector(`input[data-widget-check="${itemIdx - 1}"]`);
                 if (prevInput) prevInput.focus();
+            } else {
+                const titleInput = document.querySelector('.widget-title-input');
+                if (titleInput) titleInput.focus();
             }
         } else if (e.key === 'ArrowDown') {
-            const nextInput = document.querySelector(`input[data-widget-line="${lineIndex + 1}"]`);
-            if (nextInput) {
+            if (itemIdx < checklist.length - 1) {
                 e.preventDefault();
-                nextInput.focus();
+                const nextInput = document.querySelector(`input[data-widget-check="${itemIdx + 1}"]`);
+                if (nextInput) nextInput.focus();
+            } else {
+                const textarea = document.querySelector('.widget-content-input');
+                if (textarea) {
+                    e.preventDefault();
+                    textarea.focus();
+                    textarea.setSelectionRange(0, 0);
+                }
             }
         }
+    };
+
+    // 일반 텍스트 수정
+    const handlePlainTextChange = (newPlainText) => {
+        if (!currentNote) return;
+        const { checklist } = parseNoteContent(currentNote.content || '');
+        handleFieldChange('content', serializeNoteContent(checklist, newPlainText));
     };
 
     const colorScheme = COLOR_OPTIONS.find(c => c.id === currentNote?.color) || COLOR_OPTIONS[0];
@@ -268,7 +293,7 @@ const Widget = () => {
                     <button 
                         className="widget-tool-btn checklist-btn"
                         onClick={handleInsertChecklist}
-                        title="체크리스트 추가"
+                        title="체크박스 추가 (클릭 시 추가 · Enter 시 다음 할 일 · 빈칸 Enter 시 일반 메모 전환)"
                     >
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="9 11 12 14 22 4"></polyline>
@@ -343,30 +368,29 @@ const Widget = () => {
                     style={{ color: colorScheme.text }}
                 />
 
-                {/* 위젯 본문: 체크리스트 & 텍스트 혼합 일체형 에디터 */}
+                {/* 위젯 본문: 체크리스트 (상단) + 일반 작성 텍스트 영역 (하단) */}
                 {(() => {
-                    const lines = (currentNote?.content !== undefined && currentNote?.content !== null ? currentNote.content : '').split('\n');
-                    const hasChecklist = lines.some(l => /^\s*\[[ xXvV]\]/.test(l));
+                    const { checklist, plainText } = parseNoteContent(currentNote?.content || '');
 
-                    if (hasChecklist) {
-                        return (
-                            <div className="widget-direct-checklist-editor">
-                                {lines.map((line, idx) => {
-                                    const match = line.match(/^(\s*)\[([ xXvV])\]\s*(.*)$/);
-                                    const isChecklistLine = !!match;
-                                    const isChecked = match ? (match[2].toLowerCase() === 'x' || match[2].toLowerCase() === 'v') : false;
-                                    const text = match ? match[3] : line;
+                    return (
+                        <div className="widget-body-content-wrap">
+                            {/* 1. 체크박스 할 일 목록 */}
+                            {checklist.length > 0 && (
+                                <div className="widget-direct-checklist-editor">
+                                    {checklist.map((item, idx) => {
+                                        const itemUrls = extractUrls(item.text);
+                                        const hasUrls = itemUrls.length > 0;
+                                        const isEditingThisItem = activeChecklistIdx === idx;
 
-                                    return (
-                                        <div key={idx} className={`widget-direct-checklist-row ${isChecklistLine ? 'is-checklist' : 'is-plain-text'} ${isChecked ? 'completed' : ''}`}>
-                                            {isChecklistLine && (
+                                        return (
+                                            <div key={idx} className={`widget-direct-checklist-row ${item.checked ? 'completed' : ''}`}>
                                                 <button
                                                     type="button"
-                                                    className={`widget-direct-checkbox-btn ${isChecked ? 'checked' : ''}`}
+                                                    className={`widget-direct-checkbox-btn ${item.checked ? 'checked' : ''}`}
                                                     onClick={(e) => handleToggleChecklistItem(idx, e)}
-                                                    title={isChecked ? '완료 취소' : '할 일 완료'}
+                                                    title={item.checked ? '완료 취소' : '할 일 완료'}
                                                 >
-                                                    {isChecked ? (
+                                                    {item.checked ? (
                                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                                             <polyline points="20 6 9 17 4 12"></polyline>
                                                         </svg>
@@ -374,33 +398,90 @@ const Widget = () => {
                                                         <span className="widget-direct-empty-square" />
                                                     )}
                                                 </button>
-                                            )}
 
-                                            <input
-                                                type="text"
-                                                className={`widget-direct-checklist-input ${isChecklistLine ? 'is-check-input' : 'is-plain-input'} ${isChecked ? 'completed' : ''}`}
-                                                placeholder={isChecklistLine ? '할 일 입력... (Enter로 다음 항목)' : '메모 내용 입력...'}
-                                                value={text}
-                                                data-widget-line={idx}
-                                                onChange={(e) => handleMixedLineChange(idx, isChecklistLine, e.target.value)}
-                                                onKeyDown={(e) => handleMixedLineKeyDown(idx, isChecklistLine, e)}
-                                                style={{ color: colorScheme.text }}
-                                            />
+                                                {(!isEditingThisItem && hasUrls) ? (
+                                                    <div
+                                                        className={`widget-direct-checklist-text-view ${item.checked ? 'completed' : ''}`}
+                                                        onClick={() => setActiveChecklistIdx(idx)}
+                                                        style={{ color: colorScheme.text }}
+                                                        title="클릭하여 할 일 내용 수정 (링크 클릭 시 바로가기)"
+                                                    >
+                                                        {renderTextWithLinks(item.text)}
+                                                    </div>
+                                                ) : (
+                                                    <input
+                                                        type="text"
+                                                        className={`widget-direct-checklist-input ${item.checked ? 'completed' : ''}`}
+                                                        placeholder="할 일 입력... (Enter: 다음 할 일 / 빈칸 Enter: 일반 메모 전환)"
+                                                        value={item.text}
+                                                        data-widget-check={idx}
+                                                        autoFocus={isEditingThisItem}
+                                                        onFocus={() => setActiveChecklistIdx(idx)}
+                                                        onBlur={() => setActiveChecklistIdx(null)}
+                                                        onChange={(e) => handleChecklistTextChange(idx, e.target.value)}
+                                                        onKeyDown={(e) => handleChecklistKeyDown(idx, e)}
+                                                        style={{ color: colorScheme.text }}
+                                                    />
+                                                )}
+
+                                                <button
+                                                    type="button"
+                                                    className="widget-direct-row-delete-btn"
+                                                    onClick={(e) => handleDeleteChecklistItem(idx, e)}
+                                                    title="항목 삭제"
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
+                            {/* 2. 일반 텍스트 작성 모드 (줄별 ✕ 버튼 없는 순수 메모란) */}
+                            {(() => {
+                                const hasUrls = extractUrls(plainText).length > 0;
+
+                                if (!activeTextareaWidget && hasUrls) {
+                                    return (
+                                        <div
+                                            className={`widget-content-view ${checklist.length > 0 ? 'has-checklist' : ''}`}
+                                            onClick={() => setActiveTextareaWidget(true)}
+                                            style={{ color: colorScheme.text }}
+                                            title="클릭하여 메모 수정 (링크 클릭 시 바로가기)"
+                                        >
+                                            {renderTextWithLinks(plainText)}
                                         </div>
                                     );
-                                })}
-                            </div>
-                        );
-                    }
+                                }
 
-                    return (
-                        <textarea
-                            className="widget-content-input"
-                            value={currentNote?.content || ''}
-                            onChange={(e) => handleFieldChange('content', e.target.value)}
-                            placeholder="메모 내용을 입력하세요... (상단 체크 버튼으로 체크박스 생성)"
-                            style={{ color: colorScheme.text }}
-                        />
+                                return (
+                                    <textarea
+                                        autoFocus={activeTextareaWidget}
+                                        onFocus={() => setActiveTextareaWidget(true)}
+                                        onBlur={() => setActiveTextareaWidget(false)}
+                                        className={`widget-content-input ${checklist.length > 0 ? 'has-checklist' : ''}`}
+                                        value={plainText}
+                                        onChange={(e) => handlePlainTextChange(e.target.value)}
+                                        placeholder={checklist.length > 0 ? "메모를 입력하세요..." : "메모를 입력하세요..."}
+                                        style={{ color: colorScheme.text }}
+                                        onKeyDown={(e) => {
+                                            if (checklist.length > 0 && e.target.selectionStart === 0 && e.target.selectionEnd === 0) {
+                                                if (e.key === 'ArrowUp' || (e.key === 'Backspace' && plainText === '')) {
+                                                    e.preventDefault();
+                                                    const lastIdx = checklist.length - 1;
+                                                    const lastInput = document.querySelector(`input[data-widget-check="${lastIdx}"]`);
+                                                    if (lastInput) {
+                                                        lastInput.focus();
+                                                        lastInput.setSelectionRange(lastInput.value.length, lastInput.value.length);
+                                                    }
+                                                }
+                                            }
+                                        }}
+                                    />
+                                );
+                            })()}
+                        </div>
                     );
                 })()}
             </div>

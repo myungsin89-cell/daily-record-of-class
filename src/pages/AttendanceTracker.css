@@ -378,6 +378,93 @@
     box-sizing: border-box !important;
 }
 
+/* 체험학습 장소 입력 헤더 행 */
+.fieldtrip-loc-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.25rem;
+}
+
+.fieldtrip-loc-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #7c3aed;
+    background: #f5f3ff;
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+    border: 1px solid #ddd6fe;
+}
+
+.fieldtrip-loc-hint {
+    font-size: 0.66rem;
+    color: #94a3b8;
+}
+
+/* 세부 출결(기타) 칩 그룹 */
+.sub-type-chips {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.2rem;
+    margin-bottom: 0.35rem;
+    width: 100%;
+}
+
+.sub-type-chip {
+    padding: 0.2rem 0.15rem;
+    border-radius: 4px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    border: 1px solid var(--color-border);
+    background: #f8fafc;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.sub-type-chip:hover {
+    background: #f1f5f9;
+}
+
+.sub-type-chip.active.other_absent {
+    background: #64748b;
+    border-color: #475569;
+    color: #ffffff;
+}
+
+.sub-type-chip.active.late {
+    background: #d97706;
+    border-color: #b45309;
+    color: #ffffff;
+}
+
+.sub-type-chip.active.early {
+    background: #0284c7;
+    border-color: #0369a1;
+    color: #ffffff;
+}
+
+.sub-type-chip.active.other {
+    background: #475569;
+    border-color: #334155;
+    color: #ffffff;
+}
+
+/* 달력 타일 내 미니 상태 뱃지 */
+.status-pill-mini {
+    display: inline-block;
+    padding: 0.05rem 0.25rem;
+    border-radius: 3px;
+    font-size: 0.6rem;
+    font-weight: 800;
+    margin-right: 3px;
+    border: 1px solid transparent;
+    line-height: 1.2;
+    vertical-align: middle;
+}
+
 .reason-input-full {
     width: 100% !important;
     box-sizing: border-box !important;

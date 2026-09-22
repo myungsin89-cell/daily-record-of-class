@@ -43,6 +43,27 @@
     border: 1px solid #fde68a;
 }
 
+.postit-tip-pill {
+    font-size: 0.8rem;
+    color: #15803d;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    padding: 0.25rem 0.75rem;
+    border-radius: 99px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    white-space: nowrap;
+    cursor: help;
+    transition: all 0.15s ease;
+}
+
+.postit-tip-pill:hover {
+    background: #dcfce7;
+    border-color: #86efac;
+}
+
 .add-postit-btn {
     background: #16a34a;
     color: white;
@@ -57,6 +78,8 @@
     display: flex;
     align-items: center;
     gap: 0.4rem;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .add-postit-btn:hover {
@@ -128,15 +151,26 @@
     white-space: nowrap;
 }
 
-/* 포스트잇 그리드 */
-.notes-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+/* 포스트잇 메이슨리 반응형 컨테이너 (원래 포스트잇 규격 유지 & 빈 공간 자동 채움) */
+.notes-masonry-wrapper {
+    display: flex;
     gap: 1.25rem;
-    align-items: start;
+    align-items: flex-start;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.notes-masonry-col {
+    flex: 1 1 0px;
+    max-width: 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    min-width: 0;
 }
 
 .postit-card {
+    width: 100%;
     border-radius: 10px;
     border: 1px solid transparent;
     padding: 0.85rem 1rem 0.75rem 1rem;
@@ -668,21 +702,32 @@
     box-shadow: 0 0 0 2px #0f172a;
 }
 
-@media (max-width: 768px) {
-    .notes-grid {
-        grid-template-columns: 1fr;
+@media (max-width: 640px) {
+    .notes-masonry-wrapper {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .notes-masonry-col {
+        max-width: 100%;
     }
 }
 
 /* ─────────────────────────────────────────────────────────────
    [포스트잇 직접 입력 일체형 체크리스트 에디터 스타일]
    ───────────────────────────────────────────────────────────── */
+.postit-card-content-wrap {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 80px;
+}
+
 .postit-direct-checklist-editor {
     display: flex;
     flex-direction: column;
     gap: 0.35rem;
-    margin: 0.2rem 0;
-    min-height: 80px;
+    margin: 0.2rem 0 0.4rem 0;
 }
 
 .direct-checklist-row {
@@ -692,10 +737,6 @@
     padding: 0.1rem 0;
     border-radius: 6px;
     transition: background 0.15s ease;
-}
-
-.direct-checklist-row.is-plain-text {
-    padding-left: 0.15rem;
 }
 
 .direct-checkbox-btn {
@@ -746,10 +787,6 @@
     box-sizing: border-box;
 }
 
-.direct-checklist-text-input.is-plain-input {
-    font-size: 0.95rem;
-}
-
 .direct-checklist-text-input::placeholder {
     opacity: 0.35;
 }
@@ -763,7 +800,7 @@
     background: transparent;
     border: none;
     color: inherit;
-    opacity: 0.2;
+    opacity: 0;
     cursor: pointer;
     font-size: 0.9rem;
     padding: 0 4px;
@@ -781,21 +818,47 @@
     background: rgba(225, 29, 72, 0.1);
 }
 
-.add-checklist-item-row-btn {
-    background: rgba(0, 0, 0, 0.03);
-    border: 1px dashed rgba(0, 0, 0, 0.15);
-    border-radius: 6px;
-    padding: 0.35rem 0.6rem;
-    font-size: 0.8rem;
-    font-weight: 700;
-    cursor: pointer;
+.inline-postit-content-input.has-checklist {
+    min-height: 48px;
     margin-top: 0.25rem;
-    text-align: left;
-    transition: all 0.15s ease;
 }
 
-.add-checklist-item-row-btn:hover {
-    background: rgba(0, 0, 0, 0.07);
-    border-color: rgba(0, 0, 0, 0.25);
+/* ─────────────────────────────────────────────────────────────
+   [포스트잇 본문/체크리스트 내 직접 클릭 가능한 실시간 링크 뷰 스타일]
+   ───────────────────────────────────────────────────────────── */
+.direct-checklist-text-view {
+    flex: 1;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    font-family: inherit;
+    padding: 0.1rem 0;
+    box-sizing: border-box;
+    cursor: text;
+    word-break: break-all;
+    user-select: text;
+}
+
+.direct-checklist-text-view.completed {
+    text-decoration: line-through;
+    opacity: 0.45;
+}
+
+.inline-postit-content-view {
+    width: 100%;
+    min-height: 80px;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    font-family: inherit;
+    white-space: pre-wrap;
+    word-break: break-all;
+    cursor: text;
+    user-select: text;
+    box-sizing: border-box;
+    padding: 0.1rem 0;
+}
+
+.inline-postit-content-view.has-checklist {
+    min-height: 48px;
+    margin-top: 0.25rem;
 }
 

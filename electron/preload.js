@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     closeWidgetWindow: () => ipcRenderer.send('close-widget-window'),
     setWidgetOpacity: (opacity) => ipcRenderer.send('set-widget-opacity', opacity),
     setAlwaysOnTop: (isAlwaysOnTop) => ipcRenderer.send('set-always-on-top', isAlwaysOnTop),
+    openExternal: (url) => ipcRenderer.send('open-external', url),
     syncMemoUpdate: (noteData) => ipcRenderer.send('sync-memo-update', noteData),
     onMemoSync: (callback) => {
         const handler = (event, data) => callback(data);
